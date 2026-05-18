@@ -1,0 +1,12 @@
+<mvc:View
+  controllerName="abap.to.fiori.system.controller.App"
+  xmlns:mvc="sap.ui.core.mvc"
+  xmlns="sap.m">
+  <App>
+    <Page title="ABAP to Fiori Modernization Cockpit">
+      <content>
+        <Text text="Project started successfully." />
+      </content>
+    </Page>
+  </App>
+</mvc:View>

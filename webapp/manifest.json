@@ -1,0 +1,26 @@
+{
+  "_version": "1.65.0",
+  "sap.app": {
+    "id": "abap.to.fiori.system",
+    "type": "application",
+    "title": "ABAP to Fiori Modernization Cockpit"
+  },
+  "sap.ui": {
+    "technology": "UI5"
+  },
+  "sap.ui5": {
+    "rootView": {
+      "viewName": "abap.to.fiori.system.view.App",
+      "type": "XML",
+      "id": "app"
+    },
+    "dependencies": {
+      "libs": {
+        "sap.m": {},
+        "sap.ui.core": {},
+        "sap.f": {},
+        "sap.uxap": {}
+      }
+    }
+  }
+}
