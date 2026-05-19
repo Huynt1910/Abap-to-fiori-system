@@ -1,0 +1,86 @@
+<mvc:View
+  controllerName="abap.to.fiori.system.controller.Dashboard"
+  xmlns:mvc="sap.ui.core.mvc"
+  xmlns="sap.m"
+  xmlns:f="sap.f">
+
+  <Page title="ABAP to Fiori Modernization Cockpit">
+    <content>
+
+      <HBox class="sapUiSmallMargin" justifyContent="SpaceBetween">
+        <f:Card>
+          <f:content>
+            <VBox class="sapUiSmallMargin">
+              <Text text="Total ABAP Reports"/>
+              <Title text="{/summary/totalReports}" level="H1"/>
+            </VBox>
+          </f:content>
+        </f:Card>
+
+        <f:Card>
+          <f:content>
+            <VBox class="sapUiSmallMargin">
+              <Text text="Reports Analyzed"/>
+              <Title text="{/summary/reportsAnalyzed}" level="H1"/>
+            </VBox>
+          </f:content>
+        </f:Card>
+
+        <f:Card>
+          <f:content>
+            <VBox class="sapUiSmallMargin">
+              <Text text="Migration Readiness"/>
+              <Title text="{/summary/migrationReadiness}%" level="H1"/>
+            </VBox>
+          </f:content>
+        </f:Card>
+
+        <f:Card>
+          <f:content>
+            <VBox class="sapUiSmallMargin">
+              <Text text="High Priority"/>
+              <Title text="{/summary/highPriority}" level="H1"/>
+            </VBox>
+          </f:content>
+        </f:Card>
+      </HBox>
+
+      <Table
+        class="sapUiSmallMargin"
+        items="{/reports}">
+
+        <headerToolbar>
+          <Toolbar>
+            <Title text="ABAP Report Worklist"/>
+            <ToolbarSpacer/>
+            <SearchField width="300px" placeholder="Search report..."/>
+            <Button text="Analyze" type="Emphasized"/>
+          </Toolbar>
+        </headerToolbar>
+
+        <columns>
+          <Column><Text text="Program Name"/></Column>
+          <Column><Text text="Description"/></Column>
+          <Column><Text text="Status"/></Column>
+          <Column><Text text="Migration Potential"/></Column>
+          <Column><Text text="Priority"/></Column>
+          <Column><Text text="Assigned To"/></Column>
+        </columns>
+
+        <items>
+          <ColumnListItem type="Navigation">
+            <cells>
+              <Text text="{programName}"/>
+              <Text text="{description}"/>
+              <ObjectStatus text="{status}" state="Success"/>
+              <Text text="{migrationPotential}"/>
+              <ObjectStatus text="{priority}" state="Warning"/>
+              <Text text="{assignedTo}"/>
+            </cells>
+          </ColumnListItem>
+        </items>
+      </Table>
+
+    </content>
+  </Page>
+</mvc:View>
