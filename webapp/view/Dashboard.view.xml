@@ -1,13 +1,15 @@
 <mvc:View
-  controllerName="abap.to.fiori.system.controller.Dashboard"
-  xmlns:mvc="sap.ui.core.mvc"
-  xmlns="sap.m"
-  xmlns:f="sap.f">
-
-  <Page title="ABAP to Fiori Modernization Cockpit">
-    <content>
-
-      <HBox class="sapUiSmallMargin" justifyContent="SpaceBetween">
+    controllerName="abap.to.fiori.system.controller.Dashboard"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    xmlns:f="sap.f"
+>
+    <Page
+        id="Page"
+        title="ABAP to Fiori Modernization Cockpit"
+    >
+        <content>
+            <!-- <HBox class="sapUiSmallMargin" justifyContent="SpaceBetween">
         <f:Card>
           <f:content>
             <VBox class="sapUiSmallMargin">
@@ -43,44 +45,78 @@
             </VBox>
           </f:content>
         </f:Card>
-      </HBox>
+      </HBox> -->
 
-      <Table
-        class="sapUiSmallMargin"
-        items="{/reports}">
-
-        <headerToolbar>
-          <Toolbar>
-            <Title text="ABAP Report Worklist"/>
-            <ToolbarSpacer/>
-            <SearchField width="300px" placeholder="Search report..."/>
-            <Button text="Analyze" type="Emphasized"/>
-          </Toolbar>
-        </headerToolbar>
-
-        <columns>
-          <Column><Text text="Program Name"/></Column>
-          <Column><Text text="Description"/></Column>
-          <Column><Text text="Status"/></Column>
-          <Column><Text text="Migration Potential"/></Column>
-          <Column><Text text="Priority"/></Column>
-          <Column><Text text="Assigned To"/></Column>
-        </columns>
-
-        <items>
-          <ColumnListItem type="Navigation">
-            <cells>
-              <Text text="{programName}"/>
-              <Text text="{description}"/>
-              <ObjectStatus text="{status}" state="Success"/>
-              <Text text="{migrationPotential}"/>
-              <ObjectStatus text="{priority}" state="Warning"/>
-              <Text text="{assignedTo}"/>
-            </cells>
-          </ColumnListItem>
-        </items>
-      </Table>
-
-    </content>
-  </Page>
+            <Table id="isOderTable">
+                <headerToolbar>
+                    <OverflowToolbar>
+                        <Title text="Orders" />
+                        <ToolbarSpacer />
+                        <SearchField width="20%" />
+                        <Button
+                            tooltip="Sort"
+                            icon="sap-icon://sort"
+                        />
+                        <Button
+                            tooltip="Group"
+                            icon="sap-icon://group-2"
+                        />
+                    </OverflowToolbar>
+                </headerToolbar>
+                <columns>
+                    <Column>
+                        <Text text="Sales Order ID" />
+                    </Column>
+                    <Column>
+                        <Text text="Customer Name" />
+                    </Column>
+                    <Column>
+                        <Text text="Status" />
+                    </Column>
+                    <Column>
+                        <Text text="Gross Amount" />
+                    </Column>
+                </columns>
+                <items>
+                    <ColumnListItem type="Navigation">
+                        <cells>
+                            <ObjectIdentifier title="1" />
+                            <Text text="Customer Name 1" />
+                            <ObjectStatus
+                                text="Completed"
+                                icon="sap-icon://action-settings"
+                                state="Information"
+                            />
+                            <ObjectNumber
+                                number="1000.00"
+                                unit="USD"
+                            />
+                        </cells>
+                    </ColumnListItem>
+                </items>
+            </Table>
+            <Panel headerText="Upper center">
+                <FlexBox
+                    height="100px"
+                    alignItems="Start"
+                    justifyContent="Center"
+                >
+                    <Button
+                        text="1"
+                        type="Ghost"
+                        class="sapUiSmallMarginEnd"
+                    />
+                    <Button
+                        text="2"
+                        type="Ghost"
+                        class="sapUiSmallMarginEnd"
+                    />
+                    <Button
+                        text="3"
+                        type="Ghost"
+                    />
+                </FlexBox>
+            </Panel>
+        </content>
+    </Page>
 </mvc:View>
