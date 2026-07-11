@@ -12,6 +12,7 @@
   "license": "ISC",
   "type": "commonjs",
   "devDependencies": {
-    "@ui5/cli": "^4.0.53"
+    "@ui5/cli": "^4.0.53",
+    "ui5-middleware-simpleproxy": "3.7.1"
   }
 }

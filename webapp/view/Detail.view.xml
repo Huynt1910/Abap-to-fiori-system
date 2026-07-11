@@ -1,0 +1,562 @@
+<mvc:View
+    controllerName="abap.to.fiori.system.controller.Detail"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    displayBlock="true"
+>
+    <Page
+        id="detailPage"
+        showHeader="false"
+        busy="{view>/detail/busy}"
+        busyIndicatorDelay="0"
+        class="cockpitDetailPage"
+    >
+        <content>
+            <VBox class="cockpitDetailHeader">
+                <OverflowToolbar design="Transparent">
+                    <Button
+                        icon="sap-icon://nav-back"
+                        type="Transparent"
+                        tooltip="Back to Dashboard"
+                        press=".onBackToDashboard"
+                    />
+                    <Title
+                        text="{view>/detail/programName}"
+                        level="H2"
+                    />
+                    <ToolbarSpacer />
+                    <Button
+                        icon="sap-icon://excel-attachment"
+                        type="Transparent"
+                        tooltip="Export Detail"
+                        press=".onExportDetail"
+                    />
+                    <Button
+                        icon="sap-icon://action"
+                        type="Transparent"
+                        tooltip="Share"
+                    />
+                    <Button
+                        icon="sap-icon://slim-arrow-down"
+                        type="Transparent"
+                        tooltip="More Actions"
+                    />
+                </OverflowToolbar>
+
+                <IconTabBar
+                    id="detailTabs"
+                    expandable="false"
+                    selectedKey="{view>/detail/selectedTab}"
+                    select=".onTabSelect"
+                    class="cockpitDetailTabs"
+                >
+                    <items>
+                        <IconTabFilter
+                            key="overview"
+                            text="Overview"
+                        />
+                        <IconTabFilter
+                            key="businessLogic"
+                            text="Business Logic ({view>/detail/businessLogicCount})"
+                        />
+                        <IconTabFilter
+                            key="databaseTables"
+                            text="DB Table ({view>/detail/databaseTablesCount})"
+                        />
+                        <IconTabFilter
+                            key="uiFilters"
+                            text="UI Filter ({view>/detail/uiFiltersCount})"
+                        />
+                        <IconTabFilter
+                            key="comparisonResults"
+                            text="Comparison Result ({view>/detail/comparisonResultsCount})"
+                        />
+                    </items>
+                </IconTabBar>
+            </VBox>
+
+            <VBox class="cockpitDetailContent">
+                <VBox
+                    id="overviewSection"
+                    class="cockpitDetailSection"
+                >
+                    <HBox
+                        wrap="Wrap"
+                        class="cockpitOverviewGrid"
+                    >
+                        <VBox class="cockpitOverviewCell">
+                            <Label text="Program Name:" />
+                            <Text text="{view>/detail/overview/ProgramName}" />
+                        </VBox>
+                        <VBox class="cockpitOverviewCell">
+                            <Label text="Total Filters:" />
+                            <Text text="{view>/detail/overview/TotalFilters}" />
+                        </VBox>
+                        <VBox class="cockpitOverviewCell">
+                            <Label text="Migration Score:" />
+                            <Text
+                                text="{view>/detail/overview/MigrationScore}"
+                            />
+                        </VBox>
+                        <VBox class="cockpitOverviewCell">
+                            <Label text="Cloud Readiness:" />
+                            <Text
+                                text="{view>/detail/overview/CloudReadinessScore}"
+                            />
+                        </VBox>
+                        <VBox class="cockpitOverviewCell">
+                            <Label text="Total Tables:" />
+                            <Text text="{view>/detail/overview/TotalTables}" />
+                        </VBox>
+                        <VBox class="cockpitOverviewCell">
+                            <Label text="Business Objects:" />
+                            <Text
+                                text="{view>/detail/overview/TotalBusinessObjects}"
+                            />
+                        </VBox>
+                        <VBox class="cockpitOverviewCell">
+                            <Label text="Complexity Score:" />
+                            <Text
+                                text="{view>/detail/overview/ComplexityScore}"
+                            />
+                        </VBox>
+                        <VBox class="cockpitOverviewCell">
+                            <Label text="Analysis Status:" />
+                            <ObjectStatus
+                                text="{path: 'view>/detail/overview/AnalysisStatus', formatter: '.formatter.formatStatusText'}"
+                                state="{
+                  parts: [
+                    {path: 'view>/detail/overview/AnalysisStatus'},
+                    {path: 'view>/detail/overview/AnalysisStatusCriticality'}
+                  ],
+                  formatter: '.formatter.formatStatusState'
+                }"
+                                icon="{
+                  parts: [
+                    {path: 'view>/detail/overview/AnalysisStatus'},
+                    {path: 'view>/detail/overview/AnalysisStatusCriticality'}
+                  ],
+                  formatter: '.formatter.formatStatusIcon'
+                }"
+                            />
+                        </VBox>
+                    </HBox>
+                </VBox>
+
+                <VBox
+                    id="businessLogicSection"
+                    class="cockpitDetailSection"
+                >
+                    <OverflowToolbar design="Transparent">
+                        <Title
+                            text="Business Logic"
+                            level="H3"
+                        />
+                        <ToolbarSpacer />
+                        <Button
+                            icon="sap-icon://detail-view"
+                            type="Transparent"
+                            tooltip="View Mode"
+                        />
+                        <Button
+                            icon="sap-icon://list"
+                            type="Emphasized"
+                            tooltip="List Mode"
+                        />
+                        <Button
+                            icon="sap-icon://action-settings"
+                            type="Transparent"
+                            tooltip="Settings"
+                        />
+                        <Button
+                            icon="sap-icon://excel-attachment"
+                            type="Transparent"
+                            tooltip="Export"
+                        />
+                        <Button
+                            icon="sap-icon://slim-arrow-down"
+                            type="Transparent"
+                            tooltip="More"
+                        />
+                    </OverflowToolbar>
+                    <Table
+                        id="businessLogicTable"
+                        fixedLayout="false"
+                        growing="true"
+                        growingThreshold="10"
+                        growingScrollToLoad="false"
+                        growingTriggerText="More"
+                        noDataText="No items available."
+                        items="{view>/detail/businessLogic}"
+                    >
+                        <columns>
+                            <Column width="13rem">
+                                <Text text="Program Name" />
+                            </Column>
+                            <Column width="13rem">
+                                <Text text="Object Name" />
+                            </Column>
+                            <Column width="14rem">
+                                <Text text="Description" />
+                            </Column>
+                            <Column
+                                width="10rem"
+                                demandPopin="true"
+                                minScreenWidth="Tablet"
+                            >
+                                <Text text="Object Type" />
+                            </Column>
+                            <Column width="16rem">
+                                <Text text="Recommendation" />
+                            </Column>
+                            <Column
+                                width="12rem"
+                                demandPopin="true"
+                                minScreenWidth="Tablet"
+                            >
+                                <Text text="Migration Target" />
+                            </Column>
+                            <Column width="8rem">
+                                <Text text="Severity" />
+                            </Column>
+                            <Column
+                                width="10rem"
+                                demandPopin="true"
+                                minScreenWidth="Desktop"
+                            >
+                                <Text text="Complexity" />
+                            </Column>
+                        </columns>
+                        <items>
+                            <ColumnListItem type="Navigation">
+                                <cells>
+                                    <Text
+                                        text="{view>ProgramName}"
+                                        wrapping="true"
+                                    />
+                                    <Text
+                                        text="{view>ObjectName}"
+                                        wrapping="true"
+                                    />
+                                    <Text
+                                        text="{view>Description}"
+                                        wrapping="true"
+                                    />
+                                    <Text
+                                        text="{view>ObjectType}"
+                                        wrapping="true"
+                                    />
+                                    <Text
+                                        text="{view>Recommendation}"
+                                        wrapping="true"
+                                    />
+                                    <Text
+                                        text="{view>MigrationTarget}"
+                                        wrapping="true"
+                                    />
+                                    <ObjectStatus
+                                        text="{view>Severity}"
+                                        state="{path: 'view>Severity', formatter: '.formatter.formatCriticalityToValueState'}"
+                                    />
+                                    <Text
+                                        text="{view>RemediationComplexity}"
+                                        wrapping="true"
+                                    />
+                                </cells>
+                            </ColumnListItem>
+                        </items>
+                    </Table>
+                </VBox>
+
+                <VBox
+                    id="databaseTablesSection"
+                    class="cockpitDetailSection"
+                >
+                    <OverflowToolbar design="Transparent">
+                        <Title
+                            text="Database Tables"
+                            level="H3"
+                        />
+                        <ToolbarSpacer />
+                        <Button
+                            icon="sap-icon://detail-view"
+                            type="Transparent"
+                            tooltip="View Mode"
+                        />
+                        <Button
+                            icon="sap-icon://list"
+                            type="Emphasized"
+                            tooltip="List Mode"
+                        />
+                        <Button
+                            icon="sap-icon://action-settings"
+                            type="Transparent"
+                            tooltip="Settings"
+                        />
+                        <Button
+                            icon="sap-icon://excel-attachment"
+                            type="Transparent"
+                            tooltip="Export"
+                        />
+                        <Button
+                            icon="sap-icon://slim-arrow-down"
+                            type="Transparent"
+                            tooltip="More"
+                        />
+                    </OverflowToolbar>
+                    <Table
+                        id="databaseTablesTable"
+                        fixedLayout="false"
+                        growing="true"
+                        growingThreshold="10"
+                        growingScrollToLoad="false"
+                        growingTriggerText="More"
+                        noDataText="No items available."
+                        items="{view>/detail/databaseTables}"
+                    >
+                        <columns>
+                            <Column width="13rem">
+                                <Text text="Program Name" />
+                            </Column>
+                            <Column width="9rem">
+                                <Text text="Table Name" />
+                            </Column>
+                            <Column width="14rem">
+                                <Text text="Description" />
+                            </Column>
+                            <Column width="14rem">
+                                <Text text="Operations" />
+                            </Column>
+                            <Column
+                                width="13rem"
+                                demandPopin="true"
+                                minScreenWidth="Tablet"
+                            >
+                                <Text text="CDS Candidate" />
+                            </Column>
+                            <Column width="8rem">
+                                <Text text="Priority" />
+                            </Column>
+                            <Column
+                                width="12rem"
+                                demandPopin="true"
+                                minScreenWidth="Tablet"
+                            >
+                                <Text text="Migration Approach" />
+                            </Column>
+                        </columns>
+                        <items>
+                            <ColumnListItem type="Navigation">
+                                <cells>
+                                    <Text
+                                        text="{view>ProgramName}"
+                                        wrapping="true"
+                                    />
+                                    <Text
+                                        text="{view>TableName}"
+                                        wrapping="true"
+                                    />
+                                    <Text
+                                        text="{view>Description}"
+                                        wrapping="true"
+                                    />
+                                    <Text
+                                        text="{view>Operations}"
+                                        wrapping="true"
+                                    />
+                                    <Text
+                                        text="{view>CDSCandidate}"
+                                        wrapping="true"
+                                    />
+                                    <ObjectStatus
+                                        text="{view>Priority}"
+                                        state="{path: 'view>Priority', formatter: '.formatter.formatCriticalityToValueState'}"
+                                    />
+                                    <Text
+                                        text="{view>MigrationApproach}"
+                                        wrapping="true"
+                                    />
+                                </cells>
+                            </ColumnListItem>
+                        </items>
+                    </Table>
+                </VBox>
+
+                <VBox
+                    id="uiFiltersSection"
+                    class="cockpitDetailSection"
+                >
+                    <OverflowToolbar design="Transparent">
+                        <Title
+                            text="UI Filter"
+                            level="H3"
+                        />
+                        <ToolbarSpacer />
+                        <Button
+                            icon="sap-icon://detail-view"
+                            type="Transparent"
+                            tooltip="View Mode"
+                        />
+                        <Button
+                            icon="sap-icon://list"
+                            type="Emphasized"
+                            tooltip="List Mode"
+                        />
+                        <Button
+                            icon="sap-icon://action-settings"
+                            type="Transparent"
+                            tooltip="Settings"
+                        />
+                        <Button
+                            icon="sap-icon://excel-attachment"
+                            type="Transparent"
+                            tooltip="Export"
+                        />
+                        <Button
+                            icon="sap-icon://slim-arrow-down"
+                            type="Transparent"
+                            tooltip="More"
+                        />
+                    </OverflowToolbar>
+                    <Table
+                        id="uiFiltersTable"
+                        fixedLayout="false"
+                        growing="true"
+                        growingThreshold="10"
+                        growingScrollToLoad="false"
+                        growingTriggerText="More"
+                        noDataText="No items available."
+                        items="{view>/detail/uiFilters}"
+                    >
+                        <columns>
+                            <Column width="13rem">
+                                <Text text="Program Name" />
+                            </Column>
+                            <Column width="9rem">
+                                <Text text="Field Name" />
+                            </Column>
+                            <Column width="11rem">
+                                <Text text="Description" />
+                            </Column>
+                            <Column width="12rem">
+                                <Text text="Filter Type" />
+                            </Column>
+                            <Column width="16rem">
+                                <Text text="Recommendation" />
+                            </Column>
+                            <Column
+                                width="13rem"
+                                demandPopin="true"
+                                minScreenWidth="Tablet"
+                            >
+                                <Text text="Migration Target" />
+                            </Column>
+                            <Column
+                                width="10rem"
+                                demandPopin="true"
+                                minScreenWidth="Desktop"
+                            >
+                                <Text text="Data Element" />
+                            </Column>
+                            <Column
+                                width="8rem"
+                                demandPopin="true"
+                                minScreenWidth="Desktop"
+                            >
+                                <Text text="Mandatory" />
+                            </Column>
+                            <Column
+                                width="8rem"
+                                demandPopin="true"
+                                minScreenWidth="Desktop"
+                            >
+                                <Text text="Multi Value" />
+                            </Column>
+                            <Column width="8rem">
+                                <Text text="Severity" />
+                            </Column>
+                            <Column
+                                width="14rem"
+                                demandPopin="true"
+                                minScreenWidth="Tablet"
+                            >
+                                <Text text="Fiori Adaptation" />
+                            </Column>
+                        </columns>
+                        <items>
+                            <ColumnListItem type="Navigation">
+                                <cells>
+                                    <Text
+                                        text="{view>ProgramName}"
+                                        wrapping="true"
+                                    />
+                                    <Text
+                                        text="{view>FieldName}"
+                                        wrapping="true"
+                                    />
+                                    <Text
+                                        text="{view>Description}"
+                                        wrapping="true"
+                                    />
+                                    <Text
+                                        text="{view>FilterType}"
+                                        wrapping="true"
+                                    />
+                                    <Text
+                                        text="{view>Recommendation}"
+                                        wrapping="true"
+                                    />
+                                    <Text
+                                        text="{view>MigrationTarget}"
+                                        wrapping="true"
+                                    />
+                                    <Text
+                                        text="{view>DataElement}"
+                                        wrapping="true"
+                                    />
+                                    <Text
+                                        text="{view>MandatoryFlag}"
+                                        wrapping="true"
+                                    />
+                                    <Text
+                                        text="{view>MultiValueFlag}"
+                                        wrapping="true"
+                                    />
+                                    <ObjectStatus
+                                        text="{view>Severity}"
+                                        state="{path: 'view>Severity', formatter: '.formatter.formatCriticalityToValueState'}"
+                                    />
+                                    <Text
+                                        text="{view>FioriAdaptation}"
+                                        wrapping="true"
+                                    />
+                                </cells>
+                            </ColumnListItem>
+                        </items>
+                    </Table>
+                </VBox>
+
+                <!-- <VBox id="comparisonResultsSection" class="cockpitDetailSection">
+          <OverflowToolbar design="Transparent">
+            <Title text="Comparison Result" level="H3" />
+            <ToolbarSpacer />
+            <Button icon="sap-icon://detail-view" type="Transparent" tooltip="View Mode" />
+            <Button icon="sap-icon://list" type="Emphasized" tooltip="List Mode" />
+            <Button icon="sap-icon://action-settings" type="Transparent" tooltip="Settings" />
+            <Button icon="sap-icon://excel-attachment" type="Transparent" tooltip="Export" />
+            <Button icon="sap-icon://slim-arrow-down" type="Transparent" tooltip="More" />
+          </OverflowToolbar>
+          <Table
+            id="comparisonResultsTable"
+            fixedLayout="false"
+            growing="true"
+            growingThreshold="10"
+            growingScrollToLoad="false"
+            growingTriggerText="More"
+            noDataText="No comparison results available."
+          />
+        </VBox> -->
+            </VBox>
+        </content>
+    </Page>
+</mvc:View>

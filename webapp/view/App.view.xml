@@ -2,9 +2,7 @@
   controllerName="abap.to.fiori.system.controller.App"
   xmlns:mvc="sap.ui.core.mvc"
   xmlns="sap.m"
-  xmlns:mvcview="sap.ui.core.mvc">
-
-  <App>
-    <mvcview:XMLView viewName="abap.to.fiori.system.view.Dashboard"/>
-  </App>
+  displayBlock="true"
+>
+  <App id="app" />
 </mvc:View>
