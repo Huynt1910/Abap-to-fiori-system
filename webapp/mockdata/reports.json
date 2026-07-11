@@ -1,0 +1,34 @@
+{
+  "summary": {
+    "totalReports": 1500,
+    "reportsAnalyzed": 950,
+    "migrationReadiness": 63,
+    "highPriority": 320
+  },
+  "reports": [
+    {
+      "programName": "Z_SALES_REPORT_OLD",
+      "description": "Sales Report Old",
+      "status": "Analyzed",
+      "migrationPotential": "High",
+      "priority": "High",
+      "assignedTo": "Anwar Ramon"
+    },
+    {
+      "programName": "Z_CUSTOMER_AUDIT",
+      "description": "Customer audit report",
+      "status": "In Progress",
+      "migrationPotential": "Medium",
+      "priority": "High",
+      "assignedTo": "Minh Nguyen"
+    },
+    {
+      "programName": "Z_INVENTORY_MGMT",
+      "description": "Inventory management team",
+      "status": "Analyzed",
+      "migrationPotential": "High",
+      "priority": "Medium",
+      "assignedTo": "Awais Ramon"
+    }
+  ]
+}

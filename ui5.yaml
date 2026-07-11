@@ -3,10 +3,22 @@ metadata:
   name: abap-to-fiori-system
 type: application
 framework:
-  name: OpenUI5
+  name: SAPUI5
   version: "1.120.0"
   libraries:
     - name: sap.m
     - name: sap.ui.core
+    - name: sap.ui.layout
     - name: sap.f
-    - name: sap.uxap
+    - name: sap.ui.table
+    - name: sap.ui.comp
+    - name: themelib_sap_horizon
+server:
+  customMiddleware:
+    - name: ui5-middleware-simpleproxy
+      afterMiddleware: compression
+      mountPath: /sap
+      configuration:
+        baseUri: "https://s40lp1.ucc.cit.tum.de/sap"
+        strictSSL: false
+        removeETag: true
