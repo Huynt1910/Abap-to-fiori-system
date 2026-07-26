@@ -1,156 +1,102 @@
 <mvc:View
   controllerName="abap.to.fiori.system.controller.Dashboard"
   xmlns:mvc="sap.ui.core.mvc"
+  xmlns:core="sap.ui.core"
+  xmlns:f="sap.f"
   xmlns="sap.m"
-  displayBlock="true"
->
-  <mvc:dependents>
-    <Dialog
-      id="newAnalysisDialog"
-      title="New Analysis"
-      stretchOnPhone="true"
-    >
-      <content>
-        <VBox class="sapUiMediumMargin">
-          <Label text="Target Program Name:" labelFor="newAnalysisProgramInput" />
-          <Input
-            id="newAnalysisProgramInput"
-            width="20rem"
-            value="{view>/newAnalysis/programName}"
-            submit=".onCreateNewAnalysis"
-          />
-        </VBox>
-      </content>
-      <beginButton>
-        <Button
-          text="New Analysis"
-          type="Emphasized"
-          busy="{view>/newAnalysis/busy}"
-          press=".onCreateNewAnalysis"
-        />
-      </beginButton>
-      <endButton>
-        <Button text="Cancel" press=".onCancelNewAnalysis" />
-      </endButton>
-    </Dialog>
-  </mvc:dependents>
-
-  <Page
-    id="dashboardPage"
-    showHeader="false"
-    busy="{view>/busy}"
-    busyIndicatorDelay="0"
-    class="cockpitEclipseDashboard"
-  >
-    <content>
-      <!-- Header/filter area follows the Fiori list report style generated in Eclipse/ADT. -->
-      <VBox class="cockpitEclipseFilterShell">
-        <OverflowToolbar design="Transparent" class="cockpitEclipseVariantBar">
-          <Title text="Standard" level="H2" class="cockpitEclipseVariantTitle" />
-          <Text text="*" class="cockpitEclipseVariantDirty" />
-          <Button icon="sap-icon://slim-arrow-down" type="Transparent" tooltip="Select Variant" />
-          <ToolbarSpacer />
-          <Button icon="sap-icon://action" type="Transparent" tooltip="Share" />
-          <Button icon="sap-icon://slim-arrow-down" type="Transparent" tooltip="More Actions" />
-        </OverflowToolbar>
-
-        <HBox alignItems="End" justifyContent="SpaceBetween" wrap="Wrap" class="cockpitEclipseFilterContent">
-          <VBox>
-            <Label text="Program Name:" labelFor="programInput" />
+  displayBlock="true">
+  <f:DynamicPage id="dashboardPage" class="migrationDashboard">
+    <f:title>
+      <f:DynamicPageTitle>
+        <f:heading>
+          <Title text="{i18n>dashboardTitle}" level="H2" />
+        </f:heading>
+        <f:expandedContent>
+          <ObjectStatus text="{path: 'dashboard>/visibleCount', formatter: '.formatter.formatCountText'}" />
+        </f:expandedContent>
+        <f:actions>
+          <Button text="{i18n>runAnalysis}" type="Emphasized" icon="sap-icon://begin" press=".onRunAnalysis" />
+          <Button text="{i18n>refresh}" icon="sap-icon://refresh" press=".onRefresh" />
+        </f:actions>
+      </f:DynamicPageTitle>
+    </f:title>
+    <f:header>
+      <f:DynamicPageHeader pinnable="false">
+        <HBox alignItems="End" wrap="Wrap" class="filterBar">
+          <VBox class="filterField">
+            <Label text="{i18n>rootProgram}" labelFor="programSearch" />
             <SearchField
-              id="programInput"
-              width="26.5rem"
-              value="{view>/selectedProgram}"
-              placeholder="Enter Program Name"
-              search=".onAnalyze"
-            />
+              id="programSearch"
+              value="{dashboard>/filters/search}"
+              placeholder="{i18n>searchRootProgram}"
+              search=".onSearch" />
           </VBox>
-
-          <HBox alignItems="Center" class="cockpitEclipseFilterActions">
-            <Button text="Go" type="Emphasized" press=".onAnalyze" />
-            <Button text="Adapt Filters (1)" type="Transparent" press=".onAdaptFilters" />
-          </HBox>
+          <VBox class="filterField">
+            <Label text="{i18n>analysisStatus}" labelFor="statusSelect" />
+            <Select id="statusSelect" selectedKey="{dashboard>/filters/status}" change=".onSearch">
+              <items>
+                <core:Item key="" text="{i18n>allStatuses}" />
+                <core:Item key="COMPLETED" text="{i18n>statusCompleted}" />
+                <core:Item key="RUNNING" text="{i18n>statusRunning}" />
+                <core:Item key="FAILED" text="{i18n>statusFailed}" />
+              </items>
+            </Select>
+          </VBox>
+          <CheckBox text="{i18n>latestOnly}" selected="{dashboard>/filters/latestOnly}" select=".onSearch" />
+          <Button text="{i18n>clearFilters}" icon="sap-icon://clear-filter" press=".onClearFilters" />
         </HBox>
-
-        <HBox justifyContent="Center" class="cockpitEclipseHeaderToggle">
-          <Button icon="sap-icon://navigation-up-arrow" type="Transparent" tooltip="Collapse Header" />
-          <Button icon="sap-icon://pushpin-on" type="Transparent" tooltip="Pin Header" />
-        </HBox>
-      </VBox>
-
-      <!-- Program analysis table mirrors the Eclipse-generated Fiori preview layout. -->
-      <VBox class="cockpitEclipseTableShell">
-        <OverflowToolbar design="Transparent">
-          <Title text="Program Analysis ({view>/analysisCount})" level="H3" />
-          <ToolbarSpacer />
-          <Button text="New Analysis" type="Transparent" press=".onOpenNewAnalysis" />
-          <Button
-            text="Delete"
-            type="Transparent"
-            enabled="{= ${view>/selectedReportCount} > 0 }"
-            press=".onDeleteSelectedReports"
-          />
-          <Button icon="sap-icon://action-settings" type="Transparent" tooltip="Settings" />
-          <Button icon="sap-icon://excel-attachment" type="Transparent" tooltip="Export" />
-          <Button icon="sap-icon://slim-arrow-down" type="Transparent" tooltip="More" />
-        </OverflowToolbar>
-
+      </f:DynamicPageHeader>
+    </f:header>
+    <f:content>
+      <VBox class="contentSurface">
         <Table
           id="analysisTable"
-          sticky="ColumnHeaders"
           growing="true"
+          growingThreshold="20"
           growingScrollToLoad="true"
-          mode="MultiSelect"
-          selectionChange=".onReportSelectionChange"
-          itemPress=".onTableRowPress"
-          noDataText="{view>/analysisNoDataText}"
-          items="{view>/analysisRows}"
-          class="cockpitEclipseAnalysisTable"
-        >
+          sticky="ColumnHeaders"
+          mode="None"
+          itemPress=".onAnalysisPress"
+          updateFinished=".onAnalysesUpdateFinished"
+          noDataText="{i18n>noAnalyses}"
+          items="{
+            path: '/Analysis',
+            parameters: {
+              $select: 'AnalysisId,RootProgram,RunNo,IsLatest,AnalysisStatus,CreatedAt,CreatedBy,SourceLineCount,SourceObjectCount,IssueCount,WarningCount,StatusCriticality,WarningCriticality'
+            },
+            sorter: {
+              path: 'CreatedAt',
+              descending: true
+            }
+          }">
           <columns>
-            <Column width="18rem"><Text text="Program Name" /></Column>
-            <Column width="22rem"><Text text="Description" /></Column>
-            <Column width="7rem" hAlign="End"><Text text="Total Tables" /></Column>
-            <Column width="7rem" hAlign="End"><Text text="Total Filters" /></Column>
-            <Column width="9rem" hAlign="End"><Text text="Business Objects" /></Column>
-            <Column width="8rem" hAlign="End"><Text text="Migration Sc..." /></Column>
-            <Column width="8rem" hAlign="End"><Text text="Complexity ..." /></Column>
-            <Column width="8rem" hAlign="End"><Text text="Cloud Readi..." /></Column>
-            <Column width="14rem"><Text text="Analysis Status" /></Column>
+            <Column width="12rem" importance="High"><Text text="{i18n>rootProgram}" /></Column>
+            <Column width="5rem" hAlign="End" importance="High"><Text text="{i18n>runNo}" /></Column>
+            <Column width="9rem" importance="High"><Text text="{i18n>analysisStatus}" /></Column>
+            <Column width="7rem" hAlign="End" demandPopin="true" minScreenWidth="Tablet"><Text text="{i18n>sourceLines}" /></Column>
+            <Column width="7rem" hAlign="End" demandPopin="true" minScreenWidth="Tablet"><Text text="{i18n>sourceObjects}" /></Column>
+            <Column width="6rem" hAlign="End" demandPopin="true" minScreenWidth="Tablet"><Text text="{i18n>issues}" /></Column>
+            <Column width="6rem" hAlign="End" demandPopin="true" minScreenWidth="Tablet"><Text text="{i18n>warnings}" /></Column>
+            <Column width="12rem" demandPopin="true" minScreenWidth="Desktop"><Text text="{i18n>createdAt}" /></Column>
+            <Column width="10rem" demandPopin="true" minScreenWidth="Desktop"><Text text="{i18n>createdBy}" /></Column>
           </columns>
           <items>
-            <ColumnListItem type="Navigation" press=".onTableRowPress">
+            <ColumnListItem type="Navigation" press=".onAnalysisPress">
               <cells>
-                <Link text="{view>ProgramName}" press=".onTableRowPress" />
-                <Text text="{view>ProgramDescription}" />
-                <ObjectNumber number="{view>TotalTables}" />
-                <ObjectNumber number="{view>TotalFilters}" />
-                <ObjectNumber number="{view>TotalBusinessObjects}" />
-                <ObjectNumber number="{view>MigrationScore}" />
-                <ObjectNumber number="{view>ComplexityScore}" />
-                <ObjectNumber number="{view>CloudReadinessScore}" />
-                <ObjectStatus
-                  text="{path: 'view>AnalysisStatus', formatter: '.formatter.formatStatusText'}"
-                  state="{
-                    parts: [
-                      {path: 'view>AnalysisStatus'},
-                      {path: 'view>AnalysisStatusCriticality'}
-                    ],
-                    formatter: '.formatter.formatStatusState'
-                  }"
-                  icon="{
-                    parts: [
-                      {path: 'view>AnalysisStatus'},
-                      {path: 'view>AnalysisStatusCriticality'}
-                    ],
-                    formatter: '.formatter.formatStatusIcon'
-                  }"
-                />
+                <ObjectIdentifier title="{path: 'RootProgram', formatter: '.formatter.formatText'}" />
+                <ObjectNumber number="{path: 'RunNo', formatter: '.formatter.formatNumber'}" />
+                <ObjectStatus text="{path: 'AnalysisStatus', formatter: '.formatter.formatText'}" state="{path: 'StatusCriticality', formatter: '.formatter.formatCriticalityState'}" />
+                <ObjectNumber number="{path: 'SourceLineCount', formatter: '.formatter.formatNumber'}" />
+                <ObjectNumber number="{path: 'SourceObjectCount', formatter: '.formatter.formatNumber'}" />
+                <ObjectNumber number="{path: 'IssueCount', formatter: '.formatter.formatNumber'}" state="Error" />
+                <ObjectNumber number="{path: 'WarningCount', formatter: '.formatter.formatNumber'}" state="Warning" />
+                <Text text="{path: 'CreatedAt', formatter: '.formatter.formatDateTime'}" />
+                <Text text="{path: 'CreatedBy', formatter: '.formatter.formatText'}" />
               </cells>
             </ColumnListItem>
           </items>
         </Table>
       </VBox>
-    </content>
-  </Page>
+    </f:content>
+  </f:DynamicPage>
 </mvc:View>

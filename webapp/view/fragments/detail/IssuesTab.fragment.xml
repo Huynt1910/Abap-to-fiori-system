@@ -1,0 +1,34 @@
+<core:FragmentDefinition xmlns:core="sap.ui.core" xmlns="sap.m">
+  <VBox class="tabSurface">
+    <OverflowToolbar class="sectionToolbar" visible="{path: 'detail>/issues', formatter: '.formatter.hasItems'}">
+      <Title text="{i18n>issues}" level="H3" />
+      <ObjectStatus text="{path: 'detail>/counts/issues', formatter: '.formatter.formatCountText'}" />
+      <ToolbarSpacer />
+    </OverflowToolbar>
+    <IllustratedMessage
+      visible="{path: 'detail>/issues', formatter: '.formatter.hasNoItems'}"
+      illustrationType="sapIllus-NoEntries"
+      title="{i18n>noIssuesDetected}"
+      description="{i18n>noIssuesDetectedDescription}" />
+    <Table id="issuesTable" visible="{path: 'detail>/issues', formatter: '.formatter.hasItems'}" growing="true" growingThreshold="20" items="{detail>/issues}" itemPress=".onIssuePress">
+      <columns>
+        <Column width="8rem"><Text text="{i18n>severity}" /></Column>
+        <Column width="11rem"><Text text="{i18n>issueKind}" /></Column>
+        <Column width="12rem" demandPopin="true" minScreenWidth="Tablet"><Text text="{i18n>sourceObject}" /></Column>
+        <Column width="6rem" hAlign="End"><Text text="{i18n>lineNumber}" /></Column>
+        <Column><Text text="{i18n>messageText}" /></Column>
+      </columns>
+      <items>
+        <ColumnListItem type="Active" press=".onIssuePress">
+          <cells>
+            <ObjectStatus text="{detail>Severity}" state="{path: 'detail>SeverityCriticality', formatter: '.formatter.formatCriticalityState'}" icon="sap-icon://message-warning" />
+            <Text text="{path: 'detail>IssueKind', formatter: '.formatter.formatText'}" />
+            <Text text="{path: 'detail>SourceObject', formatter: '.formatter.formatText'}" />
+            <ObjectNumber number="{path: 'detail>LineNumber', formatter: '.formatter.formatNumber'}" />
+            <Text text="{path: 'detail>MessageText', formatter: '.formatter.formatText'}" maxLines="2" wrapping="true" />
+          </cells>
+        </ColumnListItem>
+      </items>
+    </Table>
+  </VBox>
+</core:FragmentDefinition>

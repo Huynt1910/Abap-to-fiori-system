@@ -1,0 +1,23 @@
+<core:FragmentDefinition xmlns:core="sap.ui.core" xmlns="sap.m">
+  <Dialog id="recommendationDetailDialog" title="{i18n>recommendationDetails}" stretchOnPhone="true">
+    <content>
+      <VBox class="sapUiContentPadding recommendationDetail">
+        <ObjectStatus
+          text="{path: 'detail>/selectedRecommendation/Priority', formatter: '.formatter.formatText'}"
+          state="{path: 'detail>/selectedRecommendation/Priority', formatter: '.formatter.formatPriorityState'}"
+          icon="sap-icon://flag" />
+        <Title text="{path: 'detail>/selectedRecommendation/Title', formatter: '.formatter.formatText'}" level="H3" />
+        <ObjectAttribute title="{i18n>category}" text="{path: 'detail>/selectedRecommendation/Category', formatter: '.formatter.formatText'}" />
+        <ObjectAttribute title="{i18n>recommendationCode}" text="{path: 'detail>/selectedRecommendation/RecommendationCode', formatter: '.formatter.formatText'}" />
+        <ObjectAttribute title="{i18n>generatedAt}" text="{path: 'detail>/selectedRecommendation/GeneratedAt', formatter: '.formatter.formatDateTime'}" />
+        <Label text="{i18n>description}" />
+        <Text text="{path: 'detail>/selectedRecommendation/Description', formatter: '.formatter.formatText'}" wrapping="true" />
+        <Label text="{i18n>evidence}" />
+        <Text text="{path: 'detail>/selectedRecommendation/Evidence', formatter: '.formatter.formatText'}" wrapping="true" />
+      </VBox>
+    </content>
+    <endButton>
+      <Button text="{i18n>close}" press=".onCloseRecommendationDetail" />
+    </endButton>
+  </Dialog>
+</core:FragmentDefinition>

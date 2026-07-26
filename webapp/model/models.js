@@ -4,41 +4,79 @@ sap.ui.define([
 ], function (Device, JSONModel) {
   "use strict";
 
-  return {
-    createDeviceModel: function () {
-      var oModel = new JSONModel(Device);
-      oModel.setDefaultBindingMode("OneWay");
-      return oModel;
-    },
+  function createDeviceModel() {
+    var oDeviceModel = new JSONModel(Device);
+    oDeviceModel.setDefaultBindingMode("OneWay");
+    return oDeviceModel;
+  }
 
-    createViewModel: function () {
-      return new JSONModel({
-        busy: false,
-        selectedProgram: "",
-        selectedAnalysis: {},
-        selectedReportCount: 0,
-        analysisRows: [],
-        analysisCount: 0,
-        analysisNoDataText: "Enter a Program Name and press Go",
-        newAnalysis: {
-          programName: "",
-          busy: false
-        },
-        detail: {
-          busy: false,
-          programName: "",
-          selectedTab: "overview",
-          overview: {},
-          uiFilters: [],
-          uiFiltersCount: 0,
-          databaseTables: [],
-          databaseTablesCount: 0,
-          businessLogic: [],
-          businessLogicCount: 0,
-          comparisonResults: [],
-          comparisonResultsCount: 0
-        }
-      });
-    }
+  function createDashboardModel() {
+    return new JSONModel({
+      busy: false,
+      filters: {
+        search: "",
+        status: "",
+        latestOnly: true
+      },
+      visibleCount: 0,
+      selectedCount: 0,
+      programValueHelpBusy: false,
+      newAnalysis: {
+        rootProgram: "",
+        program: null,
+        description: "",
+        busy: false
+      },
+      programValueHelp: []
+    });
+  }
+
+  function createAnalysisDetailModel() {
+    return new JSONModel({
+      busy: false,
+      analysisId: "",
+      selectedTab: "overview",
+      loaded: {
+        overview: false,
+        complexity: false,
+        recommendations: false,
+        issues: false,
+        database: false,
+        businessLogic: false,
+        dependencyGraph: false,
+        document: false,
+        history: false
+      },
+      loading: {
+        complexity: false,
+        recommendations: false
+      },
+      errors: {
+        complexity: null,
+        recommendations: null
+      },
+      overview: {},
+      summary: {},
+      complexity: null,
+      recommendations: [],
+      selectedRecommendation: null,
+      issues: [],
+      databaseAccesses: [],
+      databaseReferences: [],
+      calls: [],
+      routines: [],
+      scopes: [],
+      nodes: [],
+      edges: [],
+      document: null,
+      history: [],
+      counts: {}
+    });
+  }
+
+  return {
+    createDeviceModel: createDeviceModel,
+    createDashboardModel: createDashboardModel,
+    createAnalysisDetailModel: createAnalysisDetailModel
   };
 });

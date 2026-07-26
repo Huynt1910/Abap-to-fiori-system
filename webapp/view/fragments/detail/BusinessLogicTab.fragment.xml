@@ -1,0 +1,31 @@
+<core:FragmentDefinition xmlns:core="sap.ui.core" xmlns="sap.m">
+  <VBox class="tabSurface">
+    <IconTabBar expandable="false" class="nestedTabs">
+      <items>
+        <IconTabFilter key="calls" text="{i18n>calls}" count="{detail>/counts/calls}">
+          <IllustratedMessage visible="{path: 'detail>/calls', formatter: '.formatter.hasNoItems'}" illustrationType="sapIllus-NoEntries" title="{i18n>noCalls}" />
+          <Table id="callsTable" visible="{path: 'detail>/calls', formatter: '.formatter.hasItems'}" growing="true" growingThreshold="20" items="{detail>/calls}" itemPress=".onCallPress">
+            <columns>
+              <Column width="9rem"><Text text="{i18n>callKind}" /></Column><Column width="12rem"><Text text="{i18n>targetName}" /></Column><Column width="12rem" demandPopin="true" minScreenWidth="Tablet"><Text text="{i18n>programName}" /></Column><Column width="12rem" demandPopin="true" minScreenWidth="Tablet"><Text text="{i18n>sourceObject}" /></Column><Column width="6rem" hAlign="End"><Text text="{i18n>lineNumber}" /></Column><Column width="6rem" demandPopin="true" minScreenWidth="Desktop"><Text text="{i18n>dynamic}" /></Column><Column width="6rem" demandPopin="true" minScreenWidth="Desktop"><Text text="{i18n>bapi}" /></Column>
+            </columns>
+            <items><ColumnListItem type="Active" press=".onCallPress"><cells><Text text="{path: 'detail>CallKind', formatter: '.formatter.formatText'}" /><Text text="{path: 'detail>TargetName', formatter: '.formatter.formatText'}" /><Text text="{path: 'detail>ProgramName', formatter: '.formatter.formatText'}" /><Text text="{path: 'detail>SourceObject', formatter: '.formatter.formatText'}" /><ObjectNumber number="{path: 'detail>LineNumber', formatter: '.formatter.formatNumber'}" /><Text text="{path: 'detail>DynamicFlag', formatter: '.formatter.formatBoolean'}" /><Text text="{path: 'detail>BapiFlag', formatter: '.formatter.formatBoolean'}" /></cells></ColumnListItem></items>
+          </Table>
+        </IconTabFilter>
+        <IconTabFilter key="routines" text="{i18n>routines}" count="{detail>/counts/routines}">
+          <IllustratedMessage visible="{path: 'detail>/routines', formatter: '.formatter.hasNoItems'}" illustrationType="sapIllus-NoEntries" title="{i18n>noRoutines}" />
+          <Table id="routinesTable" visible="{path: 'detail>/routines', formatter: '.formatter.hasItems'}" growing="true" growingThreshold="20" items="{detail>/routines}" itemPress=".onRoutinePress">
+            <columns><Column width="13rem"><Text text="{i18n>routineName}" /></Column><Column width="9rem"><Text text="{i18n>routineKind}" /></Column><Column width="12rem" demandPopin="true" minScreenWidth="Tablet"><Text text="{i18n>sourceObject}" /></Column><Column width="6rem" hAlign="End"><Text text="{i18n>startLine}" /></Column><Column width="6rem" hAlign="End"><Text text="{i18n>endLine}" /></Column><Column width="7rem"><Text text="{i18n>complete}" /></Column></columns>
+            <items><ColumnListItem type="Active" press=".onRoutinePress"><cells><Text text="{path: 'detail>RoutineName', formatter: '.formatter.formatText'}" /><Text text="{path: 'detail>RoutineKind', formatter: '.formatter.formatText'}" /><Text text="{path: 'detail>SourceObject', formatter: '.formatter.formatText'}" /><ObjectNumber number="{path: 'detail>StartLine', formatter: '.formatter.formatNumber'}" /><ObjectNumber number="{path: 'detail>EndLine', formatter: '.formatter.formatNumber'}" /><Text text="{path: 'detail>CompleteFlag', formatter: '.formatter.formatBoolean'}" /></cells></ColumnListItem></items>
+          </Table>
+        </IconTabFilter>
+        <IconTabFilter key="scopes" text="{i18n>scopes}" count="{detail>/counts/scopes}">
+          <IllustratedMessage visible="{path: 'detail>/scopes', formatter: '.formatter.hasNoItems'}" illustrationType="sapIllus-NoEntries" title="{i18n>noScopes}" />
+          <Table id="scopesTable" visible="{path: 'detail>/scopes', formatter: '.formatter.hasItems'}" growing="true" growingThreshold="20" items="{detail>/scopes}" itemPress=".onScopePress">
+            <columns><Column width="12rem"><Text text="{i18n>scopeName}" /></Column><Column width="9rem"><Text text="{i18n>scopeKind}" /></Column><Column width="12rem" demandPopin="true" minScreenWidth="Tablet"><Text text="{i18n>sourceObject}" /></Column><Column width="6rem" hAlign="End"><Text text="{i18n>scopeStart}" /></Column><Column width="6rem" hAlign="End"><Text text="{i18n>scopeEnd}" /></Column><Column demandPopin="true" minScreenWidth="Desktop"><Text text="{i18n>scopePath}" /></Column></columns>
+            <items><ColumnListItem type="Active" press=".onScopePress"><cells><Text text="{path: 'detail>ScopeName', formatter: '.formatter.formatText'}" /><Text text="{path: 'detail>ScopeKind', formatter: '.formatter.formatText'}" /><Text text="{path: 'detail>SourceObject', formatter: '.formatter.formatText'}" /><ObjectNumber number="{path: 'detail>ScopeStart', formatter: '.formatter.formatNumber'}" /><ObjectNumber number="{path: 'detail>ScopeEnd', formatter: '.formatter.formatNumber'}" /><Text text="{path: 'detail>ScopePath', formatter: '.formatter.formatText'}" wrapping="true" /></cells></ColumnListItem></items>
+          </Table>
+        </IconTabFilter>
+      </items>
+    </IconTabBar>
+  </VBox>
+</core:FragmentDefinition>

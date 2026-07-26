@@ -1,0 +1,29 @@
+<core:FragmentDefinition xmlns:core="sap.ui.core" xmlns="sap.m">
+  <Dialog id="runAnalysisDialog" title="{i18n>runAnalysis}" stretchOnPhone="true" busy="{dashboard>/newAnalysis/busy}">
+    <content>
+      <VBox class="sapUiMediumMargin formStack">
+        <Label text="{i18n>rootProgram}" labelFor="rootProgramInput" required="true" />
+        <Input
+          id="rootProgramInput"
+          maxLength="40"
+          value="{dashboard>/newAnalysis/rootProgram}"
+          showValueHelp="true"
+          valueHelpRequest=".onProgramValueHelp"
+          liveChange=".onRootProgramChange"
+          submit=".onExecuteRunAnalysis" />
+        <Label text="{i18n>programDescription}" labelFor="programDescriptionInput" required="true" />
+        <Input
+          id="programDescriptionInput"
+          maxLength="60"
+          value="{dashboard>/newAnalysis/description}"
+          submit=".onExecuteRunAnalysis" />
+      </VBox>
+    </content>
+    <beginButton>
+      <Button text="{i18n>runAnalysis}" type="Emphasized" press=".onExecuteRunAnalysis" />
+    </beginButton>
+    <endButton>
+      <Button text="{i18n>cancel}" press=".onCancelRunAnalysis" />
+    </endButton>
+  </Dialog>
+</core:FragmentDefinition>

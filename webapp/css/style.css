@@ -1,192 +1,134 @@
-.cockpitEclipseDashboard {
+.migrationDashboard,
+.analysisDetailPage {
   background: var(--sapBackgroundColor);
 }
 
-.cockpitEclipseFilterShell {
-  min-height: 12.25rem;
-  background: var(--sapShellColor);
-  border-bottom: 1px solid var(--sapGroup_TitleBorderColor);
+.filterBar {
+  gap: 1rem;
+}
+
+.filterField {
+  min-width: 14rem;
+  max-width: 26rem;
+}
+
+.filterField .sapMSF {
+  width: 100%;
+}
+
+.contentSurface,
+.tabSurface {
+  background: var(--sapGroup_ContentBackground);
+  border: 1px solid var(--sapGroup_ContentBorderColor);
+  border-radius: 0.5rem;
   box-shadow: var(--sapContent_Shadow0);
+  box-sizing: border-box;
+  padding: 1rem;
 }
 
-.cockpitEclipseVariantBar {
-  padding: 1rem 3rem 0;
+.contentSurface {
+  margin: 1rem;
 }
 
-.cockpitEclipseVariantTitle {
-  color: var(--sapLinkColor);
+.detailContent {
+  gap: 1rem;
+  padding: 0 1rem 1rem;
 }
 
-.cockpitEclipseVariantDirty {
-  color: var(--sapLinkColor);
-  align-self: flex-start;
-  margin-top: 0.15rem;
+.detailMetaLine {
+  gap: 1rem;
 }
 
-.cockpitEclipseFilterContent {
-  padding: 2.25rem 3.15rem 0.75rem;
-}
-
-.cockpitEclipseFilterActions {
+.kpiGrid {
   gap: 0.75rem;
-  margin-bottom: 0.2rem;
 }
 
-.cockpitEclipseHeaderToggle {
-  margin-bottom: -0.9rem;
+.kpiCard {
+  background: var(--sapTile_Background);
+  border: 1px solid var(--sapTile_BorderColor);
+  border-radius: 0.5rem;
+  box-sizing: border-box;
+  min-width: 11rem;
+  padding: 0.75rem 1rem;
 }
 
-.cockpitEclipseHeaderToggle .sapMBtn {
-  background: var(--sapButton_Background);
+.tabContentContainer,
+.documentBlock {
+  gap: 0.75rem;
 }
 
-.cockpitEclipseTableShell {
-  padding: 1.75rem 3.15rem;
+.overviewCardGrid {
+  gap: 0.75rem;
 }
 
-.cockpitEclipseAnalysisTable {
-  border-top: 1px solid var(--sapList_BorderColor);
+.overviewCard,
+.documentCard,
+.scoreCard {
+  background: var(--sapTile_Background);
+  border: 1px solid var(--sapTile_BorderColor);
+  border-radius: 0.5rem;
+  box-sizing: border-box;
+  gap: 0.5rem;
+  padding: 1rem;
 }
 
-.cockpitEclipseAnalysisTable .sapMListTblHeaderCell {
-  background: var(--sapList_HeaderBackground);
+.overviewCard {
+  flex: 1 1 16rem;
+}
+
+.complexityLayout,
+.recommendationDetail {
+  gap: 0.75rem;
+}
+
+.complexitySummary {
+  margin-bottom: 0.75rem;
+}
+
+.scoreCard {
+  flex: 1 1 10rem;
+  min-width: 10rem;
+}
+
+.cardHeader {
+  gap: 0.5rem;
+}
+
+.sectionToolbar {
+  padding: 0;
+}
+
+.nestedTabs {
+  width: 100%;
+}
+
+.formStack {
+  gap: 0.75rem;
+  min-width: 20rem;
+}
+
+.analysisDetailPage .sapMText,
+.analysisDetailPage .sapMObjStatusText,
+.contentSurface .sapMText {
+  overflow-wrap: anywhere;
 }
 
 @media (max-width: 700px) {
-  .cockpitEclipseVariantBar,
-  .cockpitEclipseFilterContent,
-  .cockpitEclipseTableShell {
-    padding-left: 1rem;
-    padding-right: 1rem;
+  .filterField,
+  .formStack {
+    min-width: 100%;
   }
 
-  #container .sapMMultiInput {
-    width: 100% !important;
+  .contentSurface,
+  .detailContent {
+    margin: 0;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
   }
-}
 
-.cockpitDetailPage {
-  background: var(--sapBackgroundColor);
-}
-
-.cockpitDetailHeader {
-  background: var(--sapBaseColor, #fff) !important;
-  border-bottom: 1px solid var(--sapGroup_TitleBorderColor);
-  box-shadow: var(--sapContent_Shadow0);
-  padding-top: 0;
-  position: sticky;
-  top: 0;
-  z-index: 1000;
-  isolation: isolate;
-}
-
-.cockpitDetailHeader::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background: var(--sapBaseColor, #fff);
-}
-
-.cockpitDetailHeader .sapMBar {
-  padding-left: 3rem;
-  padding-right: 3rem;
-  background: var(--sapBaseColor, #fff) !important;
-  box-shadow: none;
-  height: 3.25rem;
-  min-height: 3.25rem;
-}
-
-.cockpitDetailHeader .sapMITH,
-.cockpitDetailHeader .sapMITBHead,
-.cockpitDetailHeader .sapMITBContent,
-.cockpitDetailHeader .sapMITBContainerContent {
-  background: var(--sapBaseColor, #fff) !important;
-}
-
-.cockpitDetailHeader .sapMITB,
-.cockpitDetailHeader .sapMITBScrollContainer,
-.cockpitDetailHeader .sapMITBHead,
-.cockpitDetailHeader .sapMITH {
-  background-color: var(--sapBaseColor, #fff) !important;
-}
-
-.cockpitDetailHeader .sapMBtn,
-.cockpitDetailHeader .sapMTitle,
-.cockpitDetailHeader .sapMITBText {
-  position: relative;
-  z-index: 1;
-}
-
-.cockpitDetailTabs {
-  margin-top: 0;
-  background: var(--sapBaseColor, #fff) !important;
-}
-
-.cockpitDetailTabs .sapMITBHead,
-.cockpitDetailTabs .sapMITBFilter,
-.cockpitDetailTabs .sapMITBText,
-.cockpitDetailTabs .sapMITBTab {
-  background: var(--sapBaseColor, #fff) !important;
-}
-
-.cockpitDetailContent {
-  padding: 2rem 3.15rem;
-  box-sizing: border-box;
-  max-width: 100%;
-  overflow-x: hidden;
-}
-
-.cockpitDetailSection {
-  padding-top: 1rem;
-  padding-bottom: 2.5rem;
-  border-bottom: 1px solid var(--sapList_BorderColor);
-  scroll-margin-top: 7rem;
-}
-
-.cockpitDetailSection:last-child {
-  border-bottom: 0;
-}
-
-.cockpitOverviewGrid {
-  gap: 1.25rem 4rem;
-  padding-bottom: 2rem;
-}
-
-.cockpitOverviewCell {
-  width: 14rem;
-}
-
-.cockpitDetailContent .sapMListTblHeaderCell {
-  background: var(--sapList_HeaderBackground);
-  z-index: 0;
-}
-
-.cockpitDetailContent .sapMTable {
-  width: 100% !important;
-  max-width: 100%;
-  table-layout: auto;
-}
-
-.cockpitDetailContent .sapMListTblCell,
-.cockpitDetailContent .sapMListTblHeaderCell {
-  vertical-align: top;
-}
-
-.cockpitDetailContent .sapMText,
-.cockpitDetailContent .sapMObjStatusText {
-  overflow-wrap: anywhere;
-  word-break: break-word;
-}
-
-.cockpitDetailContent .sapMListTblSubCnt {
-  max-width: 100%;
-}
-
-@media (max-width: 900px) {
-  .cockpitDetailHeader .sapMBar,
-  .cockpitDetailContent {
-    padding-left: 1rem;
-    padding-right: 1rem;
+  .kpiCard,
+  .overviewCard,
+  .scoreCard {
+    min-width: 100%;
   }
 }

@@ -1,0 +1,9 @@
+<core:FragmentDefinition xmlns:core="sap.ui.core" xmlns="sap.m">
+  <VBox class="tabSurface">
+    <IllustratedMessage visible="{path: 'detail>/history', formatter: '.formatter.hasNoItems'}" illustrationType="sapIllus-NoEntries" title="{i18n>noHistory}" />
+    <Table id="historyTable" visible="{path: 'detail>/history', formatter: '.formatter.hasItems'}" growing="true" growingThreshold="20" items="{detail>/history}" itemPress=".onHistoryPress">
+      <columns><Column width="5rem" hAlign="End"><Text text="{i18n>runNo}" /></Column><Column width="9rem"><Text text="{i18n>analysisStatus}" /></Column><Column width="12rem"><Text text="{i18n>createdAt}" /></Column><Column width="10rem" demandPopin="true" minScreenWidth="Tablet"><Text text="{i18n>createdBy}" /></Column><Column width="6rem" hAlign="End"><Text text="{i18n>issues}" /></Column><Column width="6rem" hAlign="End"><Text text="{i18n>warnings}" /></Column></columns>
+      <items><ColumnListItem type="Navigation" press=".onHistoryPress"><cells><ObjectNumber number="{path: 'detail>RunNo', formatter: '.formatter.formatNumber'}" /><ObjectStatus text="{path: 'detail>AnalysisStatus', formatter: '.formatter.formatText'}" state="{path: 'detail>StatusCriticality', formatter: '.formatter.formatCriticalityState'}" /><Text text="{path: 'detail>CreatedAt', formatter: '.formatter.formatDateTime'}" /><Text text="{path: 'detail>CreatedBy', formatter: '.formatter.formatText'}" /><ObjectNumber number="{path: 'detail>IssueCount', formatter: '.formatter.formatNumber'}" /><ObjectNumber number="{path: 'detail>WarningCount', formatter: '.formatter.formatNumber'}" /></cells></ColumnListItem></items>
+    </Table>
+  </VBox>
+</core:FragmentDefinition>

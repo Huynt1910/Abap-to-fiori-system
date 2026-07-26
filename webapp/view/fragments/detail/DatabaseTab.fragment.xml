@@ -1,0 +1,40 @@
+<core:FragmentDefinition xmlns:core="sap.ui.core" xmlns="sap.m">
+  <VBox class="tabSurface">
+    <IconTabBar expandable="false" class="nestedTabs">
+      <items>
+        <IconTabFilter key="accesses" text="{i18n>databaseAccesses}" count="{detail>/counts/databaseAccesses}">
+          <IllustratedMessage visible="{path: 'detail>/databaseAccesses', formatter: '.formatter.hasNoItems'}" illustrationType="sapIllus-NoEntries" title="{i18n>noDatabaseAccesses}" />
+          <Table id="databaseAccessTable" visible="{path: 'detail>/databaseAccesses', formatter: '.formatter.hasItems'}" growing="true" growingThreshold="20" items="{detail>/databaseAccesses}" itemPress=".onDatabaseAccessPress">
+            <columns>
+              <Column width="8rem"><Text text="{i18n>operation}" /></Column>
+              <Column width="12rem"><Text text="{i18n>tableName}" /></Column>
+              <Column width="10rem" demandPopin="true" minScreenWidth="Tablet"><Text text="{i18n>accessKind}" /></Column>
+              <Column width="10rem" demandPopin="true" minScreenWidth="Tablet"><Text text="{i18n>classStatus}" /></Column>
+              <Column width="12rem" demandPopin="true" minScreenWidth="Tablet"><Text text="{i18n>sourceObject}" /></Column>
+              <Column width="6rem" hAlign="End"><Text text="{i18n>lineNumber}" /></Column>
+            </columns>
+            <items>
+              <ColumnListItem type="Active" press=".onDatabaseAccessPress">
+                <cells>
+                  <Text text="{path: 'detail>Operation', formatter: '.formatter.formatText'}" />
+                  <Text text="{path: 'detail>TableName', formatter: '.formatter.formatText'}" />
+                  <Text text="{path: 'detail>AccessKind', formatter: '.formatter.formatText'}" />
+                  <Text text="{path: 'detail>ClassStatus', formatter: '.formatter.formatText'}" />
+                  <Text text="{path: 'detail>SourceObject', formatter: '.formatter.formatText'}" />
+                  <ObjectNumber number="{path: 'detail>LineNumber', formatter: '.formatter.formatNumber'}" />
+                </cells>
+              </ColumnListItem>
+            </items>
+          </Table>
+        </IconTabFilter>
+        <IconTabFilter key="references" text="{i18n>databaseReferences}" count="{detail>/counts/databaseReferences}">
+          <IllustratedMessage visible="{path: 'detail>/databaseReferences', formatter: '.formatter.hasNoItems'}" illustrationType="sapIllus-NoEntries" title="{i18n>noDatabaseReferences}" />
+          <Table id="databaseReferenceTable" visible="{path: 'detail>/databaseReferences', formatter: '.formatter.hasItems'}" growing="true" growingThreshold="20" items="{detail>/databaseReferences}">
+            <columns><Column><Text text="{i18n>tableName}" /></Column><Column><Text text="{i18n>tableRole}" /></Column></columns>
+            <items><ColumnListItem><cells><Text text="{path: 'detail>TableName', formatter: '.formatter.formatText'}" /><Text text="{path: 'detail>TableRole', formatter: '.formatter.formatText'}" /></cells></ColumnListItem></items>
+          </Table>
+        </IconTabFilter>
+      </items>
+    </IconTabBar>
+  </VBox>
+</core:FragmentDefinition>

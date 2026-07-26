@@ -1,0 +1,37 @@
+<core:FragmentDefinition xmlns:core="sap.ui.core" xmlns="sap.m">
+  <VBox class="tabSurface">
+    <FlexBox wrap="Wrap" class="overviewCardGrid">
+      <VBox class="overviewCard">
+        <HBox alignItems="Center" class="cardHeader"><core:Icon src="sap-icon://source-code" /><Title text="{i18n>sourceCode}" level="H4" /></HBox>
+        <ObjectAttribute title="{i18n>sourceLines}" text="{path: 'detail>/summary/SourceLineCount', formatter: '.formatter.formatNumber'}" />
+        <ObjectAttribute title="{i18n>sourceObjects}" text="{path: 'detail>/summary/SourceObjectCount', formatter: '.formatter.formatNumber'}" />
+      </VBox>
+      <VBox class="overviewCard">
+        <HBox alignItems="Center" class="cardHeader"><core:Icon src="sap-icon://database" /><Title text="{i18n>database}" level="H4" /></HBox>
+        <ObjectAttribute title="{i18n>dbAccesses}" text="{path: 'detail>/summary/DbAccessCount', formatter: '.formatter.formatNumber'}" />
+        <ObjectAttribute title="{i18n>dbReferences}" text="{path: 'detail>/summary/DbRefCount', formatter: '.formatter.formatNumber'}" />
+      </VBox>
+      <VBox class="overviewCard">
+        <HBox alignItems="Center" class="cardHeader"><core:Icon src="sap-icon://process" /><Title text="{i18n>calls}" level="H4" /></HBox>
+        <ObjectAttribute title="{i18n>calls}" text="{path: 'detail>/summary/CallCount', formatter: '.formatter.formatNumber'}" />
+        <ObjectAttribute title="{i18n>functions}" text="{path: 'detail>/summary/FunctionCount', formatter: '.formatter.formatNumber'}" />
+        <ObjectAttribute title="{i18n>methods}" text="{path: 'detail>/summary/MethodCount', formatter: '.formatter.formatNumber'}" />
+      </VBox>
+      <VBox class="overviewCard">
+        <HBox alignItems="Center" class="cardHeader"><core:Icon src="sap-icon://workflow-tasks" /><Title text="{i18n>businessLogic}" level="H4" /></HBox>
+        <ObjectAttribute title="{i18n>routines}" text="{path: 'detail>/summary/RoutineCount', formatter: '.formatter.formatNumber'}" />
+        <ObjectAttribute title="{i18n>scopes}" text="{path: 'detail>/summary/ScopeFormCount', formatter: '.formatter.formatNumber'}" />
+      </VBox>
+      <VBox class="overviewCard">
+        <HBox alignItems="Center" class="cardHeader"><core:Icon src="sap-icon://connected" /><Title text="{i18n>dependencyGraph}" level="H4" /></HBox>
+        <ObjectAttribute title="{i18n>nodes}" text="{path: 'detail>/summary/NodeCount', formatter: '.formatter.formatNumber'}" />
+        <ObjectAttribute title="{i18n>edges}" text="{path: 'detail>/summary/EdgeCount', formatter: '.formatter.formatNumber'}" />
+      </VBox>
+      <VBox class="overviewCard">
+        <HBox alignItems="Center" class="cardHeader"><core:Icon src="sap-icon://message-warning" /><Title text="{i18n>quality}" level="H4" /></HBox>
+        <ObjectAttribute title="{i18n>issues}" text="{path: 'detail>/summary/IssueCount', formatter: '.formatter.formatNumber'}" />
+        <ObjectAttribute title="{i18n>warnings}" text="{path: 'detail>/summary/WarningCount', formatter: '.formatter.formatNumber'}" />
+      </VBox>
+    </FlexBox>
+  </VBox>
+</core:FragmentDefinition>

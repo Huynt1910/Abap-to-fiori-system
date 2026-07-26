@@ -1,86 +1,123 @@
 sap.ui.define([], function () {
   "use strict";
 
-  function toNumber(vValue) {
-    var fValue = parseFloat(vValue);
-    return isNaN(fValue) ? 0 : fValue;
-  }
-
   function normalize(vValue) {
-    return String(vValue || "").trim().toUpperCase();
+    return String(vValue === null || vValue === undefined ? "" : vValue).trim();
   }
 
   function criticalityToState(vCriticality) {
-    var sCriticality = normalize(vCriticality);
+    var sValue = normalize(vCriticality).toUpperCase();
 
-    if (sCriticality === "1" || sCriticality === "GOOD" || sCriticality === "SUCCESS" || sCriticality === "POSITIVE" || sCriticality === "LOW") {
-      return "Success";
+    if (sValue === "1" || sValue === "ERROR" || sValue === "NEGATIVE" || sValue === "HIGH") {
+      return "Error";
     }
 
-    if (sCriticality === "2" || sCriticality === "CRITICAL" || sCriticality === "WARNING" || sCriticality === "MEDIUM") {
+    if (sValue === "2" || sValue === "WARNING" || sValue === "CRITICAL" || sValue === "MEDIUM") {
       return "Warning";
     }
 
-    if (sCriticality === "3" || sCriticality === "NEGATIVE" || sCriticality === "ERROR" || sCriticality === "HIGH") {
-      return "Error";
-    }
-
-    return "None";
-  }
-
-  function statusToState(sStatus) {
-    var sValue = normalize(sStatus);
-
-    if (sValue === "COMPLETED" || sValue === "COMPLETE" || sValue === "ANALYZED" || sValue === "SUCCESS") {
+    if (sValue === "3" || sValue === "SUCCESS" || sValue === "GOOD" || sValue === "POSITIVE" || sValue === "LOW") {
       return "Success";
     }
 
-    if (sValue === "IN PROGRESS" || sValue === "RUNNING" || sValue === "PROCESSING") {
+    if (sValue === "5" || sValue === "INFORMATION" || sValue === "INFO") {
       return "Information";
-    }
-
-    if (sValue === "FAILED" || sValue === "ERROR" || sValue === "INCOMPLETE") {
-      return "Error";
     }
 
     return "None";
   }
 
-  return {
-    formatScore: function (vValue) {
-      return toNumber(vValue).toFixed(0) + "%";
-    },
+  function statusToState(sStatus, vCriticality) {
+    var sValue = normalize(sStatus).toUpperCase();
 
-    formatScoreValue: function (vValue) {
-      return Math.max(0, Math.min(toNumber(vValue), 100));
-    },
-
-    formatScoreState: function (vValue) {
-      var fValue = toNumber(vValue);
-
-      if (fValue >= 75) {
-        return "Success";
-      }
-
-      if (fValue >= 50) {
-        return "Warning";
-      }
-
+    if (sValue === "FAILED" || sValue === "ERROR") {
       return "Error";
+    }
+
+    if (sValue === "RUNNING" || sValue === "IN_PROGRESS" || sValue === "PROCESSING") {
+      return "Information";
+    }
+
+    if (sValue === "COMPLETED" || sValue === "COMPLETE" || sValue === "SUCCESS") {
+      return "Success";
+    }
+
+    return criticalityToState(vCriticality);
+  }
+
+  function formatInteger(vValue) {
+    var iValue = parseInt(vValue, 10);
+    return isNaN(iValue) ? "-" : iValue.toLocaleString();
+  }
+
+  return {
+    hasItems: function (aItems) {
+      return Array.isArray(aItems) && aItems.length > 0;
     },
 
-    formatStatusState: function (sStatus, vCriticality) {
-      var sStateFromStatus = statusToState(sStatus);
-      return sStateFromStatus === "None" ? criticalityToState(vCriticality) : sStateFromStatus;
+    hasNoItems: function (aItems) {
+      return !Array.isArray(aItems) || aItems.length === 0;
     },
 
-    formatCriticalityToValueState: function (vCriticality) {
+    hasValue: function (vValue) {
+      return !!normalize(vValue);
+    },
+
+    formatCountText: function (vCount) {
+      var iValue = parseInt(vCount, 10);
+      return isNaN(iValue) ? "(0)" : "(" + iValue.toLocaleString() + ")";
+    },
+
+    formatCriticalityState: function (vCriticality) {
       return criticalityToState(vCriticality);
     },
 
+    formatComplexityState: function (sLevel) {
+      var sValue = normalize(sLevel).toUpperCase();
+
+      if (sValue === "HIGH" || sValue === "VERY_HIGH" || sValue === "CRITICAL") {
+        return "Error";
+      }
+
+      if (sValue === "MEDIUM" || sValue === "MODERATE") {
+        return "Warning";
+      }
+
+      if (sValue === "LOW" || sValue === "SIMPLE") {
+        return "Success";
+      }
+
+      return "None";
+    },
+
+    formatPriorityState: function (sPriority) {
+      var sValue = normalize(sPriority).toUpperCase();
+
+      if (sValue === "HIGH" || sValue === "CRITICAL" || sValue === "1") {
+        return "Error";
+      }
+
+      if (sValue === "MEDIUM" || sValue === "2") {
+        return "Warning";
+      }
+
+      if (sValue === "LOW" || sValue === "3") {
+        return "Success";
+      }
+
+      return "None";
+    },
+
+    formatScoreText: function (vValue) {
+      return formatInteger(vValue);
+    },
+
+    formatStatusState: function (sStatus, vCriticality) {
+      return statusToState(sStatus, vCriticality);
+    },
+
     formatStatusIcon: function (sStatus, vCriticality) {
-      var sStateFromStatus = statusToState(sStatus);
-      var sState = sStateFromStatus === "None" ? criticalityToState(vCriticality) : sStateFromStatus;
+      var sState = statusToState(sStatus, vCriticality);
 
       if (sState === "Success") {
         return "sap-icon://sys-enter-2";
@@ -94,16 +131,33 @@ sap.ui.define([], function () {
         return "sap-icon://error";
       }
 
+      if (sState === "Information") {
+        return "sap-icon://message-information";
+      }
+
       return "";
     },
 
-    formatNumber: function (vValue) {
-      var iValue = parseInt(vValue, 10);
-      return isNaN(iValue) ? "0" : iValue.toLocaleString();
+    formatText: function (vValue) {
+      var sValue = normalize(vValue);
+      return sValue || "-";
     },
 
-    formatStatusText: function (sStatus) {
-      return sStatus || "Not Analyzed";
+    formatNumber: function (vValue) {
+      return formatInteger(vValue);
+    },
+
+    formatBoolean: function (vValue) {
+      return vValue === true ? "Yes" : vValue === false ? "No" : "-";
+    },
+
+    formatDateTime: function (vValue) {
+      if (!vValue) {
+        return "-";
+      }
+
+      var oDate = vValue instanceof Date ? vValue : new Date(vValue);
+      return isNaN(oDate.getTime()) ? String(vValue) : oDate.toLocaleString();
     }
   };
 });

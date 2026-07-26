@@ -1,0 +1,23 @@
+<core:FragmentDefinition xmlns:core="sap.ui.core" xmlns="sap.m">
+  <VBox class="tabSurface">
+    <Toolbar design="Transparent" class="sectionToolbar"><Title text="{i18n>tableView}" level="H3" /><ToolbarSpacer /><Button text="{i18n>graphView}" enabled="false" tooltip="{i18n>graphViewUnavailable}" /></Toolbar>
+    <IconTabBar expandable="false" class="nestedTabs">
+      <items>
+        <IconTabFilter key="nodes" text="{i18n>nodes}" count="{detail>/counts/nodes}">
+          <IllustratedMessage visible="{path: 'detail>/nodes', formatter: '.formatter.hasNoItems'}" illustrationType="sapIllus-NoEntries" title="{i18n>noNodes}" />
+          <Table id="nodesTable" visible="{path: 'detail>/nodes', formatter: '.formatter.hasItems'}" growing="true" growingThreshold="20" items="{detail>/nodes}">
+            <columns><Column width="9rem"><Text text="{i18n>nodeKind}" /></Column><Column width="12rem"><Text text="{i18n>nodeName}" /></Column><Column width="9rem"><Text text="{i18n>nodeStatus}" /></Column><Column width="12rem" demandPopin="true" minScreenWidth="Tablet"><Text text="{i18n>sourceObject}" /></Column><Column width="6rem" hAlign="End"><Text text="{i18n>lineNumber}" /></Column></columns>
+            <items><ColumnListItem><cells><Text text="{path: 'detail>NodeKind', formatter: '.formatter.formatText'}" /><Text text="{path: 'detail>NodeName', formatter: '.formatter.formatText'}" /><Text text="{path: 'detail>NodeStatus', formatter: '.formatter.formatText'}" /><Text text="{path: 'detail>SourceObject', formatter: '.formatter.formatText'}" /><ObjectNumber number="{path: 'detail>LineNumber', formatter: '.formatter.formatNumber'}" /></cells></ColumnListItem></items>
+          </Table>
+        </IconTabFilter>
+        <IconTabFilter key="edges" text="{i18n>edges}" count="{detail>/counts/edges}">
+          <IllustratedMessage visible="{path: 'detail>/edges', formatter: '.formatter.hasNoItems'}" illustrationType="sapIllus-NoEntries" title="{i18n>noEdges}" />
+          <Table id="edgesTable" visible="{path: 'detail>/edges', formatter: '.formatter.hasItems'}" growing="true" growingThreshold="20" items="{detail>/edges}">
+            <columns><Column width="9rem"><Text text="{i18n>edgeKind}" /></Column><Column width="12rem"><Text text="{i18n>sourceId}" /></Column><Column width="12rem"><Text text="{i18n>targetId}" /></Column><Column width="6rem" hAlign="End"><Text text="{i18n>lineNumber}" /></Column><Column width="9rem" demandPopin="true" minScreenWidth="Tablet"><Text text="{i18n>edgeStatus}" /></Column></columns>
+            <items><ColumnListItem><cells><Text text="{path: 'detail>EdgeKind', formatter: '.formatter.formatText'}" /><Text text="{path: 'detail>SourceId', formatter: '.formatter.formatText'}" /><Text text="{path: 'detail>TargetId', formatter: '.formatter.formatText'}" /><ObjectNumber number="{path: 'detail>LineNumber', formatter: '.formatter.formatNumber'}" /><Text text="{path: 'detail>EdgeStatus', formatter: '.formatter.formatText'}" /></cells></ColumnListItem></items>
+          </Table>
+        </IconTabFilter>
+      </items>
+    </IconTabBar>
+  </VBox>
+</core:FragmentDefinition>

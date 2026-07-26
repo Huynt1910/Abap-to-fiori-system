@@ -1,0 +1,101 @@
+<mvc:View
+  controllerName="abap.to.fiori.system.controller.AnalysisDetail"
+  xmlns:mvc="sap.ui.core.mvc"
+  xmlns:f="sap.f"
+  xmlns="sap.m"
+  displayBlock="true">
+  <f:DynamicPage
+    id="analysisDetailPage"
+    busy="{detail>/busy}"
+    busyIndicatorDelay="0"
+    class="analysisDetailPage"
+    toggleHeaderOnTitleClick="true">
+    <f:title>
+      <f:DynamicPageTitle>
+        <f:heading>
+          <VBox>
+            <Title text="{path: 'detail>/overview/RootProgram', formatter: '.formatter.formatText'}" level="H1" />
+            <ObjectStatus
+              text="{path: 'detail>/overview/AnalysisStatus', formatter: '.formatter.formatText'}"
+              state="{path: 'detail>/overview/StatusCriticality', formatter: '.formatter.formatCriticalityState'}"
+              icon="{parts: [{path: 'detail>/overview/AnalysisStatus'}, {path: 'detail>/overview/StatusCriticality'}], formatter: '.formatter.formatStatusIcon'}" />
+          </VBox>
+        </f:heading>
+        <f:expandedContent>
+          <HBox wrap="Wrap" class="detailMetaLine">
+            <ObjectAttribute title="{i18n>runNo}" text="{path: 'detail>/overview/RunNo', formatter: '.formatter.formatNumber'}" />
+            <ObjectAttribute title="{i18n>createdAt}" text="{path: 'detail>/overview/CreatedAt', formatter: '.formatter.formatDateTime'}" />
+            <ObjectAttribute title="{i18n>createdBy}" text="{path: 'detail>/overview/CreatedBy', formatter: '.formatter.formatText'}" />
+          </HBox>
+        </f:expandedContent>
+        <f:snappedContent>
+          <ObjectStatus
+            text="{path: 'detail>/overview/AnalysisStatus', formatter: '.formatter.formatText'}"
+            state="{path: 'detail>/overview/StatusCriticality', formatter: '.formatter.formatCriticalityState'}" />
+        </f:snappedContent>
+        <f:actions>
+          <Button icon="sap-icon://nav-back" tooltip="{i18n>back}" press=".onBackToDashboard" />
+          <Button icon="sap-icon://refresh" tooltip="{i18n>refresh}" press=".onRefresh" />
+          <Button
+            text="{i18n>reanalyze}"
+            icon="sap-icon://restart"
+            type="Transparent"
+            enabled="{= !!${detail>/overview/__OperationControl/Reanalyze} }"
+            press=".onReanalyze" />
+          <Button
+            id="generateDocumentButton"
+            text="{i18n>generateDocument}"
+            icon="sap-icon://document"
+            type="Emphasized"
+            enabled="{= !!${detail>/overview/__OperationControl/GenerateDocument} }"
+            press=".onGenerateDocument" />
+        </f:actions>
+      </f:DynamicPageTitle>
+    </f:title>
+    <f:header>
+      <f:DynamicPageHeader pinnable="false">
+        <HBox wrap="Wrap" class="kpiGrid">
+          <VBox class="kpiCard">
+            <Label text="{i18n>sourceLines}" />
+            <ObjectNumber number="{path: 'detail>/overview/SourceLineCount', formatter: '.formatter.formatNumber'}" />
+          </VBox>
+          <VBox class="kpiCard">
+            <Label text="{i18n>sourceObjects}" />
+            <ObjectNumber number="{path: 'detail>/overview/SourceObjectCount', formatter: '.formatter.formatNumber'}" />
+          </VBox>
+          <VBox class="kpiCard">
+            <Label text="{i18n>issues}" />
+            <ObjectNumber number="{path: 'detail>/overview/IssueCount', formatter: '.formatter.formatNumber'}" state="Error" />
+          </VBox>
+          <VBox class="kpiCard">
+            <Label text="{i18n>warnings}" />
+            <ObjectNumber number="{path: 'detail>/overview/WarningCount', formatter: '.formatter.formatNumber'}" state="Warning" />
+          </VBox>
+        </HBox>
+      </f:DynamicPageHeader>
+    </f:header>
+    <f:content>
+      <VBox class="detailContent">
+        <IconTabBar
+          id="detailTabBar"
+          expandable="false"
+          selectedKey="{detail>/selectedTab}"
+          select=".onTabSelect"
+          class="detailTabs">
+          <items>
+            <IconTabFilter key="overview" text="{i18n>overview}" icon="sap-icon://overview-chart" />
+            <IconTabFilter key="complexity" text="{i18n>complexityTabTitle}" icon="sap-icon://performance" />
+            <IconTabFilter key="recommendations" text="{i18n>recommendationsTabTitle}" count="{detail>/counts/recommendations}" icon="sap-icon://lightbulb" />
+            <IconTabFilter key="issues" text="{i18n>issues}" count="{detail>/counts/issues}" icon="sap-icon://message-warning" />
+            <IconTabFilter key="database" text="{i18n>database}" count="{detail>/counts/databaseAccesses}" icon="sap-icon://database" />
+            <IconTabFilter key="businessLogic" text="{i18n>businessLogic}" count="{detail>/counts/calls}" icon="sap-icon://process" />
+            <IconTabFilter key="dependencyGraph" text="{i18n>dependencyGraph}" count="{detail>/counts/nodes}" icon="sap-icon://connected" />
+            <IconTabFilter key="document" text="{i18n>document}" icon="sap-icon://document-text" />
+            <IconTabFilter key="history" text="{i18n>history}" count="{detail>/counts/history}" icon="sap-icon://history" />
+          </items>
+        </IconTabBar>
+        <VBox id="tabContentContainer" class="tabContentContainer" />
+      </VBox>
+    </f:content>
+  </f:DynamicPage>
+</mvc:View>

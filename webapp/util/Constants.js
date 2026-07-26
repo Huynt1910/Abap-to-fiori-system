@@ -1,60 +1,62 @@
 sap.ui.define([], function () {
   "use strict";
 
-  return {
-    EntitySet: {
-      SavedReportHeader: "/SavedReportHeader",
-      BusinessLogic: "/ZCE_BUSINESS_LOGIC",
-      DatabaseTable: "/ZCE_DB_TABLE",
-      UIFilter: "/ZCE_UI_FILTER",
-      ComparisonResult: "/ZCE_COMPARISON_RESULT"
-    },
+  return Object.freeze({
+    entitySet: Object.freeze({
+      analysis: "/Analysis",
+      summary: "/AnalysisSummary",
+      documents: "/Documents",
+      issues: "/AnalysisIssue",
+      calls: "/AnalysisCall",
+      routines: "/AnalysisRoutine",
+      scopes: "/AnalysisScope",
+      nodes: "/AnalysisNode",
+      edges: "/AnalysisEdge",
+      databaseAccess: "/DatabaseAccess",
+      databaseReference: "/DatabaseReference",
+      programValueHelp: "/ProgramValueHelp",
+      complexity: "/Complexity",
+      recommendation: "/Recommendation"
+    }),
 
-    Action: {
-      AnalyzeAndSave: "/SavedReportHeader/com.sap.gateway.srvd.zui_analyzer_service.v0001.analyzeAndSave"
-    },
+    association: Object.freeze({
+      summary: "_Summary",
+      document: "_Document",
+      issues: "_Issues",
+      calls: "_Calls",
+      routines: "_Routines",
+      scopes: "_Scopes",
+      nodes: "_Nodes",
+      edges: "_Edges",
+      databaseAccesses: "_DbAccesses",
+      databaseReferences: "_DbRefs",
+      complexity: "_Complexity",
+      recommendations: "_Recommendation"
+    }),
 
-    Field: {
-      ProgramName: "ProgramName",
-      ProgramDescription: "ProgramDescription",
-      AnalysisStatus: "AnalysisStatus",
-      AnalysisStatusCriticality: "AnalysisStatusCriticality",
-      MigrationScore: "MigrationScore",
-      ComplexityScore: "ComplexityScore",
-      CloudReadinessScore: "CloudReadinessScore",
-      TotalTables: "TotalTables",
-      TotalFilters: "TotalFilters",
-      TotalBusinessObjects: "TotalBusinessObjects",
-      FieldName: "FieldName",
-      Recommendation: "Recommendation",
-      MigrationTarget: "MigrationTarget",
-      DataElement: "DataElement",
-      Description: "Description",
-      TableName: "TableName",
-      Operations: "Operations",
-      CDSCandidate: "CDSCandidate",
-      Priority: "Priority",
-      MigrationApproach: "MigrationApproach",
-      ObjectName: "ObjectName",
-      ObjectType: "ObjectType",
-      Severity: "Severity",
-      RemediationComplexity: "RemediationComplexity",
-      FilterType: "FilterType",
-      MandatoryFlag: "MandatoryFlag",
-      MultiValueFlag: "MultiValueFlag",
-      FioriAdaptation: "FioriAdaptation"
-    },
+    action: Object.freeze({
+      runAnalysis: "com.sap.gateway.srvd.zui_mig2_analysis.v0001.RunAnalysis",
+      reanalyze: "com.sap.gateway.srvd.zui_mig2_analysis.v0001.Reanalyze",
+      generateDocument: "com.sap.gateway.srvd.zui_mig2_analysis.v0001.GenerateDocument"
+    }),
 
-    DetailTab: {
-      Overview: "overview",
-      UIFilters: "uiFilters",
-      DatabaseTables: "databaseTables",
-      BusinessLogic: "businessLogic",
-      ComparisonResults: "comparisonResults"
-    },
+    field: Object.freeze({
+      analysisId: "AnalysisId",
+      rootProgram: "RootProgram",
+      isLatest: "IsLatest",
+      createdAt: "CreatedAt"
+    }),
 
-    Table: {
-      Top: 100
-    }
-  };
+    section: Object.freeze({
+      overview: "overview",
+      complexity: "complexity",
+      recommendations: "recommendations",
+      issues: "issues",
+      database: "database",
+      businessLogic: "businessLogic",
+      dependencyGraph: "dependencyGraph",
+      document: "document",
+      history: "history"
+    })
+  });
 });
