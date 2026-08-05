@@ -6,16 +6,9 @@
         <Input
           id="rootProgramInput"
           maxLength="40"
-          value="{dashboard>/newAnalysis/rootProgram}"
-          showValueHelp="true"
-          valueHelpRequest=".onProgramValueHelp"
-          liveChange=".onRootProgramChange"
-          submit=".onExecuteRunAnalysis" />
-        <Label text="{i18n>programDescription}" labelFor="programDescriptionInput" required="true" />
-        <Input
-          id="programDescriptionInput"
-          maxLength="60"
-          value="{dashboard>/newAnalysis/description}"
+          value="{dashboard>/newAnalysis/programName}"
+          showValueHelp="false"
+          liveChange=".onProgramNameChange"
           submit=".onExecuteRunAnalysis" />
       </VBox>
     </content>

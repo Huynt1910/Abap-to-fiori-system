@@ -1,0 +1,33 @@
+<core:FragmentDefinition xmlns:core="sap.ui.core" xmlns="sap.m">
+  <VBox class="tabSurface" busy="{detail>/loading/messages}" busyIndicatorDelay="0">
+    <MessageStrip visible="{path: 'detail>/errors/messages', formatter: '.formatter.hasValue'}" text="{detail>/errors/messages}" type="Error" showIcon="true" class="sapUiSmallMarginBottom" />
+    <OverflowToolbar class="sectionToolbar" visible="{path: 'detail>/messages', formatter: '.formatter.hasItems'}">
+      <Title text="{i18n>messages}" level="H3" />
+      <ObjectStatus text="{path: 'detail>/counts/messages', formatter: '.formatter.formatCountText'}" />
+      <ToolbarSpacer />
+    </OverflowToolbar>
+    <IllustratedMessage visible="{path: 'detail>/messages', formatter: '.formatter.hasNoItems'}" illustrationType="sapIllus-NoEntries" title="{i18n>noMessages}" />
+    <Table id="messagesTable" visible="{path: 'detail>/messages', formatter: '.formatter.hasItems'}" growing="true" growingThreshold="20" items="{detail>/messages}" itemPress=".onMessagePress">
+      <columns>
+        <Column width="6rem" hAlign="End"><Text text="{i18n>messageNo}" /></Column>
+        <Column width="8rem"><Text text="{i18n>messageType}" /></Column>
+        <Column width="10rem"><Text text="{i18n>messageCode}" /></Column>
+        <Column width="12rem" demandPopin="true" minScreenWidth="Tablet"><Text text="{i18n>sourceObject}" /></Column>
+        <Column width="6rem" hAlign="End"><Text text="{i18n>sourceLine}" /></Column>
+        <Column><Text text="{i18n>messageText}" /></Column>
+      </columns>
+      <items>
+        <ColumnListItem type="Active" press=".onMessagePress">
+          <cells>
+            <ObjectNumber number="{path: 'detail>MessageNo', formatter: '.formatter.formatNumber'}" />
+            <ObjectStatus text="{path: 'detail>MessageType', formatter: '.formatter.formatText'}" state="{path: 'detail>MessageType', formatter: '.formatter.formatSeverityState'}" icon="sap-icon://message-warning" />
+            <Text text="{path: 'detail>MessageCode', formatter: '.formatter.formatText'}" />
+            <Text text="{path: 'detail>SourceObject', formatter: '.formatter.formatText'}" />
+            <ObjectNumber number="{path: 'detail>SourceLine', formatter: '.formatter.formatNumber'}" />
+            <Text text="{path: 'detail>MessageText', formatter: '.formatter.formatText'}" maxLines="2" wrapping="true" />
+          </cells>
+        </ColumnListItem>
+      </items>
+    </Table>
+  </VBox>
+</core:FragmentDefinition>

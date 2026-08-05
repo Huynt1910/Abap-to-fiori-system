@@ -26,10 +26,6 @@ sap.ui.define([
       return this.getOwnerComponent().getAnalysisService();
     },
 
-    getProgramService: function () {
-      return this.getOwnerComponent().getProgramService();
-    },
-
     getDocumentService: function () {
       return this.getOwnerComponent().getDocumentService();
     },

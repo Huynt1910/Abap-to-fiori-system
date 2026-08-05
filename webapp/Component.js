@@ -2,9 +2,8 @@ sap.ui.define([
   "sap/ui/core/UIComponent",
   "abap/to/fiori/system/model/models",
   "abap/to/fiori/system/service/AnalysisService",
-  "abap/to/fiori/system/service/ProgramService",
   "abap/to/fiori/system/service/DocumentService"
-], function (UIComponent, models, AnalysisService, ProgramService, DocumentService) {
+], function (UIComponent, models, AnalysisService, DocumentService) {
   "use strict";
 
   return UIComponent.extend("abap.to.fiori.system.Component", {
@@ -17,7 +16,6 @@ sap.ui.define([
 
       this.setModel(models.createDeviceModel(), "device");
       this._oAnalysisService = new AnalysisService(this.getModel());
-      this._oProgramService = new ProgramService(this.getModel());
       this._oDocumentService = new DocumentService(this.getModel());
 
       this.getRouter().initialize();
@@ -25,10 +23,6 @@ sap.ui.define([
 
     getAnalysisService: function () {
       return this._oAnalysisService;
-    },
-
-    getProgramService: function () {
-      return this._oProgramService;
     },
 
     getDocumentService: function () {

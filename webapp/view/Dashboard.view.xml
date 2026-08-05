@@ -1,102 +1,318 @@
 <mvc:View
-  controllerName="abap.to.fiori.system.controller.Dashboard"
-  xmlns:mvc="sap.ui.core.mvc"
-  xmlns:core="sap.ui.core"
-  xmlns:f="sap.f"
-  xmlns="sap.m"
-  displayBlock="true">
-  <f:DynamicPage id="dashboardPage" class="migrationDashboard">
-    <f:title>
-      <f:DynamicPageTitle>
-        <f:heading>
-          <Title text="{i18n>dashboardTitle}" level="H2" />
-        </f:heading>
-        <f:expandedContent>
-          <ObjectStatus text="{path: 'dashboard>/visibleCount', formatter: '.formatter.formatCountText'}" />
-        </f:expandedContent>
-        <f:actions>
-          <Button text="{i18n>runAnalysis}" type="Emphasized" icon="sap-icon://begin" press=".onRunAnalysis" />
-          <Button text="{i18n>refresh}" icon="sap-icon://refresh" press=".onRefresh" />
-        </f:actions>
-      </f:DynamicPageTitle>
-    </f:title>
-    <f:header>
-      <f:DynamicPageHeader pinnable="false">
-        <HBox alignItems="End" wrap="Wrap" class="filterBar">
-          <VBox class="filterField">
-            <Label text="{i18n>rootProgram}" labelFor="programSearch" />
-            <SearchField
-              id="programSearch"
-              value="{dashboard>/filters/search}"
-              placeholder="{i18n>searchRootProgram}"
-              search=".onSearch" />
-          </VBox>
-          <VBox class="filterField">
-            <Label text="{i18n>analysisStatus}" labelFor="statusSelect" />
-            <Select id="statusSelect" selectedKey="{dashboard>/filters/status}" change=".onSearch">
-              <items>
-                <core:Item key="" text="{i18n>allStatuses}" />
-                <core:Item key="COMPLETED" text="{i18n>statusCompleted}" />
-                <core:Item key="RUNNING" text="{i18n>statusRunning}" />
-                <core:Item key="FAILED" text="{i18n>statusFailed}" />
-              </items>
-            </Select>
-          </VBox>
-          <CheckBox text="{i18n>latestOnly}" selected="{dashboard>/filters/latestOnly}" select=".onSearch" />
-          <Button text="{i18n>clearFilters}" icon="sap-icon://clear-filter" press=".onClearFilters" />
-        </HBox>
-      </f:DynamicPageHeader>
-    </f:header>
-    <f:content>
-      <VBox class="contentSurface">
-        <Table
-          id="analysisTable"
-          growing="true"
-          growingThreshold="20"
-          growingScrollToLoad="true"
-          sticky="ColumnHeaders"
-          mode="None"
-          itemPress=".onAnalysisPress"
-          updateFinished=".onAnalysesUpdateFinished"
-          noDataText="{i18n>noAnalyses}"
-          items="{
-            path: '/Analysis',
+    controllerName="abap.to.fiori.system.controller.Dashboard"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns:core="sap.ui.core"
+    xmlns:f="sap.f"
+    xmlns:card="sap.f.cards"
+    xmlns="sap.m"
+    displayBlock="true"
+>
+    <f:DynamicPage
+        id="dashboardPage"
+        class="migrationAnalyzerPage"
+    >
+        <f:title>
+            <f:DynamicPageTitle>
+                <f:heading>
+                    <Title
+                        text="{i18n>dashboardTitle}"
+                        level="H2"
+                    />
+                </f:heading>
+                <f:expandedContent>
+                    <ObjectStatus
+                        text="{path: 'dashboard>/visibleCount', formatter: '.formatter.formatCountText'}"
+                    />
+                </f:expandedContent>
+                <f:actions>
+                    <Button
+                        id="runAnalysisButton"
+                        text="{i18n>runAnalysis}"
+                        type="Emphasized"
+                        icon="sap-icon://begin"
+                        press=".onRunAnalysis"
+                    />
+                    <Button
+                        id="refreshAnalysesButton"
+                        text="{i18n>refresh}"
+                        type="Transparent"
+                        icon="sap-icon://refresh"
+                        press=".onRefresh"
+                    />
+                </f:actions>
+            </f:DynamicPageTitle>
+        </f:title>
+        <f:header>
+            <f:DynamicPageHeader pinnable="false">
+                <HBox
+                    alignItems="End"
+                    wrap="Wrap"
+                    class="migrationAnalyzerFilterBar"
+                >
+                    <VBox class="migrationAnalyzerFilterField">
+                        <Label
+                            text="{i18n>rootProgram}"
+                            labelFor="programSearch"
+                        />
+                        <SearchField
+                            id="programSearch"
+                            value="{dashboard>/filters/search}"
+                            placeholder="{i18n>searchProgramName}"
+                            search=".onSearch"
+                        />
+                    </VBox>
+                    <VBox class="migrationAnalyzerFilterField">
+                        <Label
+                            text="{i18n>analysisStatus}"
+                            labelFor="statusSelect"
+                        />
+                        <Select
+                            id="statusSelect"
+                            selectedKey="{dashboard>/filters/status}"
+                            change=".onSearch"
+                        >
+                            <items>
+                                <core:Item
+                                    key=""
+                                    text="{i18n>allStatuses}"
+                                />
+                                <core:Item
+                                    key="COMPLETED"
+                                    text="{i18n>statusCompleted}"
+                                />
+                                <core:Item
+                                    key="WARNING"
+                                    text="{i18n>statusWarning}"
+                                />
+                                <core:Item
+                                    key="ERROR"
+                                    text="{i18n>statusError}"
+                                />
+                            </items>
+                        </Select>
+                    </VBox>
+                    <Button
+                        id="applyFiltersButton"
+                        text="{i18n>go}"
+                        type="Emphasized"
+                        icon="sap-icon://accept"
+                        press=".onSearch"
+                    />
+                    <Button
+                        text="{i18n>clearFilters}"
+                        icon="sap-icon://clear-filter"
+                        press=".onClearFilters"
+                    />
+                </HBox>
+            </f:DynamicPageHeader>
+        </f:header>
+        <f:content>
+            <VBox class="migrationAnalyzerContent">
+                <f:GridContainer
+                    id="dashboardKpiGrid"
+                    class="migrationAnalyzerKpiGrid"
+                >
+                    <f:items>
+                        <f:Card
+                            class="migrationAnalyzerCard migrationAnalyzerCardTotal"
+                            tooltip="{i18n>totalAnalysesTooltip}"
+                        >
+                            <f:layoutData>
+                                <f:GridContainerItemLayoutData
+                                    columns="3"
+                                    minRows="1"
+                                />
+                            </f:layoutData>
+                            <f:header>
+                                <card:Header
+                                    title="{i18n>totalAnalyses}"
+                                    iconSrc="sap-icon://business-objects-experience"
+                                    statusText="{path: 'dashboard>/kpi/total', formatter: '.formatter.formatNumber'}"
+                                />
+                            </f:header>
+                        </f:Card>
+                        <f:Card
+                            class="migrationAnalyzerCard migrationAnalyzerCardSuccess"
+                            tooltip="{i18n>completedTooltip}"
+                        >
+                            <f:layoutData>
+                                <f:GridContainerItemLayoutData
+                                    columns="3"
+                                    minRows="1"
+                                />
+                            </f:layoutData>
+                            <f:header>
+                                <card:Header
+                                    title="{i18n>statusCompleted}"
+                                    iconSrc="sap-icon://sys-enter-2"
+                                    statusText="{path: 'dashboard>/kpi/completed', formatter: '.formatter.formatNumber'}"
+                                />
+                            </f:header>
+                        </f:Card>
+                        <f:Card
+                            class="migrationAnalyzerCard migrationAnalyzerCardWarning"
+                            tooltip="{i18n>warningTooltip}"
+                        >
+                            <f:layoutData>
+                                <f:GridContainerItemLayoutData
+                                    columns="3"
+                                    minRows="1"
+                                />
+                            </f:layoutData>
+                            <f:header>
+                                <card:Header
+                                    title="{i18n>statusWarning}"
+                                    iconSrc="sap-icon://alert"
+                                    statusText="{path: 'dashboard>/kpi/warning', formatter: '.formatter.formatNumber'}"
+                                />
+                            </f:header>
+                        </f:Card>
+                        <f:Card
+                            class="migrationAnalyzerCard migrationAnalyzerCardError"
+                            tooltip="{i18n>errorTooltip}"
+                        >
+                            <f:layoutData>
+                                <f:GridContainerItemLayoutData
+                                    columns="3"
+                                    minRows="1"
+                                />
+                            </f:layoutData>
+                            <f:header>
+                                <card:Header
+                                    title="{i18n>statusError}"
+                                    iconSrc="sap-icon://error"
+                                    statusText="{path: 'dashboard>/kpi/error', formatter: '.formatter.formatNumber'}"
+                                />
+                            </f:header>
+                        </f:Card>
+                    </f:items>
+                </f:GridContainer>
+                <Table
+                    id="analysisTable"
+                    growing="true"
+                    growingThreshold="20"
+                    growingScrollToLoad="true"
+                    sticky="ColumnHeaders"
+                    mode="None"
+                    autoPopinMode="true"
+                    itemPress=".onAnalysisPress"
+                    updateFinished=".onAnalysesUpdateFinished"
+                    items="{
+            path: '/Analyses',
             parameters: {
-              $select: 'AnalysisId,RootProgram,RunNo,IsLatest,AnalysisStatus,CreatedAt,CreatedBy,SourceLineCount,SourceObjectCount,IssueCount,WarningCount,StatusCriticality,WarningCriticality'
+              $select: 'AnalysisId,ProgramName,ProgramDescription,Status,TotalSourceObjects,TotalUiFilters,TotalDatabaseObjects,TotalBusinessLogic,TotalAlvOutputs,TotalAlvColumns,TotalRecommendations,ComplexityScore,ReadinessScore,CreatedAt,CreatedBy'
             },
             sorter: {
               path: 'CreatedAt',
               descending: true
             }
-          }">
-          <columns>
-            <Column width="12rem" importance="High"><Text text="{i18n>rootProgram}" /></Column>
-            <Column width="5rem" hAlign="End" importance="High"><Text text="{i18n>runNo}" /></Column>
-            <Column width="9rem" importance="High"><Text text="{i18n>analysisStatus}" /></Column>
-            <Column width="7rem" hAlign="End" demandPopin="true" minScreenWidth="Tablet"><Text text="{i18n>sourceLines}" /></Column>
-            <Column width="7rem" hAlign="End" demandPopin="true" minScreenWidth="Tablet"><Text text="{i18n>sourceObjects}" /></Column>
-            <Column width="6rem" hAlign="End" demandPopin="true" minScreenWidth="Tablet"><Text text="{i18n>issues}" /></Column>
-            <Column width="6rem" hAlign="End" demandPopin="true" minScreenWidth="Tablet"><Text text="{i18n>warnings}" /></Column>
-            <Column width="12rem" demandPopin="true" minScreenWidth="Desktop"><Text text="{i18n>createdAt}" /></Column>
-            <Column width="10rem" demandPopin="true" minScreenWidth="Desktop"><Text text="{i18n>createdBy}" /></Column>
-          </columns>
-          <items>
-            <ColumnListItem type="Navigation" press=".onAnalysisPress">
-              <cells>
-                <ObjectIdentifier title="{path: 'RootProgram', formatter: '.formatter.formatText'}" />
-                <ObjectNumber number="{path: 'RunNo', formatter: '.formatter.formatNumber'}" />
-                <ObjectStatus text="{path: 'AnalysisStatus', formatter: '.formatter.formatText'}" state="{path: 'StatusCriticality', formatter: '.formatter.formatCriticalityState'}" />
-                <ObjectNumber number="{path: 'SourceLineCount', formatter: '.formatter.formatNumber'}" />
-                <ObjectNumber number="{path: 'SourceObjectCount', formatter: '.formatter.formatNumber'}" />
-                <ObjectNumber number="{path: 'IssueCount', formatter: '.formatter.formatNumber'}" state="Error" />
-                <ObjectNumber number="{path: 'WarningCount', formatter: '.formatter.formatNumber'}" state="Warning" />
-                <Text text="{path: 'CreatedAt', formatter: '.formatter.formatDateTime'}" />
-                <Text text="{path: 'CreatedBy', formatter: '.formatter.formatText'}" />
-              </cells>
-            </ColumnListItem>
-          </items>
-        </Table>
-      </VBox>
-    </f:content>
-  </f:DynamicPage>
+          }"
+                >
+                    <noData>
+                        <IllustratedMessage
+                            illustrationType="sapIllus-NoEntries"
+                            title="{i18n>noAnalyses}"
+                            description="{i18n>noAnalysesDescription}"
+                        />
+                    </noData>
+                    <columns>
+                        <Column
+                            width="14rem"
+                            importance="High"
+                        >
+                            <Text text="{i18n>rootProgram}" />
+                        </Column>
+                        <Column
+                            width="10rem"
+                            importance="High"
+                        >
+                            <Text text="{i18n>analysisStatus}" />
+                        </Column>
+                        <Column
+                            width="7rem"
+                            hAlign="End"
+                            demandPopin="true"
+                            minScreenWidth="Tablet"
+                        >
+                            <Text text="{i18n>sourceObjects}" />
+                        </Column>
+                        <Column
+                            width="7rem"
+                            hAlign="End"
+                            demandPopin="true"
+                            minScreenWidth="Desktop"
+                        >
+                            <Text text="{i18n>dbTables}" />
+                        </Column>
+                        <Column
+                            width="7rem"
+                            hAlign="End"
+                            demandPopin="true"
+                            minScreenWidth="Desktop"
+                        >
+                            <Text text="{i18n>alvOutputs}" />
+                        </Column>
+                        <Column
+                            width="8rem"
+                            hAlign="End"
+                            demandPopin="true"
+                            minScreenWidth="Desktop"
+                        >
+                            <Text text="{i18n>readinessScore}" />
+                        </Column>
+                        <Column
+                            width="12rem"
+                            demandPopin="true"
+                            minScreenWidth="Desktop"
+                        >
+                            <Text text="{i18n>createdAt}" />
+                        </Column>
+                        <Column
+                            width="10rem"
+                            demandPopin="true"
+                            minScreenWidth="Desktop"
+                        >
+                            <Text text="{i18n>createdBy}" />
+                        </Column>
+                    </columns>
+                    <items>
+                        <ColumnListItem
+                            type="Navigation"
+                            press=".onAnalysisPress"
+                        >
+                            <cells>
+                                <ObjectIdentifier
+                                    title="{path: 'ProgramName', formatter: '.formatter.formatText'}"
+                                    text="{path: 'ProgramDescription', formatter: '.formatter.formatText'}"
+                                />
+                                <ObjectStatus
+                                    text="{path: 'Status', formatter: '.formatter.formatText'}"
+                                    state="{path: 'Status', formatter: '.formatter.formatStatusState'}"
+                                    icon="{path: 'Status', formatter: '.formatter.formatStatusIcon'}"
+                                />
+                                <ObjectNumber
+                                    number="{path: 'TotalSourceObjects', formatter: '.formatter.formatNumber'}"
+                                />
+                                <ObjectNumber
+                                    number="{path: 'TotalDatabaseObjects', formatter: '.formatter.formatNumber'}"
+                                />
+                                <ObjectNumber
+                                    number="{path: 'TotalAlvOutputs', formatter: '.formatter.formatNumber'}"
+                                />
+                                <ObjectNumber
+                                    number="{path: 'ReadinessScore', formatter: '.formatter.formatScoreText'}"
+                                />
+                                <Text
+                                    text="{path: 'CreatedAt', formatter: '.formatter.formatDateTime'}"
+                                />
+                                <Text
+                                    text="{path: 'CreatedBy', formatter: '.formatter.formatText'}"
+                                />
+                            </cells>
+                        </ColumnListItem>
+                    </items>
+                </Table>
+            </VBox>
+        </f:content>
+    </f:DynamicPage>
 </mvc:View>

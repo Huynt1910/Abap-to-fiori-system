@@ -1,0 +1,62 @@
+<core:FragmentDefinition xmlns:core="sap.ui.core" xmlns="sap.m">
+  <Dialog
+    id="exportReportDialog"
+    title="{i18n>exportReport}"
+    stretchOnPhone="true"
+    busy="{detail>/export/busy}"
+    busyIndicatorDelay="0">
+    <content>
+      <VBox class="sapUiMediumMargin formStack">
+        <Label text="{i18n>exportReportProgram}" labelFor="exportReportTypeInput" />
+        <Input
+          id="exportReportTypeInput"
+          value="{detail>/export/reportType}"
+          editable="false" />
+
+        <Label text="{i18n>exportFileFormat}" labelFor="exportFileFormatSelect" />
+        <Select
+          id="exportFileFormatSelect"
+          selectedKey="{detail>/export/fileFormat}"
+          enabled="{= !${detail>/export/busy} }">
+          <items>
+            <core:Item key="X" text="{i18n>exportFormatExcel}" />
+            <core:Item key="P" text="{i18n>exportFormatPdf}" />
+            <core:Item key="C" text="{i18n>exportFormatCsv}" />
+          </items>
+        </Select>
+
+        <Label text="{i18n>exportSection}" labelFor="exportSectionSelect" />
+        <Select
+          id="exportSectionSelect"
+          selectedKey="{detail>/export/exportSection}"
+          enabled="{= !${detail>/export/busy} }">
+          <items>
+            <core:Item key="ALL" text="{i18n>exportSectionAll}" />
+            <core:Item key="OVERVIEW" text="{i18n>exportSectionOverview}" />
+            <core:Item key="UI_FILTER" text="{i18n>exportSectionUiFilter}" />
+            <core:Item key="DB_OBJ" text="{i18n>exportSectionDatabaseObjects}" />
+            <core:Item key="BUS_LOGIC" text="{i18n>exportSectionBusinessLogic}" />
+            <core:Item key="ALV_OUTPUT" text="{i18n>exportSectionAlvOutput}" />
+            <core:Item key="SRC_EVIDEN" text="{i18n>exportSectionSourceEvidence}" />
+            <core:Item key="RECOMMEN" text="{i18n>exportSectionRecommendations}" />
+            <core:Item key="MESSAGE" text="{i18n>exportSectionMessages}" />
+          </items>
+        </Select>
+      </VBox>
+    </content>
+    <beginButton>
+      <Button
+        text="{i18n>download}"
+        type="Emphasized"
+        icon="sap-icon://download"
+        enabled="{= !${detail>/export/busy} }"
+        press=".onDownloadExport" />
+    </beginButton>
+    <endButton>
+      <Button
+        text="{i18n>cancel}"
+        enabled="{= !${detail>/export/busy} }"
+        press=".onCancelExport" />
+    </endButton>
+  </Dialog>
+</core:FragmentDefinition>

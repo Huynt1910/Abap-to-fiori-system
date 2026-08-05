@@ -15,19 +15,20 @@ sap.ui.define([
       busy: false,
       filters: {
         search: "",
-        status: "",
-        latestOnly: true
+        status: ""
       },
       visibleCount: 0,
       selectedCount: 0,
-      programValueHelpBusy: false,
-      newAnalysis: {
-        rootProgram: "",
-        program: null,
-        description: "",
-        busy: false
+      kpi: {
+        total: 0,
+        completed: 0,
+        warning: 0,
+        error: 0
       },
-      programValueHelp: []
+      newAnalysis: {
+        programName: "",
+        busy: false
+      }
     });
   }
 
@@ -35,41 +36,50 @@ sap.ui.define([
     return new JSONModel({
       busy: false,
       analysisId: "",
-      selectedTab: "overview",
+      selectedTab: "uiFilters",
       loaded: {
-        overview: false,
-        complexity: false,
-        recommendations: false,
-        issues: false,
-        database: false,
+        uiFilters: false,
+        databaseObjects: false,
         businessLogic: false,
-        dependencyGraph: false,
-        document: false,
-        history: false
+        alvOutputs: false,
+        evidences: false,
+        recommendations: false,
+        messages: false
       },
       loading: {
-        complexity: false,
-        recommendations: false
+        uiFilters: false,
+        databaseObjects: false,
+        businessLogic: false,
+        alvOutputs: false,
+        evidences: false,
+        recommendations: false,
+        messages: false
       },
       errors: {
-        complexity: null,
-        recommendations: null
+        uiFilters: null,
+        databaseObjects: null,
+        businessLogic: null,
+        alvOutputs: null,
+        evidences: null,
+        recommendations: null,
+        messages: null
       },
       overview: {},
-      summary: {},
-      complexity: null,
-      recommendations: [],
+      export: {
+        busy: false,
+        fileFormat: "X",
+        exportSection: "ALL",
+        reportType: "",
+        dialogOpen: false
+      },
       selectedRecommendation: null,
-      issues: [],
-      databaseAccesses: [],
-      databaseReferences: [],
-      calls: [],
-      routines: [],
-      scopes: [],
-      nodes: [],
-      edges: [],
-      document: null,
-      history: [],
+      uiFilters: [],
+      databaseObjects: [],
+      businessLogic: [],
+      alvOutputs: [],
+      evidences: [],
+      recommendations: [],
+      messages: [],
       counts: {}
     });
   }

@@ -12,7 +12,7 @@ sap.ui.define([], function () {
       return "Error";
     }
 
-    if (sValue === "2" || sValue === "WARNING" || sValue === "CRITICAL" || sValue === "MEDIUM") {
+    if (sValue === "2" || sValue === "WARNING" || sValue === "CRITICAL" || sValue === "MEDIUM" || sValue === "PARTIAL") {
       return "Warning";
     }
 
@@ -27,22 +27,22 @@ sap.ui.define([], function () {
     return "None";
   }
 
-  function statusToState(sStatus, vCriticality) {
+  function statusToState(sStatus) {
     var sValue = normalize(sStatus).toUpperCase();
 
-    if (sValue === "FAILED" || sValue === "ERROR") {
+    if (sValue === "ERROR") {
       return "Error";
     }
 
-    if (sValue === "RUNNING" || sValue === "IN_PROGRESS" || sValue === "PROCESSING") {
-      return "Information";
+    if (sValue === "WARNING") {
+      return "Warning";
     }
 
-    if (sValue === "COMPLETED" || sValue === "COMPLETE" || sValue === "SUCCESS") {
+    if (sValue === "COMPLETED") {
       return "Success";
     }
 
-    return criticalityToState(vCriticality);
+    return "None";
   }
 
   function formatInteger(vValue) {
@@ -90,19 +90,19 @@ sap.ui.define([], function () {
       return "None";
     },
 
-    formatPriorityState: function (sPriority) {
-      var sValue = normalize(sPriority).toUpperCase();
+    formatSeverityState: function (sSeverity) {
+      var sValue = normalize(sSeverity).toUpperCase();
 
-      if (sValue === "HIGH" || sValue === "CRITICAL" || sValue === "1") {
+      if (sValue === "ERROR" || sValue === "HIGH" || sValue === "CRITICAL") {
         return "Error";
       }
 
-      if (sValue === "MEDIUM" || sValue === "2") {
+      if (sValue === "WARNING" || sValue === "MEDIUM") {
         return "Warning";
       }
 
-      if (sValue === "LOW" || sValue === "3") {
-        return "Success";
+      if (sValue === "INFO" || sValue === "INFORMATION" || sValue === "LOW") {
+        return "Information";
       }
 
       return "None";
@@ -112,12 +112,12 @@ sap.ui.define([], function () {
       return formatInteger(vValue);
     },
 
-    formatStatusState: function (sStatus, vCriticality) {
-      return statusToState(sStatus, vCriticality);
+    formatStatusState: function (sStatus) {
+      return statusToState(sStatus);
     },
 
-    formatStatusIcon: function (sStatus, vCriticality) {
-      var sState = statusToState(sStatus, vCriticality);
+    formatStatusIcon: function (sStatus) {
+      var sState = statusToState(sStatus);
 
       if (sState === "Success") {
         return "sap-icon://sys-enter-2";

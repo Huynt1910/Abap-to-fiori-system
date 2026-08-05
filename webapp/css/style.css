@@ -1,22 +1,24 @@
-.migrationDashboard,
-.analysisDetailPage {
+.migrationAnalyzerPage,
+.migrationAnalyzerObjectPage {
   background: var(--sapBackgroundColor);
 }
 
-.filterBar {
+.migrationAnalyzerFilterBar {
   gap: 1rem;
-}
-
-.filterField {
-  min-width: 14rem;
-  max-width: 26rem;
-}
-
-.filterField .sapMSF {
   width: 100%;
 }
 
-.contentSurface,
+.migrationAnalyzerFilterField {
+  flex: 1 1 14rem;
+  max-width: 26rem;
+  min-width: 12rem;
+}
+
+.migrationAnalyzerFilterBar .sapMBtn {
+  flex: 0 0 auto;
+}
+
+.migrationAnalyzerContent,
 .tabSurface {
   background: var(--sapGroup_ContentBackground);
   border: 1px solid var(--sapGroup_ContentBorderColor);
@@ -26,24 +28,35 @@
   padding: 1rem;
 }
 
-.contentSurface {
-  margin: 1rem;
-}
-
-.detailContent {
+.migrationAnalyzerContent {
   gap: 1rem;
-  padding: 0 1rem 1rem;
+  margin: 1rem;
 }
 
 .detailMetaLine {
   gap: 1rem;
 }
 
-.kpiGrid {
-  gap: 0.75rem;
+.detailOverviewMetrics {
+  gap: 1rem;
+  justify-content: flex-start;
+  width: 100%;
 }
 
-.kpiCard {
+.migrationAnalyzerKpiGrid {
+  gap: 1rem;
+  margin: 0 auto;
+  max-width: 72rem;
+  width: 100%;
+}
+
+.migrationAnalyzerKpiPair {
+  gap: 1.5rem;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.migrationAnalyzerMetric {
   background: var(--sapTile_Background);
   border: 1px solid var(--sapTile_BorderColor);
   border-radius: 0.5rem;
@@ -52,54 +65,161 @@
   padding: 0.75rem 1rem;
 }
 
-.tabContentContainer,
-.documentBlock {
-  gap: 0.75rem;
-}
-
-.overviewCardGrid {
-  gap: 0.75rem;
-}
-
-.overviewCard,
-.documentCard,
-.scoreCard {
-  background: var(--sapTile_Background);
-  border: 1px solid var(--sapTile_BorderColor);
+.migrationAnalyzerCard {
+  border: 1px solid var(--sapGroup_ContentBorderColor);
+  border-left: 0.35rem solid var(--sapAccentColor6);
   border-radius: 0.5rem;
+  box-shadow: var(--sapContent_Shadow0);
   box-sizing: border-box;
-  gap: 0.5rem;
-  padding: 1rem;
+  min-width: 11rem;
+  overflow: hidden;
 }
 
-.overviewCard {
-  flex: 1 1 16rem;
+.migrationAnalyzerCard .sapFCardContent {
+  min-width: 0;
 }
 
-.complexityLayout,
+.migrationAnalyzerKpiInline {
+  align-items: center;
+  box-sizing: border-box;
+  gap: 0.85rem;
+  min-height: 4.5rem;
+  padding: 0.85rem 1.1rem;
+  width: 100%;
+}
+
+.migrationAnalyzerKpiIcon {
+  align-items: center;
+  border-radius: 50%;
+  box-sizing: border-box;
+  color: var(--sapContent_ContrastIconColor);
+  display: inline-flex;
+  flex: 0 0 2.75rem;
+  font-size: 1.55rem;
+  height: 2.75rem;
+  justify-content: center;
+  width: 2.75rem;
+}
+
+.migrationAnalyzerKpiTitle {
+  color: var(--sapTextColor);
+  flex: 1 1 auto;
+  font-size: 0.95rem;
+  font-weight: 800;
+  min-width: 0;
+}
+
+.migrationAnalyzerKpiNumber {
+  flex: 0 0 auto;
+  text-align: right;
+}
+
+.migrationAnalyzerKpiNumber .sapMObjectNumberText {
+  font-size: 1.35rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.migrationAnalyzerCard .sapMObjNumber {
+  max-width: 100%;
+}
+
+.migrationAnalyzerCard .sapMObjectNumberText,
+.migrationAnalyzerCard .sapMObjectNumberUnit {
+  white-space: normal;
+}
+
+.migrationAnalyzerCardTotal {
+  background: #eef5ff;
+  border-left-color: var(--sapAccentColor6);
+}
+
+.migrationAnalyzerCardSuccess {
+  background: #edf8f0;
+  border-left-color: var(--sapPositiveColor);
+}
+
+.migrationAnalyzerCardWarning {
+  background: #fff4df;
+  border-left-color: var(--sapCriticalColor);
+}
+
+.migrationAnalyzerCardError {
+  background: #fff0f0;
+  border-left-color: var(--sapNegativeColor);
+}
+
+.migrationAnalyzerCardTotal .migrationAnalyzerKpiIcon {
+  background: var(--sapAccentColor6);
+}
+
+.migrationAnalyzerCardSuccess .migrationAnalyzerKpiIcon {
+  background: var(--sapPositiveColor);
+}
+
+.migrationAnalyzerCardWarning .migrationAnalyzerKpiIcon {
+  background: var(--sapCriticalColor);
+}
+
+.migrationAnalyzerCardError .migrationAnalyzerKpiIcon {
+  background: var(--sapNegativeColor);
+}
+
+.migrationAnalyzerCardTotal .migrationAnalyzerKpiTitle,
+.migrationAnalyzerCardTotal .migrationAnalyzerKpiNumber .sapMObjectNumberText {
+  color: var(--sapAccentColor6);
+}
+
+.migrationAnalyzerCardSuccess .migrationAnalyzerKpiTitle,
+.migrationAnalyzerCardSuccess .migrationAnalyzerKpiNumber .sapMObjectNumberText {
+  color: var(--sapPositiveTextColor);
+}
+
+.migrationAnalyzerCardWarning .migrationAnalyzerKpiTitle,
+.migrationAnalyzerCardWarning .migrationAnalyzerKpiNumber .sapMObjectNumberText {
+  color: var(--sapCriticalTextColor);
+}
+
+.migrationAnalyzerCardError .migrationAnalyzerKpiTitle,
+.migrationAnalyzerCardError .migrationAnalyzerKpiNumber .sapMObjectNumberText {
+  color: var(--sapNegativeTextColor);
+}
+
 .recommendationDetail {
-  gap: 0.75rem;
+  box-sizing: border-box;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  width: 100%;
 }
 
-.complexitySummary {
-  margin-bottom: 0.75rem;
+.recommendationDetailDialog .sapMDialogScrollCont {
+  padding: 0;
 }
 
-.scoreCard {
-  flex: 1 1 10rem;
-  min-width: 10rem;
+.recommendationDetailTitle {
+  margin-top: -0.25rem;
 }
 
-.cardHeader {
-  gap: 0.5rem;
+.recommendationDetailMeta {
+  gap: 0.35rem;
+}
+
+.recommendationDetailMeta .sapMObjectAttributeDiv {
+  min-width: 0;
+}
+
+.recommendationDetailSection {
+  gap: 0.25rem;
+}
+
+.recommendationDetailSection .sapMText {
+  line-height: 1.45;
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 
 .sectionToolbar {
   padding: 0;
-}
-
-.nestedTabs {
-  width: 100%;
 }
 
 .formStack {
@@ -107,28 +227,34 @@
   min-width: 20rem;
 }
 
-.analysisDetailPage .sapMText,
-.analysisDetailPage .sapMObjStatusText,
-.contentSurface .sapMText {
-  overflow-wrap: anywhere;
-}
-
 @media (max-width: 700px) {
-  .filterField,
+  .migrationAnalyzerFilterField,
   .formStack {
+    flex-basis: 100%;
     min-width: 100%;
+    max-width: 100%;
   }
 
-  .contentSurface,
-  .detailContent {
+  .migrationAnalyzerFilterBar .sapMBtn {
+    flex: 1 1 auto;
+  }
+
+  .migrationAnalyzerContent {
     margin: 0;
     padding-left: 0.5rem;
     padding-right: 0.5rem;
   }
 
-  .kpiCard,
-  .overviewCard,
-  .scoreCard {
+  .migrationAnalyzerMetric {
     min-width: 100%;
   }
+
+  .migrationAnalyzerCard {
+    min-width: 100%;
+  }
+
+  .recommendationDetail {
+    padding: 0.75rem 1rem;
+  }
+
 }

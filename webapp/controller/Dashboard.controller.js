@@ -18,6 +18,7 @@ sap.ui.define([
       this._oViewModel = models.createDashboardModel();
       this.getView().setModel(this._oViewModel, "dashboard");
       this._applyAnalysisFilters();
+      this._updateDashboardKpis();
     },
 
     onSearch: function () {
@@ -31,12 +32,13 @@ sap.ui.define([
     onClearFilters: function () {
       this._oViewModel.setProperty("/filters/search", "");
       this._oViewModel.setProperty("/filters/status", "");
-      this._oViewModel.setProperty("/filters/latestOnly", true);
       this._applyAnalysisFilters();
     },
 
     onAnalysesUpdateFinished: function (oEvent) {
-      this._oViewModel.setProperty("/visibleCount", oEvent.getParameter("total") || 0);
+      var iTotal = oEvent.getParameter("total") || 0;
+      this._oViewModel.setProperty("/visibleCount", iTotal);
+      this._updateDashboardKpis();
     },
 
     onRunAnalysis: function () {
@@ -49,22 +51,15 @@ sap.ui.define([
     },
 
     onExecuteRunAnalysis: function () {
-      var oProgram = this._oViewModel.getProperty("/newAnalysis/program") || {};
-      var sRootProgram = String(this._oViewModel.getProperty("/newAnalysis/rootProgram") || oProgram.RootProgram || "").trim();
-      var sDescription = String(this._oViewModel.getProperty("/newAnalysis/description") || "").trim();
+      var sProgramName = String(this._oViewModel.getProperty("/newAnalysis/programName") || "").trim();
 
-      if (!sRootProgram) {
-        MessageToast.show(this.getText("validationRootProgramRequired"));
-        return;
-      }
-
-      if (!sDescription) {
-        MessageToast.show(this.getText("validationProgramDescriptionRequired"));
+      if (!sProgramName) {
+        MessageToast.show(this.getText("validationProgramNameRequired"));
         return;
       }
 
       this._oViewModel.setProperty("/newAnalysis/busy", true);
-      this.getAnalysisService().runAnalysis(sRootProgram, sDescription)
+      this.getAnalysisService().analyzeProgram(sProgramName)
         .then(function (oAnalysis) {
           var sAnalysisId = oAnalysis && oAnalysis.AnalysisId;
 
@@ -86,33 +81,8 @@ sap.ui.define([
         }.bind(this));
     },
 
-    onProgramValueHelp: function () {
-      this._openProgramValueHelpDialog();
-    },
-
-    onRootProgramChange: function (oEvent) {
-      var sRootProgram = String(oEvent.getParameter("value") || "").trim();
-
-      this._oViewModel.setProperty("/newAnalysis/rootProgram", sRootProgram);
-      this._oViewModel.setProperty("/newAnalysis/program", sRootProgram ? {
-        RootProgram: sRootProgram
-      } : null);
-    },
-
-    onProgramValueHelpSearch: function (oEvent) {
-      this._searchPrograms(oEvent.getParameter("value"));
-    },
-
-    onProgramValueHelpConfirm: function (oEvent) {
-      var oSelectedItem = oEvent.getParameter("selectedItem");
-      var oContext = oSelectedItem && oSelectedItem.getBindingContext("dashboard");
-      var oProgram = oContext && oContext.getObject();
-
-      if (oProgram) {
-        this._oViewModel.setProperty("/newAnalysis/program", oProgram);
-        this._oViewModel.setProperty("/newAnalysis/rootProgram", oProgram.RootProgram || "");
-        this._oViewModel.setProperty("/newAnalysis/description", oProgram.Description || "");
-      }
+    onProgramNameChange: function (oEvent) {
+      this._oViewModel.setProperty("/newAnalysis/programName", String(oEvent.getParameter("value") || "").trim());
     },
 
     onAnalysisPress: function (oEvent) {
@@ -139,6 +109,7 @@ sap.ui.define([
         oBinding.filter(aFilters);
         oBinding.sort([new Sorter(Constants.field.createdAt, true)]);
       }
+      this._updateDashboardKpis();
     },
 
     _refreshAnalyses: function () {
@@ -156,19 +127,29 @@ sap.ui.define([
       var sSearch = String(this._oViewModel.getProperty("/filters/search") || "").trim();
       var sStatus = String(this._oViewModel.getProperty("/filters/status") || "").trim();
 
-      if (this._oViewModel.getProperty("/filters/latestOnly")) {
-        aFilters.push(new Filter(Constants.field.isLatest, FilterOperator.EQ, true));
-      }
-
       if (sSearch) {
-        aFilters.push(new Filter(Constants.field.rootProgram, FilterOperator.Contains, sSearch));
+        aFilters.push(new Filter(Constants.field.programName, FilterOperator.Contains, sSearch));
       }
 
       if (sStatus) {
-        aFilters.push(new Filter("AnalysisStatus", FilterOperator.EQ, sStatus));
+        aFilters.push(new Filter(Constants.field.status, FilterOperator.EQ, sStatus));
       }
 
       return aFilters;
+    },
+
+    _updateDashboardKpis: function () {
+      this._oViewModel.setProperty("/busy", true);
+      this.getAnalysisService().readAnalysisSummary()
+        .then(function (oKpi) {
+          this._oViewModel.setProperty("/kpi", oKpi);
+        }.bind(this))
+        .catch(function (oError) {
+          this.showError(oError, "loadOverviewError");
+        }.bind(this))
+        .finally(function () {
+          this._oViewModel.setProperty("/busy", false);
+        }.bind(this));
     },
 
     _openRunAnalysisDialog: function () {
@@ -188,43 +169,8 @@ sap.ui.define([
       });
     },
 
-    _openProgramValueHelpDialog: function () {
-      if (!this._pProgramValueHelpDialog) {
-        this._pProgramValueHelpDialog = Fragment.load({
-          id: this.getView().getId(),
-          name: "abap.to.fiori.system.view.fragments.ProgramValueHelp",
-          controller: this
-        }).then(function (oDialog) {
-          this.getView().addDependent(oDialog);
-          return oDialog;
-        }.bind(this));
-      }
-
-      this._pProgramValueHelpDialog.then(function (oDialog) {
-        oDialog.open();
-        this._searchPrograms(this._oViewModel.getProperty("/newAnalysis/rootProgram"));
-      }.bind(this));
-    },
-
-    _searchPrograms: function (sQuery) {
-      this._oViewModel.setProperty("/programValueHelpBusy", true);
-
-      return this.getProgramService().searchPrograms(String(sQuery || "").trim())
-        .then(function (aPrograms) {
-          this._oViewModel.setProperty("/programValueHelp", aPrograms);
-        }.bind(this))
-        .catch(function (oError) {
-          this.showError(oError, "programSearchError");
-        }.bind(this))
-        .finally(function () {
-          this._oViewModel.setProperty("/programValueHelpBusy", false);
-        }.bind(this));
-    },
-
     _resetRunAnalysisState: function () {
-      this._oViewModel.setProperty("/newAnalysis/rootProgram", "");
-      this._oViewModel.setProperty("/newAnalysis/program", null);
-      this._oViewModel.setProperty("/newAnalysis/description", "");
+      this._oViewModel.setProperty("/newAnalysis/programName", "");
       this._oViewModel.setProperty("/newAnalysis/busy", false);
     }
   });

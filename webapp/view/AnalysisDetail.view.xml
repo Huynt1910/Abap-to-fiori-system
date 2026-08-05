@@ -1,101 +1,90 @@
 <mvc:View
   controllerName="abap.to.fiori.system.controller.AnalysisDetail"
   xmlns:mvc="sap.ui.core.mvc"
-  xmlns:f="sap.f"
+  xmlns:core="sap.ui.core"
+  xmlns:uxap="sap.uxap"
   xmlns="sap.m"
   displayBlock="true">
-  <f:DynamicPage
+  <uxap:ObjectPageLayout
     id="analysisDetailPage"
     busy="{detail>/busy}"
     busyIndicatorDelay="0"
-    class="analysisDetailPage"
-    toggleHeaderOnTitleClick="true">
-    <f:title>
-      <f:DynamicPageTitle>
-        <f:heading>
+    class="migrationAnalyzerObjectPage"
+    useIconTabBar="true"
+    showFooter="false"
+    navigate=".onSectionNavigate">
+    <uxap:headerTitle>
+      <uxap:ObjectPageDynamicHeaderTitle>
+        <uxap:heading>
           <VBox>
-            <Title text="{path: 'detail>/overview/RootProgram', formatter: '.formatter.formatText'}" level="H1" />
+            <Title text="{path: 'detail>/overview/ProgramName', formatter: '.formatter.formatText'}" level="H1" />
             <ObjectStatus
-              text="{path: 'detail>/overview/AnalysisStatus', formatter: '.formatter.formatText'}"
-              state="{path: 'detail>/overview/StatusCriticality', formatter: '.formatter.formatCriticalityState'}"
-              icon="{parts: [{path: 'detail>/overview/AnalysisStatus'}, {path: 'detail>/overview/StatusCriticality'}], formatter: '.formatter.formatStatusIcon'}" />
+              text="{path: 'detail>/overview/Status', formatter: '.formatter.formatText'}"
+              state="{path: 'detail>/overview/Status', formatter: '.formatter.formatStatusState'}"
+              icon="{path: 'detail>/overview/Status', formatter: '.formatter.formatStatusIcon'}" />
           </VBox>
-        </f:heading>
-        <f:expandedContent>
+        </uxap:heading>
+        <uxap:expandedHeading>
           <HBox wrap="Wrap" class="detailMetaLine">
-            <ObjectAttribute title="{i18n>runNo}" text="{path: 'detail>/overview/RunNo', formatter: '.formatter.formatNumber'}" />
+            <ObjectAttribute title="{i18n>programDescription}" text="{path: 'detail>/overview/ProgramDescription', formatter: '.formatter.formatText'}" />
             <ObjectAttribute title="{i18n>createdAt}" text="{path: 'detail>/overview/CreatedAt', formatter: '.formatter.formatDateTime'}" />
             <ObjectAttribute title="{i18n>createdBy}" text="{path: 'detail>/overview/CreatedBy', formatter: '.formatter.formatText'}" />
           </HBox>
-        </f:expandedContent>
-        <f:snappedContent>
+        </uxap:expandedHeading>
+        <uxap:snappedHeading>
           <ObjectStatus
-            text="{path: 'detail>/overview/AnalysisStatus', formatter: '.formatter.formatText'}"
-            state="{path: 'detail>/overview/StatusCriticality', formatter: '.formatter.formatCriticalityState'}" />
-        </f:snappedContent>
-        <f:actions>
+            text="{path: 'detail>/overview/Status', formatter: '.formatter.formatText'}"
+            state="{path: 'detail>/overview/Status', formatter: '.formatter.formatStatusState'}" />
+        </uxap:snappedHeading>
+        <uxap:actions>
           <Button icon="sap-icon://nav-back" tooltip="{i18n>back}" press=".onBackToDashboard" />
           <Button icon="sap-icon://refresh" tooltip="{i18n>refresh}" press=".onRefresh" />
-          <Button
-            text="{i18n>reanalyze}"
-            icon="sap-icon://restart"
-            type="Transparent"
-            enabled="{= !!${detail>/overview/__OperationControl/Reanalyze} }"
-            press=".onReanalyze" />
-          <Button
-            id="generateDocumentButton"
-            text="{i18n>generateDocument}"
-            icon="sap-icon://document"
-            type="Emphasized"
-            enabled="{= !!${detail>/overview/__OperationControl/GenerateDocument} }"
-            press=".onGenerateDocument" />
-        </f:actions>
-      </f:DynamicPageTitle>
-    </f:title>
-    <f:header>
-      <f:DynamicPageHeader pinnable="false">
-        <HBox wrap="Wrap" class="kpiGrid">
-          <VBox class="kpiCard">
-            <Label text="{i18n>sourceLines}" />
-            <ObjectNumber number="{path: 'detail>/overview/SourceLineCount', formatter: '.formatter.formatNumber'}" />
+          <Button text="{i18n>exportReport}" icon="sap-icon://download" type="Emphasized" press=".onOpenExportDialog" />
+        </uxap:actions>
+      </uxap:ObjectPageDynamicHeaderTitle>
+    </uxap:headerTitle>
+    <uxap:headerContent>
+        <HBox wrap="Wrap" class="detailOverviewMetrics">
+          <VBox class="migrationAnalyzerMetric">
+            <Label text="{i18n>readinessScore}" />
+            <ObjectNumber number="{path: 'detail>/overview/ReadinessScore', formatter: '.formatter.formatScoreText'}" />
           </VBox>
-          <VBox class="kpiCard">
+          <VBox class="migrationAnalyzerMetric">
             <Label text="{i18n>sourceObjects}" />
-            <ObjectNumber number="{path: 'detail>/overview/SourceObjectCount', formatter: '.formatter.formatNumber'}" />
+            <ObjectNumber number="{path: 'detail>/overview/TotalSourceObjects', formatter: '.formatter.formatNumber'}" />
           </VBox>
-          <VBox class="kpiCard">
-            <Label text="{i18n>issues}" />
-            <ObjectNumber number="{path: 'detail>/overview/IssueCount', formatter: '.formatter.formatNumber'}" state="Error" />
+          <VBox class="migrationAnalyzerMetric">
+            <Label text="{i18n>alvOutputs}" />
+            <ObjectNumber number="{path: 'detail>/overview/TotalAlvOutputs', formatter: '.formatter.formatNumber'}" />
           </VBox>
-          <VBox class="kpiCard">
-            <Label text="{i18n>warnings}" />
-            <ObjectNumber number="{path: 'detail>/overview/WarningCount', formatter: '.formatter.formatNumber'}" state="Warning" />
+          <VBox class="migrationAnalyzerMetric">
+            <Label text="{i18n>recommendationsTabTitle}" />
+            <ObjectNumber number="{path: 'detail>/overview/TotalRecommendations', formatter: '.formatter.formatNumber'}" />
           </VBox>
         </HBox>
-      </f:DynamicPageHeader>
-    </f:header>
-    <f:content>
-      <VBox class="detailContent">
-        <IconTabBar
-          id="detailTabBar"
-          expandable="false"
-          selectedKey="{detail>/selectedTab}"
-          select=".onTabSelect"
-          class="detailTabs">
-          <items>
-            <IconTabFilter key="overview" text="{i18n>overview}" icon="sap-icon://overview-chart" />
-            <IconTabFilter key="complexity" text="{i18n>complexityTabTitle}" icon="sap-icon://performance" />
-            <IconTabFilter key="recommendations" text="{i18n>recommendationsTabTitle}" count="{detail>/counts/recommendations}" icon="sap-icon://lightbulb" />
-            <IconTabFilter key="issues" text="{i18n>issues}" count="{detail>/counts/issues}" icon="sap-icon://message-warning" />
-            <IconTabFilter key="database" text="{i18n>database}" count="{detail>/counts/databaseAccesses}" icon="sap-icon://database" />
-            <IconTabFilter key="businessLogic" text="{i18n>businessLogic}" count="{detail>/counts/calls}" icon="sap-icon://process" />
-            <IconTabFilter key="dependencyGraph" text="{i18n>dependencyGraph}" count="{detail>/counts/nodes}" icon="sap-icon://connected" />
-            <IconTabFilter key="document" text="{i18n>document}" icon="sap-icon://document-text" />
-            <IconTabFilter key="history" text="{i18n>history}" count="{detail>/counts/history}" icon="sap-icon://history" />
-          </items>
-        </IconTabBar>
-        <VBox id="tabContentContainer" class="tabContentContainer" />
-      </VBox>
-    </f:content>
-  </f:DynamicPage>
+    </uxap:headerContent>
+    <uxap:sections>
+      <uxap:ObjectPageSection id="uiFiltersSection" title="{i18n>uiFilters}">
+        <uxap:subSections><uxap:ObjectPageSubSection id="uiFiltersSubSection" title="{i18n>uiFilters}"><uxap:blocks><core:Fragment fragmentName="abap.to.fiori.system.view.fragments.detail.UiFiltersTab" type="XML" /></uxap:blocks></uxap:ObjectPageSubSection></uxap:subSections>
+      </uxap:ObjectPageSection>
+      <uxap:ObjectPageSection id="databaseObjectsSection" title="{i18n>databaseObjects}">
+        <uxap:subSections><uxap:ObjectPageSubSection id="databaseObjectsSubSection" title="{i18n>databaseObjects}"><uxap:blocks><core:Fragment fragmentName="abap.to.fiori.system.view.fragments.detail.DatabaseTab" type="XML" /></uxap:blocks></uxap:ObjectPageSubSection></uxap:subSections>
+      </uxap:ObjectPageSection>
+      <uxap:ObjectPageSection id="businessLogicSection" title="{i18n>businessLogic}">
+        <uxap:subSections><uxap:ObjectPageSubSection id="businessLogicSubSection" title="{i18n>businessLogic}"><uxap:blocks><core:Fragment fragmentName="abap.to.fiori.system.view.fragments.detail.BusinessLogicTab" type="XML" /></uxap:blocks></uxap:ObjectPageSubSection></uxap:subSections>
+      </uxap:ObjectPageSection>
+      <uxap:ObjectPageSection id="alvOutputsSection" title="{i18n>alvOutputs}">
+        <uxap:subSections><uxap:ObjectPageSubSection id="alvOutputsSubSection" title="{i18n>alvOutputs}"><uxap:blocks><core:Fragment fragmentName="abap.to.fiori.system.view.fragments.detail.AlvOutputsTab" type="XML" /></uxap:blocks></uxap:ObjectPageSubSection></uxap:subSections>
+      </uxap:ObjectPageSection>
+      <uxap:ObjectPageSection id="evidencesSection" title="{i18n>evidence}">
+        <uxap:subSections><uxap:ObjectPageSubSection id="evidencesSubSection" title="{i18n>evidence}"><uxap:blocks><core:Fragment fragmentName="abap.to.fiori.system.view.fragments.detail.EvidencesTab" type="XML" /></uxap:blocks></uxap:ObjectPageSubSection></uxap:subSections>
+      </uxap:ObjectPageSection>
+      <uxap:ObjectPageSection id="recommendationsSection" title="{i18n>recommendationsTabTitle}">
+        <uxap:subSections><uxap:ObjectPageSubSection id="recommendationsSubSection" title="{i18n>recommendationsTabTitle}"><uxap:blocks><core:Fragment fragmentName="abap.to.fiori.system.view.fragments.detail.RecommendationsTab" type="XML" /></uxap:blocks></uxap:ObjectPageSubSection></uxap:subSections>
+      </uxap:ObjectPageSection>
+      <uxap:ObjectPageSection id="messagesSection" title="{i18n>messages}">
+        <uxap:subSections><uxap:ObjectPageSubSection id="messagesSubSection" title="{i18n>messages}"><uxap:blocks><core:Fragment fragmentName="abap.to.fiori.system.view.fragments.detail.MessagesTab" type="XML" /></uxap:blocks></uxap:ObjectPageSubSection></uxap:subSections>
+      </uxap:ObjectPageSection>
+    </uxap:sections>
+  </uxap:ObjectPageLayout>
 </mvc:View>

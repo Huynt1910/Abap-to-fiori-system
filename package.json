@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "start": "ui5 serve -o index.html",
-    "build": "ui5 build --all"
+    "build": "ui5 build --all",
+    "test": "node --test test/*.test.js"
   },
   "keywords": [],
   "author": "",

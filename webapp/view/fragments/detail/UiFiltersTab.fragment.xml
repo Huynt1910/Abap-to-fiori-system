@@ -1,0 +1,35 @@
+<core:FragmentDefinition xmlns:core="sap.ui.core" xmlns="sap.m">
+  <VBox class="tabSurface" busy="{detail>/loading/uiFilters}" busyIndicatorDelay="0">
+    <MessageStrip visible="{path: 'detail>/errors/uiFilters', formatter: '.formatter.hasValue'}" text="{detail>/errors/uiFilters}" type="Error" showIcon="true" class="sapUiSmallMarginBottom" />
+    <OverflowToolbar class="sectionToolbar" visible="{path: 'detail>/uiFilters', formatter: '.formatter.hasItems'}">
+      <Title text="{i18n>uiFilters}" level="H3" />
+      <ObjectStatus text="{path: 'detail>/counts/uiFilters', formatter: '.formatter.formatCountText'}" />
+      <ToolbarSpacer />
+    </OverflowToolbar>
+    <IllustratedMessage visible="{path: 'detail>/uiFilters', formatter: '.formatter.hasNoItems'}" illustrationType="sapIllus-NoEntries" title="{i18n>noUiFilters}" />
+    <Table id="uiFiltersTable" visible="{path: 'detail>/uiFilters', formatter: '.formatter.hasItems'}" growing="true" growingThreshold="20" items="{detail>/uiFilters}">
+      <columns>
+        <Column width="12rem"><Text text="{i18n>fieldName}" /></Column>
+        <Column width="9rem"><Text text="{i18n>fieldKind}" /></Column>
+        <Column width="12rem" demandPopin="true" minScreenWidth="Tablet"><Text text="{i18n>dataElement}" /></Column>
+        <Column width="12rem" demandPopin="true" minScreenWidth="Tablet"><Text text="{i18n>selectionBlock}" /></Column>
+        <Column width="8rem"><Text text="{i18n>mandatory}" /></Column>
+        <Column width="8rem"><Text text="{i18n>multipleSelection}" /></Column>
+        <Column width="8rem"><Text text="{i18n>confidence}" /></Column>
+      </columns>
+      <items>
+        <ColumnListItem>
+          <cells>
+            <Text text="{path: 'detail>FieldName', formatter: '.formatter.formatText'}" />
+            <Text text="{path: 'detail>FieldKind', formatter: '.formatter.formatText'}" />
+            <Text text="{path: 'detail>DataElement', formatter: '.formatter.formatText'}" />
+            <Text text="{path: 'detail>SelectionBlock', formatter: '.formatter.formatText'}" />
+            <Text text="{path: 'detail>Mandatory', formatter: '.formatter.formatBoolean'}" />
+            <Text text="{path: 'detail>MultipleSelection', formatter: '.formatter.formatBoolean'}" />
+            <Text text="{path: 'detail>Confidence', formatter: '.formatter.formatText'}" />
+          </cells>
+        </ColumnListItem>
+      </items>
+    </Table>
+  </VBox>
+</core:FragmentDefinition>

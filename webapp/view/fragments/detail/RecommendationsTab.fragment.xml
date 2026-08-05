@@ -28,20 +28,20 @@
       items="{detail>/recommendations}"
       itemPress=".onRecommendationPress">
       <columns>
-        <Column width="8rem"><Text text="{i18n>priority}" /></Column>
-        <Column width="10rem"><Text text="{i18n>category}" /></Column>
+        <Column width="8rem"><Text text="{i18n>severity}" /></Column>
+        <Column width="10rem"><Text text="{i18n>targetLayer}" /></Column>
         <Column><Text text="{i18n>title}" /></Column>
-        <Column width="12rem" demandPopin="true" minScreenWidth="Tablet"><Text text="{i18n>recommendationCode}" /></Column>
-        <Column width="12rem" demandPopin="true" minScreenWidth="Desktop"><Text text="{i18n>generatedAt}" /></Column>
+        <Column width="12rem" demandPopin="true" minScreenWidth="Tablet"><Text text="{i18n>ruleId}" /></Column>
+        <Column width="8rem" demandPopin="true" minScreenWidth="Desktop"><Text text="{i18n>confidence}" /></Column>
       </columns>
       <items>
         <ColumnListItem type="Active" press=".onRecommendationPress">
           <cells>
-            <ObjectStatus text="{path: 'detail>Priority', formatter: '.formatter.formatText'}" state="{path: 'detail>Priority', formatter: '.formatter.formatPriorityState'}" icon="sap-icon://flag" />
-            <Text text="{path: 'detail>Category', formatter: '.formatter.formatText'}" />
+            <ObjectStatus text="{path: 'detail>Severity', formatter: '.formatter.formatText'}" state="{path: 'detail>Severity', formatter: '.formatter.formatSeverityState'}" icon="sap-icon://flag" />
+            <Text text="{path: 'detail>TargetLayer', formatter: '.formatter.formatText'}" />
             <Text text="{path: 'detail>Title', formatter: '.formatter.formatText'}" maxLines="2" wrapping="true" />
-            <Text text="{path: 'detail>RecommendationCode', formatter: '.formatter.formatText'}" />
-            <Text text="{path: 'detail>GeneratedAt', formatter: '.formatter.formatDateTime'}" />
+            <Text text="{path: 'detail>RuleId', formatter: '.formatter.formatText'}" />
+            <ObjectNumber number="{path: 'detail>Confidence', formatter: '.formatter.formatScoreText'}" />
           </cells>
         </ColumnListItem>
       </items>

@@ -11,7 +11,7 @@
     "description": "{{appDescription}}",
     "dataSources": {
       "mainService": {
-        "uri": "/sap/opu/odata4/sap/zui_mig2_analysis_o4/srvd/sap/zui_mig2_analysis/0001/",
+        "uri": "/sap/opu/odata4/sap/zui_mig_analysis_o4/srvd/sap/zui_mig_analysis/0001/?sap-client=324",
         "type": "OData",
         "settings": {
           "odataVersion": "4.0"

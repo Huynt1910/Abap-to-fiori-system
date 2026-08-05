@@ -1,0 +1,35 @@
+<core:FragmentDefinition xmlns:core="sap.ui.core" xmlns="sap.m">
+  <VBox class="tabSurface" busy="{detail>/loading/alvOutputs}" busyIndicatorDelay="0">
+    <MessageStrip visible="{path: 'detail>/errors/alvOutputs', formatter: '.formatter.hasValue'}" text="{detail>/errors/alvOutputs}" type="Error" showIcon="true" class="sapUiSmallMarginBottom" />
+    <OverflowToolbar class="sectionToolbar" visible="{path: 'detail>/alvOutputs', formatter: '.formatter.hasItems'}">
+      <Title text="{i18n>alvOutputs}" level="H3" />
+      <ObjectStatus text="{path: 'detail>/counts/alvOutputs', formatter: '.formatter.formatCountText'}" />
+      <ToolbarSpacer />
+    </OverflowToolbar>
+    <IllustratedMessage visible="{path: 'detail>/alvOutputs', formatter: '.formatter.hasNoItems'}" illustrationType="sapIllus-NoEntries" title="{i18n>noAlvOutputs}" />
+    <Table id="alvOutputsTable" visible="{path: 'detail>/alvOutputs', formatter: '.formatter.hasItems'}" growing="true" growingThreshold="20" items="{detail>/alvOutputs}" itemPress=".onAlvOutputPress">
+      <columns>
+        <Column width="14rem"><Text text="{i18n>outputName}" /></Column>
+        <Column width="10rem"><Text text="{i18n>outputKind}" /></Column>
+        <Column width="10rem"><Text text="{i18n>framework}" /></Column>
+        <Column width="12rem" demandPopin="true" minScreenWidth="Tablet"><Text text="{i18n>controlObject}" /></Column>
+        <Column width="12rem" demandPopin="true" minScreenWidth="Tablet"><Text text="{i18n>outputTable}" /></Column>
+        <Column width="8rem"><Text text="{i18n>editable}" /></Column>
+        <Column width="8rem"><Text text="{i18n>confidence}" /></Column>
+      </columns>
+      <items>
+        <ColumnListItem type="Active" press=".onAlvOutputPress">
+          <cells>
+            <Text text="{path: 'detail>OutputName', formatter: '.formatter.formatText'}" />
+            <Text text="{path: 'detail>OutputKind', formatter: '.formatter.formatText'}" />
+            <Text text="{path: 'detail>Framework', formatter: '.formatter.formatText'}" />
+            <Text text="{path: 'detail>ControlObject', formatter: '.formatter.formatText'}" />
+            <Text text="{path: 'detail>OutputTable', formatter: '.formatter.formatText'}" />
+            <Text text="{path: 'detail>Editable', formatter: '.formatter.formatBoolean'}" />
+            <Text text="{path: 'detail>Confidence', formatter: '.formatter.formatText'}" />
+          </cells>
+        </ColumnListItem>
+      </items>
+    </Table>
+  </VBox>
+</core:FragmentDefinition>
