@@ -26,6 +26,13 @@
                 </f:expandedContent>
                 <f:actions>
                     <Button
+                        id="mailDistributionButton"
+                        text="{i18n>mailDistributionTitle}"
+                        type="Transparent"
+                        icon="sap-icon://email"
+                        press=".onOpenMailJobs"
+                    />
+                    <Button
                         id="runAnalysisButton"
                         text="{i18n>runAnalysis}"
                         type="Emphasized"

@@ -1,0 +1,39 @@
+<core:FragmentDefinition
+  xmlns:core="sap.ui.core"
+  xmlns="sap.m"
+  xmlns:f="sap.ui.layout.form">
+  <Dialog
+    id="recipientDialog"
+    title="{= ${mailUi>/recipient/mode} === 'edit' ? ${i18n>editRecipient} : ${i18n>addRecipient} }"
+    contentWidth="28rem"
+    draggable="true"
+    resizable="true"
+    busy="{mailUi>/recipient/busy}"
+    busyIndicatorDelay="0">
+    <content>
+      <VBox class="sapUiSmallMargin">
+        <MessageStrip text="{i18n>recipientSapUserHint}" type="Information" showIcon="true" class="sapUiSmallMarginBottom" />
+        <f:SimpleForm editable="true" layout="ResponsiveGridLayout">
+          <Label text="{i18n>recipientType}" required="true" />
+          <Select selectedKey="{mailUi>/recipient/data/RecipientType}">
+            <items>
+              <core:Item key="T" text="{i18n>recipientTypeTo}" />
+              <core:Item key="C" text="{i18n>recipientTypeCc}" />
+              <core:Item key="B" text="{i18n>recipientTypeBcc}" />
+            </items>
+          </Select>
+          <Label text="{i18n>sapUser}" required="true" />
+          <Input value="{mailUi>/recipient/data/SapUser}" editable="{= ${mailUi>/recipient/mode} === 'create' }" />
+          <Label text="{i18n>resolvedEmailAddress}" visible="{= !!${mailUi>/recipient/data/EmailAddress} }" />
+          <Input value="{mailUi>/recipient/data/EmailAddress}" editable="false" visible="{= !!${mailUi>/recipient/data/EmailAddress} }" />
+        </f:SimpleForm>
+      </VBox>
+    </content>
+    <beginButton>
+      <Button text="{i18n>save}" type="Emphasized" press=".onSaveRecipient" />
+    </beginButton>
+    <endButton>
+      <Button text="{i18n>cancel}" press=".onCancelRecipientDialog" />
+    </endButton>
+  </Dialog>
+</core:FragmentDefinition>

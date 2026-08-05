@@ -16,6 +16,13 @@
         "settings": {
           "odataVersion": "4.0"
         }
+      },
+      "mailService": {
+        "uri": "/sap/opu/odata4/sap/zui_mig_mail_ov4/srvd/sap/zui_mig_mail/0001/?sap-client=324",
+        "type": "OData",
+        "settings": {
+          "odataVersion": "4.0"
+        }
       }
     },
     "crossNavigation": {
@@ -85,6 +92,19 @@
           "groupId": "$auto",
           "updateGroupId": "$auto"
         }
+      },
+      "mail": {
+        "dataSource": "mailService",
+        "type": "sap.ui.model.odata.v4.ODataModel",
+        "preload": true,
+        "settings": {
+          "operationMode": "Server",
+          "synchronizationMode": "None",
+          "autoExpandSelect": true,
+          "earlyRequests": true,
+          "groupId": "$direct",
+          "updateGroupId": "$direct"
+        }
       }
     },
     "resources": {
@@ -122,6 +142,26 @@
           "name": "detail",
           "pattern": "detail/{analysisId}",
           "target": "analysisDetail"
+        },
+        {
+          "name": "mailJobs",
+          "pattern": "mail",
+          "target": "mailJobs"
+        },
+        {
+          "name": "mailJobsSlash",
+          "pattern": "/mail",
+          "target": "mailJobs"
+        },
+        {
+          "name": "mailJobDetail",
+          "pattern": "mail/{jobId}",
+          "target": "mailJobDetail"
+        },
+        {
+          "name": "mailJobDetailSlash",
+          "pattern": "/mail/{jobId}",
+          "target": "mailJobDetail"
         }
       ],
       "targets": {
@@ -130,6 +170,12 @@
         },
         "analysisDetail": {
           "viewName": "AnalysisDetail"
+        },
+        "mailJobs": {
+          "viewName": "MailJobs"
+        },
+        "mailJobDetail": {
+          "viewName": "MailJobDetail"
         }
       }
     }

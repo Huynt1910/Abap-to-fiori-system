@@ -39,6 +39,7 @@
         <uxap:actions>
           <Button icon="sap-icon://nav-back" tooltip="{i18n>back}" press=".onBackToDashboard" />
           <Button icon="sap-icon://refresh" tooltip="{i18n>refresh}" press=".onRefresh" />
+          <Button text="{i18n>createMailJob}" icon="sap-icon://email" press=".onCreateMailJobForAnalysis" />
           <Button text="{i18n>exportReport}" icon="sap-icon://download" type="Emphasized" press=".onOpenExportDialog" />
         </uxap:actions>
       </uxap:ObjectPageDynamicHeaderTitle>

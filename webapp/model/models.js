@@ -84,9 +84,45 @@ sap.ui.define([
     });
   }
 
+  function createMailUiModel() {
+    return new JSONModel({
+      busy: false,
+      listBusy: false,
+      sendBusyJobId: null,
+      selectedJobId: null,
+      recipientCounts: {},
+      filters: {
+        search: "",
+        frequency: "",
+        fileFormat: ""
+      },
+      wizard: {
+        busy: false,
+        mode: "create",
+        errorMessage: "",
+        job: {},
+        recipients: [],
+        newRecipient: {
+          RecipientType: "T",
+          SapUser: ""
+        },
+        activateAfterCreate: false
+      },
+      recipient: {
+        busy: false,
+        mode: "create",
+        jobId: "",
+        data: {}
+      },
+      logs: [],
+      errors: {}
+    });
+  }
+
   return {
     createDeviceModel: createDeviceModel,
     createDashboardModel: createDashboardModel,
-    createAnalysisDetailModel: createAnalysisDetailModel
+    createAnalysisDetailModel: createAnalysisDetailModel,
+    createMailUiModel: createMailUiModel
   };
 });

@@ -1,0 +1,158 @@
+<mvc:View
+  controllerName="abap.to.fiori.system.controller.MailJobDetail"
+  xmlns:mvc="sap.ui.core.mvc"
+  xmlns:core="sap.ui.core"
+  xmlns:uxap="sap.uxap"
+  xmlns="sap.m"
+  displayBlock="true">
+  <uxap:ObjectPageLayout id="mailJobDetailPage" busy="{mailUi>/busy}" busyIndicatorDelay="0" class="migrationAnalyzerObjectPage" useIconTabBar="true">
+    <uxap:headerTitle>
+      <uxap:ObjectPageDynamicHeaderTitle>
+        <uxap:heading>
+          <VBox>
+            <Title text="{path: 'mail>JobName', formatter: '.mailFormatter.formatText'}" level="H1" />
+          </VBox>
+        </uxap:heading>
+        <uxap:actions>
+          <Button icon="sap-icon://nav-back" tooltip="{i18n>back}" press=".onBackToMailJobs" />
+          <Button icon="sap-icon://refresh" tooltip="{i18n>refresh}" press=".onRefresh" />
+          <Button
+            text="{i18n>sendNow}"
+            icon="sap-icon://email"
+            type="Emphasized"
+            press=".onSendNow"
+            enabled="{parts: [{path: 'mail>JobId', targetType: 'any'}, {path: 'mailUi>/sendBusyJobId', targetType: 'any'}], formatter: '.mailFormatter.canSendNow'}" />
+        </uxap:actions>
+      </uxap:ObjectPageDynamicHeaderTitle>
+    </uxap:headerTitle>
+    <uxap:headerContent>
+      <HBox wrap="Wrap" class="detailOverviewMetrics">
+        <VBox class="migrationAnalyzerMetric">
+          <Label text="{i18n>reportType}" />
+          <Text text="{path: 'mail>ReportType', formatter: '.mailFormatter.formatText'}" />
+        </VBox>
+        <VBox class="migrationAnalyzerMetric">
+          <Label text="{i18n>exportFileFormat}" />
+          <Text text="{path: 'mail>FileFormat', formatter: '.mailFormatter.formatFileFormat'}" />
+        </VBox>
+        <VBox class="migrationAnalyzerMetric">
+          <Label text="{i18n>frequency}" />
+          <Text text="{path: 'mail>Frequency', formatter: '.mailFormatter.formatFrequency'}" />
+        </VBox>
+        <VBox class="migrationAnalyzerMetric">
+          <Label text="{i18n>nextRunAt}" />
+          <Text text="{path: 'mail>NextRunAt', formatter: '.mailFormatter.formatDateTime'}" />
+        </VBox>
+      </HBox>
+    </uxap:headerContent>
+    <uxap:sections>
+      <uxap:ObjectPageSection title="{i18n>general}">
+        <uxap:subSections>
+          <uxap:ObjectPageSubSection title="{i18n>general}">
+            <uxap:blocks>
+              <VBox class="tabSurface">
+                <ObjectAttribute title="{i18n>mailJobName}" text="{path: 'mail>JobName', formatter: '.mailFormatter.formatText'}" />
+                <ObjectAttribute title="{i18n>reportType}" text="{path: 'mail>ReportType', formatter: '.mailFormatter.formatText'}" />
+                <ObjectAttribute title="{i18n>exportFileFormat}" text="{path: 'mail>FileFormat', formatter: '.mailFormatter.formatFileFormat'}" tooltip="{i18n>attachmentIntegrationTooltip}" />
+                <ObjectAttribute title="{i18n>mailSubject}" text="{path: 'mail>MailSubject', formatter: '.mailFormatter.formatText'}" />
+                <Label text="{i18n>mailBody}" />
+                <Text text="{path: 'mail>MailBody', formatter: '.mailFormatter.formatText'}" wrapping="true" />
+              </VBox>
+            </uxap:blocks>
+          </uxap:ObjectPageSubSection>
+        </uxap:subSections>
+      </uxap:ObjectPageSection>
+      <uxap:ObjectPageSection title="{i18n>mailStepSchedule}">
+        <uxap:subSections>
+          <uxap:ObjectPageSubSection title="{i18n>mailStepSchedule}">
+            <uxap:blocks>
+              <VBox class="tabSurface">
+                <ObjectAttribute title="{i18n>frequency}" text="{path: 'mail>Frequency', formatter: '.mailFormatter.formatFrequency'}" />
+                <ObjectAttribute title="{i18n>startDate}" text="{path: 'mail>StartDate', formatter: '.mailFormatter.formatDate'}" />
+                <ObjectAttribute title="{i18n>startTime}" text="{path: 'mail>StartTime', formatter: '.mailFormatter.formatTime'}" />
+                <ObjectAttribute title="{i18n>dayOfWeek}" text="{path: 'mail>DayOfWeek', formatter: '.mailFormatter.formatText'}" />
+                <ObjectAttribute title="{i18n>dayOfMonth}" text="{path: 'mail>DayOfMonth', formatter: '.mailFormatter.formatText'}" />
+                <ObjectAttribute title="{i18n>nextRunAt}" text="{path: 'mail>NextRunAt', formatter: '.mailFormatter.formatDateTime'}" />
+              </VBox>
+            </uxap:blocks>
+          </uxap:ObjectPageSubSection>
+        </uxap:subSections>
+      </uxap:ObjectPageSection>
+      <uxap:ObjectPageSection title="{i18n>mailStepRecipients}">
+        <uxap:subSections>
+          <uxap:ObjectPageSubSection title="{i18n>mailStepRecipients}">
+            <uxap:blocks>
+              <VBox class="tabSurface">
+                <MessageStrip text="{i18n>recipientSapUserHint}" type="Information" showIcon="true" class="sapUiSmallMarginBottom" />
+                <OverflowToolbar class="sectionToolbar">
+                  <Title text="{i18n>mailStepRecipients}" level="H3" />
+                  <ToolbarSpacer />
+                  <Button text="{i18n>addRecipient}" icon="sap-icon://add" press=".onAddRecipient" />
+                </OverflowToolbar>
+                <Table id="detailRecipientsTable" items="{path: 'mail>_Recipients'}">
+                  <columns>
+                    <Column width="8rem"><Text text="{i18n>recipientType}" /></Column>
+                    <Column><Text text="{i18n>sapUser}" /></Column>
+                    <Column><Text text="{i18n>resolvedEmailAddress}" /></Column>
+                    <Column width="12rem" demandPopin="true" minScreenWidth="Tablet"><Text text="{i18n>createdAt}" /></Column>
+                    <Column width="8rem"><Text text="{i18n>actions}" /></Column>
+                  </columns>
+                  <items>
+                    <ColumnListItem>
+                      <cells>
+                        <Text text="{path: 'mail>RecipientType', formatter: '.mailFormatter.formatRecipientType'}" />
+                        <Text text="{path: 'mail>SapUser', formatter: '.mailFormatter.formatText'}" />
+                        <Text text="{path: 'mail>EmailAddress', formatter: '.mailFormatter.formatText'}" />
+                        <Text text="{path: 'mail>CreatedAt', formatter: '.mailFormatter.formatDateTime'}" />
+                        <HBox>
+                          <Button icon="sap-icon://edit" tooltip="{i18n>edit}" press=".onEditRecipient" />
+                          <Button icon="sap-icon://delete" tooltip="{i18n>delete}" press=".onDeleteRecipient" />
+                        </HBox>
+                      </cells>
+                    </ColumnListItem>
+                  </items>
+                </Table>
+              </VBox>
+            </uxap:blocks>
+          </uxap:ObjectPageSubSection>
+        </uxap:subSections>
+      </uxap:ObjectPageSection>
+      <uxap:ObjectPageSection title="{i18n>executionHistory}">
+        <uxap:subSections>
+          <uxap:ObjectPageSubSection title="{i18n>executionHistory}">
+            <uxap:blocks>
+              <VBox class="tabSurface">
+                <Table id="executionLogsTable" items="{mailUi>/logs}">
+                  <columns>
+                    <Column width="9rem"><Text text="{i18n>executionStatus}" /></Column>
+                    <Column width="8rem"><Text text="{i18n>triggerType}" /></Column>
+                    <Column width="12rem"><Text text="{i18n>startedAt}" /></Column>
+                    <Column width="12rem" demandPopin="true" minScreenWidth="Tablet"><Text text="{i18n>finishedAt}" /></Column>
+                    <Column width="7rem" hAlign="End" demandPopin="true" minScreenWidth="Tablet"><Text text="{i18n>recipientCount}" /></Column>
+                    <Column width="12rem" demandPopin="true" minScreenWidth="Desktop"><Text text="{i18n>fileName}" /></Column>
+                    <Column width="7rem" hAlign="End" demandPopin="true" minScreenWidth="Desktop"><Text text="{i18n>fileSize}" /></Column>
+                    <Column><Text text="{i18n>messageText}" /></Column>
+                  </columns>
+                  <items>
+                    <ColumnListItem>
+                      <cells>
+                        <ObjectStatus text="{path: 'mailUi>Status', formatter: '.mailFormatter.formatExecutionStatus'}" state="{path: 'mailUi>Status', formatter: '.mailFormatter.formatExecutionStatusState'}" tooltip="{path: 'mailUi>Status', formatter: '.mailFormatter.formatExecutionStatusTooltip'}" />
+                        <Text text="{path: 'mailUi>TriggerType', formatter: '.mailFormatter.formatTriggerType'}" />
+                        <Text text="{path: 'mailUi>StartedAt', formatter: '.mailFormatter.formatDateTime'}" />
+                        <Text text="{path: 'mailUi>FinishedAt', formatter: '.mailFormatter.formatDateTime'}" />
+                        <ObjectNumber number="{path: 'mailUi>RecipientCount', formatter: '.mailFormatter.formatNumber'}" />
+                        <Text text="{parts: [{path: 'mailUi>FileName'}, {path: 'mailUi>FileSize'}], formatter: '.mailFormatter.formatAttachmentText'}" tooltip="{i18n>attachmentIntegrationTooltip}" />
+                        <ObjectNumber number="{path: 'mailUi>FileSize', formatter: '.mailFormatter.formatNumber'}" />
+                        <Text text="{path: 'mailUi>LogMessage', formatter: '.mailFormatter.formatText'}" wrapping="true" />
+                      </cells>
+                    </ColumnListItem>
+                  </items>
+                </Table>
+              </VBox>
+            </uxap:blocks>
+          </uxap:ObjectPageSubSection>
+        </uxap:subSections>
+      </uxap:ObjectPageSection>
+    </uxap:sections>
+  </uxap:ObjectPageLayout>
+</mvc:View>

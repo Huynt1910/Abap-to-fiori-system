@@ -4,17 +4,22 @@ sap.ui.define([
   "sap/m/MessageToast",
   "abap/to/fiori/system/controller/BaseController",
   "abap/to/fiori/system/model/models",
+  "abap/to/fiori/system/model/mailConstants",
+  "abap/to/fiori/system/model/mailFormatter",
   "abap/to/fiori/system/util/Constants",
   "abap/to/fiori/system/util/formatter"
-], function (Fragment, MessageBox, MessageToast, BaseController, models, Constants, formatter) {
+], function (Fragment, MessageBox, MessageToast, BaseController, models, MailConstants, mailFormatter, Constants, formatter) {
   "use strict";
 
   return BaseController.extend("abap.to.fiori.system.controller.AnalysisDetail", {
     formatter: formatter,
+    mailFormatter: mailFormatter,
 
     onInit: function () {
       this._oViewModel = models.createAnalysisDetailModel();
       this.getView().setModel(this._oViewModel, "detail");
+      this._oMailViewModel = models.createMailUiModel();
+      this.getView().setModel(this._oMailViewModel, "mailUi");
       this.getRouter().getRoute("analysisDetail").attachPatternMatched(this._onRouteMatched, this);
       this.getRouter().getRoute("detail").attachPatternMatched(this._onRouteMatched, this);
     },
@@ -46,6 +51,96 @@ sap.ui.define([
     onOpenExportDialog: function () {
       this._resetExportState();
       this._openExportDialog();
+    },
+
+    onCreateMailJobForAnalysis: function () {
+      var sAnalysisId = this._oViewModel.getProperty("/analysisId");
+      if (sAnalysisId) {
+        this._resetMailWizard();
+        this._prefillMailWizardFromAnalysis();
+        this._openMailWizard();
+      }
+    },
+
+    onCancelMailJobWizard: function () {
+      this._oMailViewModel.setProperty("/wizard/busy", false);
+      this._oMailViewModel.setProperty("/wizard/errorMessage", "");
+      this.byId("mailJobWizardDialog").close();
+    },
+
+    onAddDraftRecipient: function () {
+      var oRecipient = Object.assign({}, this._oMailViewModel.getProperty("/wizard/newRecipient"));
+      var aRecipients = this._oMailViewModel.getProperty("/wizard/recipients").slice();
+
+      this._oMailViewModel.setProperty("/wizard/errorMessage", "");
+      oRecipient.SapUser = String(oRecipient.SapUser || "").trim();
+      oRecipient.RecipientType = oRecipient.RecipientType || MailConstants.recipientType.to;
+
+      if (!oRecipient.SapUser) {
+        MessageToast.show(this.getText("validationSapUserRequired"));
+        return;
+      }
+
+      aRecipients.push(oRecipient);
+      this._oMailViewModel.setProperty("/wizard/recipients", aRecipients);
+      if (aRecipients.length === 1) {
+        this._oMailViewModel.setProperty("/wizard/activateAfterCreate", true);
+      }
+      this._oMailViewModel.setProperty("/wizard/newRecipient", {
+        RecipientType: MailConstants.recipientType.to,
+        SapUser: ""
+      });
+    },
+
+    onRemoveDraftRecipient: function (oEvent) {
+      var oContext = oEvent.getSource().getBindingContext("mailUi");
+      var sPath = oContext && oContext.getPath();
+      var iIndex = sPath ? Number(sPath.split("/").pop()) : -1;
+      var aRecipients = this._oMailViewModel.getProperty("/wizard/recipients").slice();
+
+      if (iIndex >= 0) {
+        aRecipients.splice(iIndex, 1);
+        this._oMailViewModel.setProperty("/wizard/recipients", aRecipients);
+        if (!aRecipients.length) {
+          this._oMailViewModel.setProperty("/wizard/activateAfterCreate", false);
+        }
+      }
+    },
+
+    onSaveMailJob: function () {
+      var oWizard = this._oMailViewModel.getProperty("/wizard");
+      var oJob = this._normalizeMailJob(oWizard.job);
+      var aRecipients = oWizard.recipients || [];
+      var aErrors = this._validateMailJob(oJob);
+
+      this._oMailViewModel.setProperty("/wizard/errorMessage", "");
+
+      if (aErrors.length) {
+        this._oMailViewModel.setProperty("/wizard/errorMessage", aErrors.join("\n"));
+        MessageBox.error(aErrors.join("\n"));
+        return;
+      }
+
+      this._oMailViewModel.setProperty("/wizard/busy", true);
+      this._withMailRequestTimeout(this.getMailService().createMailJobWithRecipients({
+        job: oJob,
+        recipients: aRecipients,
+        activateAfterCreate: oWizard.activateAfterCreate
+      })).then(function (oCreated) {
+        var sJobId = oCreated && oCreated.object && oCreated.object.JobId;
+        if (sJobId && this.getOwnerComponent().setPendingCreatedMailJobId) {
+          this.getOwnerComponent().setPendingCreatedMailJobId(sJobId);
+        }
+        MessageToast.show(this.getText("mailJobCreated"));
+        this.byId("mailJobWizardDialog").close();
+        this.getRouter().navTo("mailJobs");
+      }.bind(this)).catch(this._showMailWizardError.bind(this)).finally(function () {
+        this._oMailViewModel.setProperty("/wizard/busy", false);
+      }.bind(this));
+    },
+
+    onCloseWizardError: function () {
+      this._oMailViewModel.setProperty("/wizard/errorMessage", "");
     },
 
     onCancelExport: function () {
@@ -276,6 +371,128 @@ sap.ui.define([
       this._pRecommendationDetailDialog.then(function (oDialog) {
         oDialog.open();
       });
+    },
+
+    _resetMailWizard: function () {
+      this._oMailViewModel.setProperty("/wizard", {
+        busy: false,
+        mode: "create",
+        errorMessage: "",
+        job: {
+          AnalysisId: "",
+          JobName: "",
+          ReportType: "",
+          FileFormat: MailConstants.fileFormat.excel,
+          Frequency: MailConstants.frequency.onDemand,
+          StartDate: MailConstants.scheduleDefaults.startDate,
+          StartTime: MailConstants.scheduleDefaults.startTime,
+          DayOfWeek: MailConstants.scheduleDefaults.dayOfWeek,
+          DayOfMonth: MailConstants.scheduleDefaults.dayOfMonth,
+          MailSubject: "",
+          MailBody: "",
+          Status: MailConstants.status.inactive
+        },
+        recipients: [],
+        newRecipient: {
+          RecipientType: MailConstants.recipientType.to,
+          SapUser: ""
+        },
+        activateAfterCreate: false
+      });
+    },
+
+    _prefillMailWizardFromAnalysis: function () {
+      var sAnalysisId = this._oViewModel.getProperty("/analysisId");
+      var oOverview = this._oViewModel.getProperty("/overview") || {};
+      var sProgramName = oOverview.ProgramName || "";
+
+      this._oMailViewModel.setProperty("/wizard/job/AnalysisId", sAnalysisId);
+      this._oMailViewModel.setProperty("/wizard/job/ReportType", sProgramName);
+      this._oMailViewModel.setProperty("/wizard/job/JobName", sProgramName ? "Mail " + sProgramName : "");
+      this._oMailViewModel.setProperty("/wizard/job/MailSubject", sProgramName ? "Migration report " + sProgramName : "");
+    },
+
+    _openMailWizard: function () {
+      if (!this._pMailWizardDialog) {
+        this._pMailWizardDialog = Fragment.load({
+          id: this.getView().getId(),
+          name: "abap.to.fiori.system.view.fragments.MailJobWizard",
+          controller: this
+        }).then(function (oDialog) {
+          this.getView().addDependent(oDialog);
+          return oDialog;
+        }.bind(this));
+      }
+
+      this._pMailWizardDialog.then(function (oDialog) {
+        var oWizard = this.byId("mailJobWizard");
+        if (oWizard && oWizard.discardProgress) {
+          oWizard.discardProgress(this.byId("mailGeneralStep"));
+        }
+        oDialog.open();
+      }.bind(this));
+    },
+
+    _validateMailJob: function (oJob) {
+      var aErrors = [];
+
+      if (!oJob.JobName) {
+        aErrors.push(this.getText("validationJobNameRequired"));
+      }
+      if (!oJob.ReportType) {
+        aErrors.push(this.getText("validationReportTypeRequired"));
+      }
+      if (!oJob.FileFormat) {
+        aErrors.push(this.getText("validationFileFormatRequired"));
+      }
+      if (!oJob.MailSubject) {
+        aErrors.push(this.getText("validationMailSubjectRequired"));
+      }
+
+      aErrors = aErrors.concat(this.getMailService().validateSchedule(oJob, true));
+
+      return aErrors;
+    },
+
+    _normalizeMailJob: function (oJob) {
+      var oPayload = Object.assign({}, oJob || {});
+
+      if (oPayload.Frequency === MailConstants.frequency.onDemand) {
+        oPayload.StartDate = MailConstants.scheduleDefaults.startDate;
+        oPayload.StartTime = MailConstants.scheduleDefaults.startTime;
+        oPayload.DayOfWeek = MailConstants.scheduleDefaults.dayOfWeek;
+        oPayload.DayOfMonth = MailConstants.scheduleDefaults.dayOfMonth;
+        return oPayload;
+      }
+
+      if (oPayload.Frequency !== MailConstants.frequency.weekly) {
+        oPayload.DayOfWeek = "";
+      }
+      if (oPayload.Frequency !== MailConstants.frequency.monthly) {
+        oPayload.DayOfMonth = "";
+      } else if (oPayload.DayOfMonth) {
+        oPayload.DayOfMonth = String(oPayload.DayOfMonth).padStart(2, "0");
+      }
+
+      return oPayload;
+    },
+
+    _showMailWizardError: function (oError) {
+      var sMessage = this.getMailService().toFriendlyError(oError).message;
+      this._oMailViewModel.setProperty("/wizard/busy", false);
+      this._oMailViewModel.setProperty("/wizard/errorMessage", sMessage);
+      MessageBox.error(sMessage);
+    },
+
+    _withMailRequestTimeout: function (pRequest) {
+      return Promise.race([
+        pRequest,
+        new Promise(function (resolve, reject) {
+          setTimeout(function () {
+            reject(new Error(this.getText("mailRequestTimeout")));
+          }.bind(this), 30000);
+        }.bind(this))
+      ]);
     },
 
     _getSectionKeyFromId: function (sSectionId) {

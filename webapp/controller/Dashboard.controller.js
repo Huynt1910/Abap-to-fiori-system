@@ -1,5 +1,6 @@
 sap.ui.define([
   "sap/ui/core/Fragment",
+  "sap/ui/core/routing/HashChanger",
   "sap/ui/model/Filter",
   "sap/ui/model/FilterOperator",
   "sap/ui/model/Sorter",
@@ -8,7 +9,7 @@ sap.ui.define([
   "abap/to/fiori/system/model/models",
   "abap/to/fiori/system/util/Constants",
   "abap/to/fiori/system/util/formatter"
-], function (Fragment, Filter, FilterOperator, Sorter, MessageToast, BaseController, models, Constants, formatter) {
+], function (Fragment, HashChanger, Filter, FilterOperator, Sorter, MessageToast, BaseController, models, Constants, formatter) {
   "use strict";
 
   return BaseController.extend("abap.to.fiori.system.controller.Dashboard", {
@@ -19,6 +20,7 @@ sap.ui.define([
       this.getView().setModel(this._oViewModel, "dashboard");
       this._applyAnalysisFilters();
       this._updateDashboardKpis();
+      this._displayMailTargetFromHash();
     },
 
     onSearch: function () {
@@ -27,6 +29,10 @@ sap.ui.define([
 
     onRefresh: function () {
       this._refreshAnalyses();
+    },
+
+    onOpenMailJobs: function () {
+      this._displayMailJobs();
     },
 
     onClearFilters: function () {
@@ -150,6 +156,36 @@ sap.ui.define([
         .finally(function () {
           this._oViewModel.setProperty("/busy", false);
         }.bind(this));
+    },
+
+    _displayMailTargetFromHash: function () {
+      var sHash = HashChanger.getInstance().getHash();
+
+      if (/^\/?mail($|\/)/.test(sHash)) {
+        setTimeout(function () {
+          this._displayMailJobs(true);
+        }.bind(this), 0);
+      }
+    },
+
+    _displayMailJobs: function (bKeepHash) {
+      var vDisplayResult;
+
+      try {
+        vDisplayResult = this.getRouter().getTargets().display("mailJobs");
+
+        if (vDisplayResult && typeof vDisplayResult.catch === "function") {
+          vDisplayResult.catch(function (oError) {
+            this.showError(oError, "openMailJobsError");
+          }.bind(this));
+        }
+
+        if (!bKeepHash) {
+          HashChanger.getInstance().setHash("mail");
+        }
+      } catch (oError) {
+        this.showError(oError, "openMailJobsError");
+      }
     },
 
     _openRunAnalysisDialog: function () {

@@ -1,8 +1,9 @@
 sap.ui.define([
   "sap/ui/core/mvc/Controller",
   "sap/ui/core/UIComponent",
-  "sap/m/MessageBox"
-], function (Controller, UIComponent, MessageBox) {
+  "sap/m/MessageBox",
+  "abap/to/fiori/system/util/ODataErrorHandler"
+], function (Controller, UIComponent, MessageBox, ODataErrorHandler) {
   "use strict";
 
   return Controller.extend("abap.to.fiori.system.controller.BaseController", {
@@ -30,8 +31,22 @@ sap.ui.define([
       return this.getOwnerComponent().getDocumentService();
     },
 
+    getMailService: function () {
+      return this.getOwnerComponent().getMailService();
+    },
+
+    parseError: function (oError) {
+      return ODataErrorHandler.parse(oError);
+    },
+
     showError: function (oError, sFallbackKey) {
-      var sMessage = oError && oError.message ? oError.message : this.getText(sFallbackKey || "errorGeneric");
+      var oParsedError = this.parseError(oError);
+      var sMessage = oParsedError.message;
+
+      if (!sMessage || sMessage === "Unexpected error.") {
+        sMessage = this.getText(sFallbackKey || "errorGeneric");
+      }
+
       MessageBox.error(sMessage);
     }
   });
