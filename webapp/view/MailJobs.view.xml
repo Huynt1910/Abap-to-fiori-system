@@ -19,12 +19,12 @@
     </f:title>
     <f:header>
       <f:DynamicPageHeader pinnable="false">
-        <HBox alignItems="End" wrap="Wrap" class="migrationAnalyzerFilterBar">
-          <VBox class="migrationAnalyzerFilterField">
+        <HBox alignItems="End" wrap="Wrap" class="migrationAnalyzerFilterBar mailJobsFilterBar">
+          <VBox class="migrationAnalyzerFilterField migrationAnalyzerSearchFilterField">
             <Label text="{i18n>search}" labelFor="mailJobSearch" />
             <SearchField id="mailJobSearch" value="{mailUi>/filters/search}" placeholder="{i18n>searchMailJobs}" search=".onSearch" />
           </VBox>
-          <VBox class="migrationAnalyzerFilterField">
+          <VBox class="migrationAnalyzerFilterField migrationAnalyzerSelectFilterField">
             <Label text="{i18n>frequency}" labelFor="mailFrequencySelect" />
             <Select id="mailFrequencySelect" selectedKey="{mailUi>/filters/frequency}" change=".onSearch">
               <items>
@@ -36,7 +36,7 @@
               </items>
             </Select>
           </VBox>
-          <VBox class="migrationAnalyzerFilterField">
+          <VBox class="migrationAnalyzerFilterField migrationAnalyzerSelectFilterField">
             <Label text="{i18n>exportFileFormat}" labelFor="mailFormatSelect" />
             <Select id="mailFormatSelect" selectedKey="{mailUi>/filters/fileFormat}" change=".onSearch">
               <items>
@@ -47,8 +47,7 @@
               </items>
             </Select>
           </VBox>
-          <Button text="{i18n>go}" type="Emphasized" icon="sap-icon://accept" press=".onSearch" />
-          <Button text="{i18n>clearFilters}" icon="sap-icon://clear-filter" press=".onClearFilters" />
+          <Button type="Transparent" icon="sap-icon://action-settings" tooltip="{i18n>viewSettings}" press=".onOpenMailTableSettings" />
         </HBox>
       </f:DynamicPageHeader>
     </f:header>
@@ -61,33 +60,33 @@
           sticky="ColumnHeaders"
           autoPopinMode="true"
           updateFinished=".onMailJobsUpdateFinished"
-          items="{path: 'mail>/MailJobs', parameters: { $$groupId: '$direct' }}">
+          items="{path: 'mail>/MailJobs', parameters: { $$groupId: '$direct', $select: 'JobId,AnalysisId,JobName,ReportType,FileFormat,Frequency,StartDate,StartTime,DayOfWeek,DayOfMonth,NextRunAt,MailSubject,MailBody,Status,CreatedBy,CreatedAt,LocalLastChangedAt' }}">
           <noData>
             <IllustratedMessage illustrationType="sapIllus-NoEntries" title="{i18n>noMailJobs}" description="{i18n>noMailJobsDescription}" />
           </noData>
           <columns>
-            <Column width="14rem" importance="High"><Text text="{i18n>mailJobName}" /></Column>
-            <Column width="10rem" demandPopin="true" minScreenWidth="Tablet"><Text text="{i18n>reportType}" /></Column>
-            <Column width="8rem" demandPopin="true" minScreenWidth="Tablet"><Text text="{i18n>exportFileFormat}" /></Column>
-            <Column width="8rem" demandPopin="true" minScreenWidth="Tablet"><Text text="{i18n>frequency}" /></Column>
-            <Column width="12rem" demandPopin="true" minScreenWidth="Desktop"><Text text="{i18n>nextRunAt}" /></Column>
-            <Column width="7rem" hAlign="End" demandPopin="true" minScreenWidth="Desktop"><Text text="{i18n>recipientCount}" /></Column>
-            <Column width="9rem" demandPopin="true" minScreenWidth="Desktop"><Text text="{i18n>createdBy}" /></Column>
-            <Column width="12rem" demandPopin="true" minScreenWidth="Desktop"><Text text="{i18n>createdAt}" /></Column>
-            <Column width="18rem" importance="High"><Text text="{i18n>actions}" /></Column>
+            <Column width="14rem" importance="High" visible="{mailUi>/columns/jobName}"><Text text="{i18n>mailJobName}" /></Column>
+            <Column width="10rem" demandPopin="true" minScreenWidth="Tablet" visible="{mailUi>/columns/reportType}"><Text text="{i18n>reportType}" /></Column>
+            <Column width="8rem" demandPopin="true" minScreenWidth="Tablet" visible="{mailUi>/columns/fileFormat}"><Text text="{i18n>exportFileFormat}" /></Column>
+            <Column width="8rem" demandPopin="true" minScreenWidth="Tablet" visible="{mailUi>/columns/frequency}"><Text text="{i18n>frequency}" /></Column>
+            <Column width="12rem" demandPopin="true" minScreenWidth="Desktop" visible="{mailUi>/columns/nextRunAt}"><Text text="{i18n>nextRunAt}" /></Column>
+            <Column width="7rem" hAlign="End" demandPopin="true" minScreenWidth="Desktop" visible="{mailUi>/columns/recipientCount}"><Text text="{i18n>recipientCount}" /></Column>
+            <Column width="9rem" demandPopin="true" minScreenWidth="Desktop" visible="{mailUi>/columns/createdBy}"><Text text="{i18n>createdBy}" /></Column>
+            <Column width="12rem" demandPopin="true" minScreenWidth="Desktop" visible="{mailUi>/columns/createdAt}"><Text text="{i18n>createdAt}" /></Column>
+            <Column width="18rem" importance="High" visible="{mailUi>/columns/actions}"><Text text="{i18n>actions}" /></Column>
           </columns>
           <items>
             <ColumnListItem>
               <cells>
-                <ObjectIdentifier title="{path: 'mail>JobName', formatter: '.mailFormatter.formatText'}" />
-                <Text text="{path: 'mail>ReportType', formatter: '.mailFormatter.formatText'}" />
-                <Text text="{path: 'mail>FileFormat', formatter: '.mailFormatter.formatFileFormat'}" />
-                <Text text="{path: 'mail>Frequency', formatter: '.mailFormatter.formatFrequency'}" />
-                <Text text="{path: 'mail>NextRunAt', formatter: '.mailFormatter.formatDateTime'}" />
-                <ObjectNumber number="{path: 'mail>JobId', formatter: '.formatRecipientCountForJob'}" />
-                <Text text="{path: 'mail>CreatedBy', formatter: '.mailFormatter.formatText'}" />
-                <Text text="{path: 'mail>CreatedAt', formatter: '.mailFormatter.formatDateTime'}" />
-                <OverflowToolbar class="mailActionToolbar">
+                <ObjectIdentifier title="{path: 'mail>JobName', formatter: '.mailFormatter.formatText'}" visible="{mailUi>/columns/jobName}" />
+                <Text text="{path: 'mail>ReportType', formatter: '.mailFormatter.formatText'}" visible="{mailUi>/columns/reportType}" />
+                <Text text="{path: 'mail>FileFormat', formatter: '.mailFormatter.formatFileFormat'}" visible="{mailUi>/columns/fileFormat}" />
+                <Text text="{path: 'mail>Frequency', formatter: '.mailFormatter.formatFrequency'}" visible="{mailUi>/columns/frequency}" />
+                <Text text="{path: 'mail>NextRunAt', formatter: '.mailFormatter.formatDateTime'}" visible="{mailUi>/columns/nextRunAt}" />
+                <ObjectNumber number="{path: 'mail>JobId', formatter: '.formatRecipientCountForJob'}" visible="{mailUi>/columns/recipientCount}" />
+                <Text text="{path: 'mail>CreatedBy', formatter: '.mailFormatter.formatText'}" visible="{mailUi>/columns/createdBy}" />
+                <Text text="{path: 'mail>CreatedAt', formatter: '.mailFormatter.formatDateTime'}" visible="{mailUi>/columns/createdAt}" />
+                <OverflowToolbar class="mailActionToolbar" visible="{mailUi>/columns/actions}">
                   <Button icon="sap-icon://display" tooltip="{i18n>viewDetails}" press=".onViewDetails" />
                   <Button icon="sap-icon://edit" tooltip="{i18n>edit}" press=".onEditMailJob" />
                   <Button icon="sap-icon://add-contact" tooltip="{i18n>addRecipient}" press=".onAddRecipient" />

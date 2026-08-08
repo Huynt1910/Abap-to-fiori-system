@@ -33,6 +33,13 @@
                         press=".onOpenMailJobs"
                     />
                     <Button
+                        id="comparisonHistoryButton"
+                        text="{i18n>comparisonTitle}"
+                        type="Transparent"
+                        icon="sap-icon://compare"
+                        press=".onOpenComparisonHistory"
+                    />
+                    <Button
                         id="runAnalysisButton"
                         text="{i18n>runAnalysis}"
                         type="Emphasized"
@@ -46,6 +53,13 @@
                         icon="sap-icon://refresh"
                         press=".onRefresh"
                     />
+                    <Button
+                        id="analysisViewSettingsButton"
+                        type="Transparent"
+                        icon="sap-icon://action-settings"
+                        tooltip="{i18n>viewSettings}"
+                        press=".onOpenAnalysisTableSettings"
+                    />
                 </f:actions>
             </f:DynamicPageTitle>
         </f:title>
@@ -56,7 +70,7 @@
                     wrap="Wrap"
                     class="migrationAnalyzerFilterBar"
                 >
-                    <VBox class="migrationAnalyzerFilterField">
+                    <VBox class="migrationAnalyzerFilterField migrationAnalyzerSearchFilterField">
                         <Label
                             text="{i18n>rootProgram}"
                             labelFor="programSearch"
@@ -68,7 +82,7 @@
                             search=".onSearch"
                         />
                     </VBox>
-                    <VBox class="migrationAnalyzerFilterField">
+                    <VBox class="migrationAnalyzerFilterField migrationAnalyzerSelectFilterField">
                         <Label
                             text="{i18n>analysisStatus}"
                             labelFor="statusSelect"
@@ -98,18 +112,6 @@
                             </items>
                         </Select>
                     </VBox>
-                    <Button
-                        id="applyFiltersButton"
-                        text="{i18n>go}"
-                        type="Emphasized"
-                        icon="sap-icon://accept"
-                        press=".onSearch"
-                    />
-                    <Button
-                        text="{i18n>clearFilters}"
-                        icon="sap-icon://clear-filter"
-                        press=".onClearFilters"
-                    />
                 </HBox>
             </f:DynamicPageHeader>
         </f:header>
@@ -226,12 +228,14 @@
                         <Column
                             width="14rem"
                             importance="High"
+                            visible="{dashboard>/columns/program}"
                         >
                             <Text text="{i18n>rootProgram}" />
                         </Column>
                         <Column
                             width="10rem"
                             importance="High"
+                            visible="{dashboard>/columns/status}"
                         >
                             <Text text="{i18n>analysisStatus}" />
                         </Column>
@@ -240,6 +244,7 @@
                             hAlign="End"
                             demandPopin="true"
                             minScreenWidth="Tablet"
+                            visible="{dashboard>/columns/sourceObjects}"
                         >
                             <Text text="{i18n>sourceObjects}" />
                         </Column>
@@ -248,6 +253,7 @@
                             hAlign="End"
                             demandPopin="true"
                             minScreenWidth="Desktop"
+                            visible="{dashboard>/columns/dbTables}"
                         >
                             <Text text="{i18n>dbTables}" />
                         </Column>
@@ -256,6 +262,7 @@
                             hAlign="End"
                             demandPopin="true"
                             minScreenWidth="Desktop"
+                            visible="{dashboard>/columns/alvOutputs}"
                         >
                             <Text text="{i18n>alvOutputs}" />
                         </Column>
@@ -264,6 +271,7 @@
                             hAlign="End"
                             demandPopin="true"
                             minScreenWidth="Desktop"
+                            visible="{dashboard>/columns/readinessScore}"
                         >
                             <Text text="{i18n>readinessScore}" />
                         </Column>
@@ -271,6 +279,7 @@
                             width="12rem"
                             demandPopin="true"
                             minScreenWidth="Desktop"
+                            visible="{dashboard>/columns/createdAt}"
                         >
                             <Text text="{i18n>createdAt}" />
                         </Column>
@@ -278,6 +287,7 @@
                             width="10rem"
                             demandPopin="true"
                             minScreenWidth="Desktop"
+                            visible="{dashboard>/columns/createdBy}"
                         >
                             <Text text="{i18n>createdBy}" />
                         </Column>
@@ -291,29 +301,37 @@
                                 <ObjectIdentifier
                                     title="{path: 'ProgramName', formatter: '.formatter.formatText'}"
                                     text="{path: 'ProgramDescription', formatter: '.formatter.formatText'}"
+                                    visible="{dashboard>/columns/program}"
                                 />
                                 <ObjectStatus
                                     text="{path: 'Status', formatter: '.formatter.formatText'}"
                                     state="{path: 'Status', formatter: '.formatter.formatStatusState'}"
                                     icon="{path: 'Status', formatter: '.formatter.formatStatusIcon'}"
+                                    visible="{dashboard>/columns/status}"
                                 />
                                 <ObjectNumber
                                     number="{path: 'TotalSourceObjects', formatter: '.formatter.formatNumber'}"
+                                    visible="{dashboard>/columns/sourceObjects}"
                                 />
                                 <ObjectNumber
                                     number="{path: 'TotalDatabaseObjects', formatter: '.formatter.formatNumber'}"
+                                    visible="{dashboard>/columns/dbTables}"
                                 />
                                 <ObjectNumber
                                     number="{path: 'TotalAlvOutputs', formatter: '.formatter.formatNumber'}"
+                                    visible="{dashboard>/columns/alvOutputs}"
                                 />
                                 <ObjectNumber
                                     number="{path: 'ReadinessScore', formatter: '.formatter.formatScoreText'}"
+                                    visible="{dashboard>/columns/readinessScore}"
                                 />
                                 <Text
                                     text="{path: 'CreatedAt', formatter: '.formatter.formatDateTime'}"
+                                    visible="{dashboard>/columns/createdAt}"
                                 />
                                 <Text
                                     text="{path: 'CreatedBy', formatter: '.formatter.formatText'}"
+                                    visible="{dashboard>/columns/createdBy}"
                                 />
                             </cells>
                         </ColumnListItem>

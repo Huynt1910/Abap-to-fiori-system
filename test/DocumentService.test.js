@@ -238,3 +238,106 @@ test("successful download falls back to generated filename", async () => {
   assert.equal(result.fileName, "Z_REP_MESSAGE_20260805_103000.csv");
   assert.equal(stubs.calls.download, result.fileName);
 });
+
+test("prepare selected export executes bound action with property keys", async () => {
+  const calls = [];
+  const service = new DocumentService({
+    bindContext(pathValue) {
+      calls.push(["bindContext", pathValue]);
+      return {
+        setParameter(name, value) {
+          calls.push(["setParameter", name, value]);
+        },
+        execute(groupId) {
+          calls.push(["execute", groupId]);
+          return Promise.resolve();
+        },
+        getBoundContext() {
+          return {
+            requestObject: async () => ({ DownloadUrl: "/download/1", FileName: "x.xlsx", MimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" })
+          };
+        }
+      };
+    }
+  });
+
+  const result = await service.prepareSelectedExport("11111111-2222-3333-4444-555555555555", {
+    fileFormat: "X",
+    exportSection: "UI_FILTER",
+    selectedFields: ["FieldName", "DataElement"]
+  });
+
+  assert.equal(calls[0][0], "bindContext");
+  assert.match(calls[0][1], /\/Analyses\(11111111-2222-3333-4444-555555555555\)\/com\.sap\.gateway\.srvd\.zui_mig_analysis\.v0001\.PrepareSelectedExport\(\.\.\.\)$/);
+  assert.deepEqual(calls.slice(1, 5), [
+    ["setParameter", "FileFormat", "X"],
+    ["setParameter", "ExportSection", "UI_FILTER"],
+    ["setParameter", "SelectedFields", "FieldName,DataElement"],
+    ["execute", "$direct"]
+  ]);
+  assert.equal(result.DownloadUrl, "/download/1");
+});
+
+test("selected export validates selected fields and parameter lengths", async () => {
+  const service = createService();
+
+  assert.throws(() => service.prepareSelectedExport("A", {
+    fileFormat: "XX",
+    exportSection: "UI_FILTER",
+    selectedFields: ["FieldName"]
+  }), /Unsupported export file format|FileFormat/);
+
+  assert.throws(() => service.prepareSelectedExport("A", {
+    fileFormat: "X",
+    exportSection: "THIS_SECTION_CODE_IS_TOO_LONG",
+    selectedFields: ["FieldName"]
+  }), /Unsupported export section|ExportSection/);
+
+  assert.throws(() => service.prepareSelectedExport("A", {
+    fileFormat: "X",
+    exportSection: "UI_FILTER",
+    selectedFields: []
+  }), /Select at least one column/);
+});
+
+test("download selected export uses backend DownloadUrl and filename", async () => {
+  const stubs = createDownloadStubs();
+  let requestedUrl = "";
+  const service = new DocumentService({
+    bindContext() {
+      return {
+        setParameter() {},
+        execute: async () => undefined,
+        getBoundContext() {
+          return {
+            requestObject: async () => ({
+              DownloadUrl: "/sap/export/url",
+              FileName: "backend.xlsx",
+              MimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            })
+          };
+        }
+      };
+    }
+  }, {
+    ...stubs,
+    fetch: async (url) => {
+      requestedUrl = url;
+      return {
+        ok: true,
+        headers: { get: () => "" },
+        blob: async () => new Blob(["xlsx"], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" })
+      };
+    }
+  });
+
+  const result = await service.downloadSelectedExport("11111111-2222-3333-4444-555555555555", {
+    fileFormat: "X",
+    exportSection: "UI_FILTER",
+    selectedFields: ["FieldName"]
+  });
+
+  assert.equal(requestedUrl, "/sap/export/url");
+  assert.equal(result.fileName, "backend.xlsx");
+  assert.equal(stubs.calls.click, 1);
+});

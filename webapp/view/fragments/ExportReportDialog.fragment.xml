@@ -13,6 +13,12 @@
           value="{detail>/export/reportType}"
           editable="false" />
 
+        <Label text="{i18n>exportSelectedSection}" labelFor="exportSelectedSectionInput" />
+        <Input
+          id="exportSelectedSectionInput"
+          value="{detail>/export/selectedSection}"
+          editable="false" />
+
         <Label text="{i18n>exportFileFormat}" labelFor="exportFileFormatSelect" />
         <Select
           id="exportFileFormatSelect"
@@ -29,7 +35,7 @@
         <Select
           id="exportSectionSelect"
           selectedKey="{detail>/export/exportSection}"
-          enabled="{= !${detail>/export/busy} }">
+          enabled="false">
           <items>
             <core:Item key="ALL" text="{i18n>exportSectionAll}" />
             <core:Item key="OVERVIEW" text="{i18n>exportSectionOverview}" />
@@ -42,6 +48,24 @@
             <core:Item key="MESSAGE" text="{i18n>exportSectionMessages}" />
           </items>
         </Select>
+
+        <Toolbar>
+          <Title text="{i18n>selectedColumns}" level="H5" />
+          <ToolbarSpacer />
+          <Button text="{i18n>selectAll}" type="Transparent" enabled="{= !${detail>/export/busy} }" press=".onSelectAllExportFields" />
+          <Button text="{i18n>clearAll}" type="Transparent" enabled="{= !${detail>/export/busy} }" press=".onClearExportFields" />
+        </Toolbar>
+        <List
+          id="exportFieldsList"
+          mode="MultiSelect"
+          includeItemInSelection="true"
+          selectionChange=".onExportFieldSelectionChange"
+          items="{detail>/export/availableFields}">
+          <StandardListItem
+            title="{detail>label}"
+            description="{detail>key}"
+            selected="{detail>selected}" />
+        </List>
       </VBox>
     </content>
     <beginButton>

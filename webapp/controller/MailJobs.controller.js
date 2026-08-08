@@ -32,6 +32,41 @@ sap.ui.define([
       this._clearFilters();
     },
 
+    onOpenMailTableSettings: function () {
+      this._mMailColumnSnapshot = Object.assign({}, this._oViewModel.getProperty("/columns") || {});
+      this._prepareMailTableSettings();
+      this._openMailTableSettingsDialog();
+    },
+
+    onSearchMailTableSettings: function (oEvent) {
+      this._filterTableSettingsList("mailTableSettingsList", oEvent.getParameter("newValue"));
+    },
+
+    onMailTableSettingSelectionChange: function () {
+      setTimeout(this._updateMailTableSettingsCount.bind(this), 0);
+    },
+
+    onResetMailTableSettings: function () {
+      this._getMailColumnSettings().forEach(function (oColumn) {
+        this._oViewModel.setProperty("/columns/" + oColumn.key, oColumn.defaultVisible);
+      }.bind(this));
+      this._prepareMailTableSettings();
+    },
+
+    onConfirmMailTableSettings: function () {
+      this._updateMailTableSettingsCount();
+      this._mMailColumnSnapshot = null;
+      this.byId("mailTableSettingsDialog").close();
+    },
+
+    onCancelMailTableSettings: function () {
+      if (this._mMailColumnSnapshot) {
+        this._oViewModel.setProperty("/columns", this._mMailColumnSnapshot);
+      }
+      this._mMailColumnSnapshot = null;
+      this.byId("mailTableSettingsDialog").close();
+    },
+
     onRefresh: function () {
       this._refreshMailJobs();
     },
@@ -54,15 +89,30 @@ sap.ui.define([
 
     onEditMailJob: function (oEvent) {
       var oContext = this._getMailContext(oEvent);
-      var oJob = oContext && oContext.getObject();
 
-      if (!oJob) {
+      if (!oContext) {
         return;
       }
 
-      this._resetWizard("edit", oJob);
-      this._oWizardContext = oContext;
-      this._openWizard();
+      this._oViewModel.setProperty("/listBusy", true);
+
+      Promise.resolve(oContext.requestObject ? oContext.requestObject() : oContext.getObject())
+        .then(function (oJob) {
+          if (!oJob) {
+            return;
+          }
+
+          return this.getMailService().loadRecipients(oJob.JobId).then(function (aRecipients) {
+            this._resetWizard("edit", oJob);
+            this._oViewModel.setProperty("/wizard/recipients", aRecipients || []);
+            this._oWizardContext = oContext;
+            this._openWizard();
+          }.bind(this));
+        }.bind(this))
+        .catch(this._showMailError.bind(this))
+        .finally(function () {
+          this._oViewModel.setProperty("/listBusy", false);
+        }.bind(this));
     },
 
     onCancelMailJobWizard: function () {
@@ -251,10 +301,14 @@ sap.ui.define([
 
     _onRouteMatched: function () {
       setTimeout(function () {
+        var oComponent = this.getOwnerComponent();
+        var bPendingRefresh = oComponent.consumePendingMailJobsRefresh
+          ? oComponent.consumePendingMailJobsRefresh()
+          : false;
         var sCreatedJobId = this.getOwnerComponent().consumePendingCreatedMailJobId
           ? this.getOwnerComponent().consumePendingCreatedMailJobId()
           : "";
-        if (sCreatedJobId) {
+        if (bPendingRefresh || sCreatedJobId) {
           this._clearFilters();
           this._refreshMailJobs(sCreatedJobId);
         }
@@ -462,6 +516,76 @@ sap.ui.define([
       this._pRecipientDialog.then(function (oDialog) {
         oDialog.open();
       });
+    },
+
+    _getMailColumnSettings: function () {
+      return [
+        { key: "jobName", label: this.getText("mailJobName"), defaultVisible: true },
+        { key: "reportType", label: this.getText("reportType"), defaultVisible: true },
+        { key: "fileFormat", label: this.getText("exportFileFormat"), defaultVisible: true },
+        { key: "frequency", label: this.getText("frequency"), defaultVisible: true },
+        { key: "nextRunAt", label: this.getText("nextRunAt"), defaultVisible: true },
+        { key: "recipientCount", label: this.getText("recipientCount"), defaultVisible: true },
+        { key: "createdBy", label: this.getText("createdBy"), defaultVisible: true },
+        { key: "createdAt", label: this.getText("createdAt"), defaultVisible: true },
+        { key: "actions", label: this.getText("actions"), defaultVisible: true }
+      ];
+    },
+
+    _prepareMailTableSettings: function () {
+      var mColumns = this._oViewModel.getProperty("/columns") || {};
+      var aItems = this._getMailColumnSettings().map(function (oColumn) {
+        return Object.assign({}, oColumn, {
+          visible: mColumns[oColumn.key] !== false
+        });
+      });
+
+      this._oViewModel.setProperty("/tableSettings", {
+        items: aItems,
+        selectedCount: aItems.filter(function (oColumn) {
+          return oColumn.visible;
+        }).length,
+        totalCount: aItems.length
+      });
+    },
+
+    _updateMailTableSettingsCount: function () {
+      var aItems = this._oViewModel.getProperty("/tableSettings/items") || [];
+
+      aItems.forEach(function (oColumn) {
+        this._oViewModel.setProperty("/columns/" + oColumn.key, oColumn.visible !== false);
+      }.bind(this));
+      this._oViewModel.setProperty("/tableSettings/selectedCount", aItems.filter(function (oColumn) {
+        return oColumn.visible;
+      }).length);
+    },
+
+    _filterTableSettingsList: function (sListId, sSearch) {
+      var oList = this.byId(sListId);
+      var oBinding = oList && oList.getBinding("items");
+      var sValue = String(sSearch || "").trim();
+
+      if (oBinding) {
+        oBinding.filter(sValue ? [new Filter("label", FilterOperator.Contains, sValue)] : []);
+      }
+    },
+
+    _openMailTableSettingsDialog: function () {
+      if (!this._pMailTableSettingsDialog) {
+        this._pMailTableSettingsDialog = Fragment.load({
+          id: this.getView().getId(),
+          name: "abap.to.fiori.system.view.fragments.MailTableSettings",
+          controller: this
+        }).then(function (oDialog) {
+          this.getView().addDependent(oDialog);
+          return oDialog;
+        }.bind(this));
+      }
+
+      this._pMailTableSettingsDialog.then(function (oDialog) {
+        this._filterTableSettingsList("mailTableSettingsList", "");
+        oDialog.open();
+      }.bind(this));
     },
 
     _refreshRecipientJob: function () {

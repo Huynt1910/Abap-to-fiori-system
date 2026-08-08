@@ -217,6 +217,72 @@ test("create job allows empty recipients and keeps the job inactive", async () =
   assert.deepEqual(calls, [["createJob", "I"]]);
 });
 
+test("update job does not patch AnalysisId from the edit wizard copy", async () => {
+  const calls = [];
+  const service = new MailService({});
+  const context = {
+    setProperty: async (property, value) => calls.push([property, value]),
+    requestObject: async () => ({ JobId: "J1" })
+  };
+
+  await service.updateMailJob(context, {
+    AnalysisId: "",
+    JobName: "Mail ZREP",
+    ReportType: "ZREP",
+    FileFormat: "X",
+    Frequency: "O",
+    MailSubject: "Subject",
+    MailBody: "",
+    Status: "I"
+  });
+
+  assert.equal(calls.some((call) => call[0] === "AnalysisId"), false);
+  assert.equal(calls.some((call) => call[0] === "JobName"), true);
+});
+
+test("update context skips unchanged fields and patches changed fields sequentially", async () => {
+  const calls = [];
+  let active = 0;
+  let maxActive = 0;
+  const service = new MailService({});
+  const context = {
+    getObject: () => ({
+      JobName: "Mail ZREP",
+      ReportType: "ZREP",
+      FileFormat: "X",
+      Frequency: "O",
+      MailSubject: "Old subject",
+      StartDate: MailConstants.scheduleDefaults.startDate,
+      StartTime: MailConstants.scheduleDefaults.startTime,
+      DayOfWeek: MailConstants.scheduleDefaults.dayOfWeek,
+      DayOfMonth: MailConstants.scheduleDefaults.dayOfMonth
+    }),
+    setProperty: async (property, value) => {
+      active += 1;
+      maxActive = Math.max(maxActive, active);
+      await new Promise((resolve) => setTimeout(resolve, 1));
+      calls.push([property, value]);
+      active -= 1;
+    },
+    requestObject: async () => ({ JobId: "J1" })
+  };
+
+  await service.updateMailJob(context, {
+    AnalysisId: "",
+    JobName: "Mail ZREP",
+    ReportType: "ZREP",
+    FileFormat: "P",
+    Frequency: "O",
+    MailSubject: "New subject"
+  });
+
+  assert.deepEqual(calls, [
+    ["FileFormat", "P"],
+    ["MailSubject", "New subject"]
+  ]);
+  assert.equal(maxActive, 1);
+});
+
 test("recipient create rejects immediately when createCompleted reports backend failure", async () => {
   messageData = [];
   let createCompletedHandler;

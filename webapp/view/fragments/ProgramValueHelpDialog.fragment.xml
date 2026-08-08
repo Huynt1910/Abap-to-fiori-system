@@ -1,0 +1,46 @@
+<core:FragmentDefinition
+  xmlns:core="sap.ui.core"
+  xmlns="sap.m">
+  <Dialog
+    id="programValueHelpDialog"
+    title="{i18n>programValueHelpTitle}"
+    contentWidth="32rem"
+    contentHeight="36rem"
+    stretchOnPhone="true"
+    resizable="true"
+    draggable="true"
+    busy="{dashboard>/newAnalysis/valueHelp/busy}">
+    <VBox class="sapUiMediumMargin">
+      <MessageStrip
+        text="{dashboard>/newAnalysis/valueHelp/errorMessage}"
+        type="Error"
+        showIcon="true"
+        visible="{path: 'dashboard>/newAnalysis/valueHelp/errorMessage', formatter: '.formatter.hasValue'}"
+        class="sapUiSmallMarginBottom" />
+      <SearchField
+        id="programValueHelpSearch"
+        value="{dashboard>/newAnalysis/valueHelp/search}"
+        placeholder="{i18n>searchProgramName}"
+        liveChange=".onProgramValueHelpSearch"
+        search=".onProgramValueHelpSearch"
+        class="sapUiSmallMarginBottom" />
+      <List
+        id="programValueHelpList"
+        mode="SingleSelectMaster"
+        includeItemInSelection="true"
+        noDataText="{i18n>noProgramsFound}"
+        items="{dashboard>/newAnalysis/valueHelp/items}"
+        selectionChange=".onProgramValueHelpSelectionChange">
+        <StandardListItem
+          title="{dashboard>ProgramName}"
+          type="Active" />
+      </List>
+    </VBox>
+    <beginButton>
+      <Button text="{i18n>ok}" type="Emphasized" press=".onConfirmProgramValueHelp" />
+    </beginButton>
+    <endButton>
+      <Button text="{i18n>cancel}" press=".onCancelProgramValueHelp" />
+    </endButton>
+  </Dialog>
+</core:FragmentDefinition>

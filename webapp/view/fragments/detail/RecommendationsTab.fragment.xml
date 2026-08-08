@@ -14,6 +14,11 @@
       <Title text="{i18n>recommendationsTabTitle}" level="H3" />
       <ObjectStatus text="{path: 'detail>/counts/recommendations', formatter: '.formatter.formatCountText'}" />
       <ToolbarSpacer />
+      <Button icon="sap-icon://action-settings" tooltip="{i18n>viewSettings}" press=".onOpenDetailTableSettings">
+        <customData>
+          <core:CustomData key="section" value="recommendations" />
+        </customData>
+      </Button>
     </OverflowToolbar>
     <IllustratedMessage
       visible="{= !${detail>/errors/recommendations} &amp;&amp; ${detail>/recommendations}.length === 0 }"
@@ -28,23 +33,75 @@
       items="{detail>/recommendations}"
       itemPress=".onRecommendationPress">
       <columns>
-        <Column width="8rem"><Text text="{i18n>severity}" /></Column>
-        <Column width="10rem"><Text text="{i18n>targetLayer}" /></Column>
-        <Column><Text text="{i18n>title}" /></Column>
-        <Column width="12rem" demandPopin="true" minScreenWidth="Tablet"><Text text="{i18n>ruleId}" /></Column>
-        <Column width="8rem" demandPopin="true" minScreenWidth="Desktop"><Text text="{i18n>confidence}" /></Column>
+        <Column width="8rem" demandPopin="true" minScreenWidth="Tablet" visible="{detail>/columns/recommendations/ruleVersion}"><Text text="{i18n>ruleVersion}" /></Column>
+        <Column width="8rem" visible="{detail>/columns/recommendations/severity}"><Text text="{i18n>severity}" /></Column>
+        <Column width="10rem" visible="{detail>/columns/recommendations/targetLayer}"><Text text="{i18n>targetLayer}" /></Column>
+        <Column visible="{detail>/columns/recommendations/title}"><Text text="{i18n>title}" /></Column>
+        <Column width="18rem" demandPopin="true" minScreenWidth="Tablet" visible="{detail>/columns/recommendations/displayText}"><Text text="{i18n>displayText}" /></Column>
+        <Column width="18rem" demandPopin="true" minScreenWidth="Tablet" visible="{detail>/columns/recommendations/explanation}"><Text text="{i18n>explanation}" /></Column>
+        <Column width="8rem" demandPopin="true" minScreenWidth="Desktop" visible="{detail>/columns/recommendations/confidence}"><Text text="{i18n>confidence}" /></Column>
+        <Column width="10rem" demandPopin="true" minScreenWidth="Tablet" visible="{detail>/columns/recommendations/reviewStatus}"><Text text="{i18n>reviewStatus}" /></Column>
+        <Column width="8rem" demandPopin="true" minScreenWidth="Tablet" visible="{detail>/columns/recommendations/manualReview}"><Text text="{i18n>manualReview}" /></Column>
       </columns>
       <items>
         <ColumnListItem type="Active" press=".onRecommendationPress">
           <cells>
-            <ObjectStatus text="{path: 'detail>Severity', formatter: '.formatter.formatText'}" state="{path: 'detail>Severity', formatter: '.formatter.formatSeverityState'}" icon="sap-icon://flag" />
-            <Text text="{path: 'detail>TargetLayer', formatter: '.formatter.formatText'}" />
-            <Text text="{path: 'detail>Title', formatter: '.formatter.formatText'}" maxLines="2" wrapping="true" />
-            <Text text="{path: 'detail>RuleId', formatter: '.formatter.formatText'}" />
-            <ObjectNumber number="{path: 'detail>Confidence', formatter: '.formatter.formatScoreText'}" />
+            <Text text="{path: 'detail>RuleVersion', formatter: '.formatter.formatText'}" visible="{detail>/columns/recommendations/ruleVersion}" />
+            <ObjectStatus text="{path: 'detail>Severity', formatter: '.formatter.formatText'}" state="{path: 'detail>Severity', formatter: '.formatter.formatSeverityState'}" icon="sap-icon://flag" visible="{detail>/columns/recommendations/severity}" />
+            <Text text="{path: 'detail>TargetLayer', formatter: '.formatter.formatText'}" visible="{detail>/columns/recommendations/targetLayer}" />
+            <Text text="{path: 'detail>Title', formatter: '.formatter.formatText'}" maxLines="2" wrapping="true" visible="{detail>/columns/recommendations/title}" />
+            <Text text="{path: 'detail>DisplayText', formatter: '.formatter.formatText'}" maxLines="3" wrapping="true" visible="{detail>/columns/recommendations/displayText}" />
+            <Text text="{path: 'detail>Explanation', formatter: '.formatter.formatText'}" maxLines="3" wrapping="true" visible="{detail>/columns/recommendations/explanation}" />
+            <ObjectNumber number="{path: 'detail>Confidence', formatter: '.formatter.formatScoreText'}" visible="{detail>/columns/recommendations/confidence}" />
+            <Text text="{path: 'detail>ReviewStatus', formatter: '.formatter.formatText'}" visible="{detail>/columns/recommendations/reviewStatus}" />
+            <Text text="{path: 'detail>ManualReview', formatter: '.formatter.formatBoolean'}" visible="{detail>/columns/recommendations/manualReview}" />
           </cells>
         </ColumnListItem>
       </items>
     </Table>
+    <VBox visible="{path: 'detail>/selectedRecommendation', formatter: '.formatter.hasValue'}" busy="{detail>/recommendationDetail/loading}" busyIndicatorDelay="0" class="inlineDetailPanel sapUiMediumMarginTop">
+      <OverflowToolbar class="sectionToolbar">
+        <ObjectStatus
+          text="{path: 'detail>/selectedRecommendation/Severity', formatter: '.formatter.formatText'}"
+          state="{path: 'detail>/selectedRecommendation/Severity', formatter: '.formatter.formatSeverityState'}"
+          icon="sap-icon://flag" />
+        <Title text="{path: 'detail>/selectedRecommendation/Title', formatter: '.formatter.formatText'}" level="H4" />
+        <ToolbarSpacer />
+        <Button icon="sap-icon://decline" tooltip="{i18n>close}" press=".onCloseRecommendationInlineDetail" />
+      </OverflowToolbar>
+      <MessageStrip visible="{path: 'detail>/recommendationDetail/error', formatter: '.formatter.hasValue'}" text="{detail>/recommendationDetail/error}" type="Error" showIcon="true" class="sapUiSmallMarginBottom" />
+      <VBox class="sapUiSmallMarginBottom">
+        <ObjectAttribute title="{i18n>targetLayer}" text="{path: 'detail>/selectedRecommendation/TargetLayer', formatter: '.formatter.formatText'}" />
+        <ObjectAttribute title="{i18n>ruleId}" text="{path: 'detail>/selectedRecommendation/RuleId', formatter: '.formatter.formatText'}" />
+        <ObjectAttribute title="{i18n>reviewStatus}" text="{path: 'detail>/selectedRecommendation/ReviewStatus', formatter: '.formatter.formatText'}" />
+        <Text text="{path: 'detail>/selectedRecommendation/Explanation', formatter: '.formatter.formatText'}" wrapping="true" />
+      </VBox>
+      <Table growing="true" growingThreshold="20" items="{detail>/recommendationDetail/annotations}">
+        <headerToolbar>
+          <OverflowToolbar>
+            <Title text="{i18n>annotations}" level="H5" />
+            <ObjectStatus text="{path: 'detail>/recommendationDetail/annotations/length', formatter: '.formatter.formatCountText'}" />
+          </OverflowToolbar>
+        </headerToolbar>
+        <columns>
+          <Column><Text text="{i18n>targetEntity}" /></Column>
+          <Column><Text text="{i18n>targetElement}" /></Column>
+          <Column><Text text="{i18n>annotationName}" /></Column>
+          <Column><Text text="{i18n>annotationValue}" /></Column>
+          <Column hAlign="End"><Text text="{i18n>annotationSequence}" /></Column>
+        </columns>
+        <items>
+          <ColumnListItem>
+            <cells>
+              <Text text="{path: 'detail>TargetEntity', formatter: '.formatter.formatText'}" />
+              <Text text="{path: 'detail>TargetElement', formatter: '.formatter.formatText'}" />
+              <Text text="{path: 'detail>AnnotationName', formatter: '.formatter.formatText'}" />
+              <Text text="{path: 'detail>AnnotationValue', formatter: '.formatter.formatText'}" wrapping="true" />
+              <ObjectNumber number="{path: 'detail>AnnotationSequence', formatter: '.formatter.formatNumber'}" />
+            </cells>
+          </ColumnListItem>
+        </items>
+      </Table>
+    </VBox>
   </VBox>
 </core:FragmentDefinition>

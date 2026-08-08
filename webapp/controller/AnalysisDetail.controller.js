@@ -2,13 +2,19 @@ sap.ui.define([
   "sap/ui/core/Fragment",
   "sap/m/MessageBox",
   "sap/m/MessageToast",
+  "sap/ui/model/Filter",
+  "sap/ui/model/FilterOperator",
+  "sap/ui/model/Sorter",
   "abap/to/fiori/system/controller/BaseController",
   "abap/to/fiori/system/model/models",
   "abap/to/fiori/system/model/mailConstants",
   "abap/to/fiori/system/model/mailFormatter",
+  "abap/to/fiori/system/model/ComparisonConstants",
+  "abap/to/fiori/system/model/AnalysisTableConfig",
+  "abap/to/fiori/system/util/TablePersonalizationService",
   "abap/to/fiori/system/util/Constants",
   "abap/to/fiori/system/util/formatter"
-], function (Fragment, MessageBox, MessageToast, BaseController, models, MailConstants, mailFormatter, Constants, formatter) {
+], function (Fragment, MessageBox, MessageToast, Filter, FilterOperator, Sorter, BaseController, models, MailConstants, mailFormatter, ComparisonConstants, AnalysisTableConfig, TablePersonalizationService, Constants, formatter) {
   "use strict";
 
   return BaseController.extend("abap.to.fiori.system.controller.AnalysisDetail", {
@@ -17,6 +23,7 @@ sap.ui.define([
 
     onInit: function () {
       this._oViewModel = models.createAnalysisDetailModel();
+      this._oTablePersonalization = new TablePersonalizationService();
       this.getView().setModel(this._oViewModel, "detail");
       this._oMailViewModel = models.createMailUiModel();
       this.getView().setModel(this._oMailViewModel, "mailUi");
@@ -28,6 +35,14 @@ sap.ui.define([
       this.getRouter().navTo("dashboard");
     },
 
+    onExit: function () {
+      this.getComparisonService().cancelPolling();
+      this.getDocumentService().cancelExportPolling();
+      if (this._iProgramValueHelpSearchTimer) {
+        clearTimeout(this._iProgramValueHelpSearchTimer);
+      }
+    },
+
     onSectionNavigate: function (oEvent) {
       var oSection = oEvent.getParameter("section");
       var sSectionId = oSection && oSection.getId && oSection.getId();
@@ -35,22 +50,167 @@ sap.ui.define([
 
       if (sSectionKey) {
         this._oViewModel.setProperty("/selectedTab", sSectionKey);
-        this._loadTabData(sSectionKey);
       }
     },
 
     onRefresh: function () {
-      var sSelectedTab = this._oViewModel.getProperty("/selectedTab");
-
       this._resetLoadedState();
       this._loadHeader().then(function () {
-        return this._loadTabData(sSelectedTab);
+        return this._loadAllTabData();
       }.bind(this));
     },
 
     onOpenExportDialog: function () {
       this._resetExportState();
       this._openExportDialog();
+    },
+
+    onOpenDetailTableSettings: function (oEvent) {
+      var sSection = oEvent.getSource().data("section");
+
+      if (!sSection) {
+        return;
+      }
+
+      this._sDetailTableSettingsSection = sSection;
+      this._mDetailSettingsSnapshot = JSON.parse(JSON.stringify(this._oViewModel.getProperty("/tableSettingsState/" + sSection) || {}));
+      this._mDetailColumnSnapshot = Object.assign({}, this._oViewModel.getProperty("/columns/" + sSection) || {});
+      this._prepareDetailTableSettings(sSection);
+      this._openDetailTableSettingsDialog();
+    },
+
+    onSearchDetailTableSettings: function (oEvent) {
+      this._filterDetailTableSettingsList(oEvent.getParameter("newValue"));
+    },
+
+    onDetailTableSettingSelectionChange: function () {
+      setTimeout(this._updateDetailTableSettingsCount.bind(this), 0);
+    },
+
+    onToggleDetailTableShowSelected: function () {
+      this._oViewModel.setProperty("/tableSettings/showSelected", !this._oViewModel.getProperty("/tableSettings/showSelected"));
+      this._filterDetailTableSettingsList(this._oViewModel.getProperty("/tableSettings/search"));
+    },
+
+    onSelectAllDetailTableColumns: function () {
+      this._setAllDetailTableColumns(true);
+    },
+
+    onClearAllDetailTableColumns: function () {
+      this._setAllDetailTableColumns(false);
+    },
+
+    onMoveDetailColumnToTop: function () {
+      this._moveSelectedDetailColumn("top");
+    },
+
+    onMoveDetailColumnUp: function () {
+      this._moveSelectedDetailColumn("up");
+    },
+
+    onMoveDetailColumnDown: function () {
+      this._moveSelectedDetailColumn("down");
+    },
+
+    onMoveDetailColumnToBottom: function () {
+      this._moveSelectedDetailColumn("bottom");
+    },
+
+    onDetailColumnDrop: function (oEvent) {
+      var oDragged = oEvent.getParameter("draggedControl");
+      var oDropped = oEvent.getParameter("droppedControl");
+      var sDropPosition = oEvent.getParameter("dropPosition");
+      var oDraggedContext = oDragged && oDragged.getBindingContext("detail");
+      var oDroppedContext = oDropped && oDropped.getBindingContext("detail");
+      var oDraggedColumn = oDraggedContext && oDraggedContext.getObject();
+      var oDroppedColumn = oDroppedContext && oDroppedContext.getObject();
+      var aItems = (this._oViewModel.getProperty("/tableSettings/items") || []).slice();
+      var iDraggedIndex = aItems.indexOf(oDraggedColumn);
+      var iDroppedIndex = aItems.indexOf(oDroppedColumn);
+
+      if (iDraggedIndex < 0 || iDroppedIndex < 0 || iDraggedIndex === iDroppedIndex) {
+        return;
+      }
+
+      aItems.splice(iDraggedIndex, 1);
+      if (iDraggedIndex < iDroppedIndex) {
+        iDroppedIndex -= 1;
+      }
+      if (sDropPosition === "After") {
+        iDroppedIndex += 1;
+      }
+      aItems.splice(iDroppedIndex, 0, oDraggedColumn);
+      this._oViewModel.setProperty("/tableSettings/items", this._reindexDetailColumns(aItems));
+    },
+
+    onAddDetailSorter: function () {
+      this._addDetailCriterion("sorters", "sortFields");
+    },
+
+    onRemoveDetailSorter: function (oEvent) {
+      this._removeDetailCriterion(oEvent, "sorters");
+    },
+
+    onAddDetailGroup: function () {
+      this._addDetailCriterion("groups", "groupFields");
+    },
+
+    onRemoveDetailGroup: function (oEvent) {
+      this._removeDetailCriterion(oEvent, "groups");
+    },
+
+    onAddDetailFilter: function () {
+      this._addDetailCriterion("filters", "filterFields");
+    },
+
+    onRemoveDetailFilter: function (oEvent) {
+      this._removeDetailCriterion(oEvent, "filters");
+    },
+
+    onResetDetailTableSettings: function () {
+      var sSection = this._sDetailTableSettingsSection;
+      var oConfig = AnalysisTableConfig.getConfig(sSection);
+      var oState;
+
+      if (!sSection) {
+        return;
+      }
+
+      oState = this._oTablePersonalization.resetState(oConfig);
+      this._setPersonalizationState(sSection, oState);
+      this._prepareDetailTableSettings(sSection, oState);
+    },
+
+    onConfirmDetailTableSettings: function () {
+      var sSection = this._sDetailTableSettingsSection;
+      var oConfig = AnalysisTableConfig.getConfig(sSection);
+      var oState = this._buildDetailSettingsStateFromDialog(sSection);
+
+      if (!this._validateDetailSettingsState(oState)) {
+        MessageBox.error(this.getText("personalizationAtLeastOneColumn"));
+        return;
+      }
+
+      oState = this._oTablePersonalization.saveState(oConfig, oState);
+      this._setPersonalizationState(sSection, oState);
+      this._applyTablePersonalization(sSection);
+      this._mDetailColumnSnapshot = null;
+      this._mDetailSettingsSnapshot = null;
+      this._sDetailTableSettingsSection = "";
+      this.byId("detailTableSettingsDialog").close();
+    },
+
+    onCancelDetailTableSettings: function () {
+      if (this._sDetailTableSettingsSection && this._mDetailColumnSnapshot) {
+        this._oViewModel.setProperty("/columns/" + this._sDetailTableSettingsSection, this._mDetailColumnSnapshot);
+      }
+      if (this._sDetailTableSettingsSection && this._mDetailSettingsSnapshot) {
+        this._oViewModel.setProperty("/tableSettingsState/" + this._sDetailTableSettingsSection, this._mDetailSettingsSnapshot);
+      }
+      this._mDetailColumnSnapshot = null;
+      this._mDetailSettingsSnapshot = null;
+      this._sDetailTableSettingsSection = "";
+      this.byId("detailTableSettingsDialog").close();
     },
 
     onCreateMailJobForAnalysis: function () {
@@ -60,6 +220,67 @@ sap.ui.define([
         this._prefillMailWizardFromAnalysis();
         this._openMailWizard();
       }
+    },
+
+    onRunComparisonForAnalysis: function () {
+      var sAnalysisId = this._oViewModel.getProperty("/analysisId");
+      var oComparisonService = this.getComparisonService();
+
+      if (this._oViewModel.getProperty("/comparison/busy")) {
+        return;
+      }
+
+      if (!oComparisonService.isGuid(sAnalysisId)) {
+        MessageBox.error(this.getText("comparisonAnalysisIdRequired"));
+        return;
+      }
+
+      this._setComparisonProgress(true, ComparisonConstants.progressState.submitting, this.getText("comparisonSubmitting"));
+
+      var iStartedAt = Date.now();
+      var aPreviousRunIds = [];
+
+      oComparisonService.cancelPolling();
+      oComparisonService.resetCancellation();
+
+      oComparisonService.getComparisonRuns({
+        top: 100,
+        filters: { analysisId: sAnalysisId }
+      }).then(function (aRuns) {
+        aPreviousRunIds = (aRuns || []).map(function (oRun) {
+          return oRun.CmpRunId;
+        }).filter(Boolean);
+        return oComparisonService.executeComparison(sAnalysisId);
+      }).then(function () {
+        this._setComparisonProgress(true, ComparisonConstants.progressState.discoveringRun, this.getText("comparisonDiscoveringRun"));
+        return oComparisonService.discoverNewRun(sAnalysisId, aPreviousRunIds, iStartedAt);
+      }.bind(this)).then(function (oRun) {
+        this._setComparisonProgress(true, ComparisonConstants.progressState.running, this.getText("comparisonRunning"));
+        return oComparisonService.pollRunStatus(oRun.CmpRunId);
+      }.bind(this)).then(function (oRun) {
+        var sRunId = oRun && oRun.CmpRunId;
+        var bFailed = oComparisonService.isFailedStatus(oRun && oRun.RunStatus);
+        var sMessage = bFailed ?
+          (oRun.ErrorMessage || this.getText("comparisonFailed")) :
+          this.getText("comparisonCompleted");
+
+        this._setComparisonProgress(false, bFailed ? ComparisonConstants.progressState.failed : ComparisonConstants.progressState.completed, sMessage);
+
+        if (bFailed) {
+          MessageBox.error(sMessage);
+        } else {
+          MessageToast.show(sMessage);
+        }
+
+        if (sRunId) {
+          this.getRouter().navTo(ComparisonConstants.route.detail, {
+            cmpRunId: encodeURIComponent(sRunId)
+          });
+        }
+      }.bind(this)).catch(function (oError) {
+        this._setComparisonProgress(false, ComparisonConstants.progressState.failed, oError && oError.message || this.getText("comparisonRunError"));
+        MessageBox.error(oError && oError.message || this.getText("comparisonRunError"));
+      }.bind(this));
     },
 
     onCancelMailJobWizard: function () {
@@ -128,7 +349,7 @@ sap.ui.define([
         activateAfterCreate: oWizard.activateAfterCreate
       })).then(function (oCreated) {
         var sJobId = oCreated && oCreated.object && oCreated.object.JobId;
-        if (sJobId && this.getOwnerComponent().setPendingCreatedMailJobId) {
+        if (this.getOwnerComponent().setPendingCreatedMailJobId) {
           this.getOwnerComponent().setPendingCreatedMailJobId(sJobId);
         }
         MessageToast.show(this.getText("mailJobCreated"));
@@ -149,21 +370,33 @@ sap.ui.define([
       }
 
       this.byId("exportReportDialog").close();
+      this.getDocumentService().cancelExportPolling();
       this._oViewModel.setProperty("/export/dialogOpen", false);
     },
 
     onDownloadExport: function () {
       var oExport = this._oViewModel.getProperty("/export");
+      var aSelectedFields = this._getSelectedExportFieldKeys();
 
       if (oExport.busy) {
         return;
       }
 
+      if (!this._canPrepareSelectedExport()) {
+        MessageBox.error(this.getText("exportNotAvailable"));
+        return;
+      }
+
+      if (!aSelectedFields.length) {
+        MessageBox.error(this.getText("exportSelectColumnRequired"));
+        return;
+      }
+
       this._oViewModel.setProperty("/export/busy", true);
-      this.getDocumentService().downloadExport({
-        reportType: oExport.reportType,
+      this.getDocumentService().downloadSelectedExport(this._oViewModel.getProperty("/analysisId"), {
         fileFormat: oExport.fileFormat,
-        exportSection: oExport.exportSection
+        exportSection: oExport.exportSection,
+        selectedFields: aSelectedFields
       }).then(function () {
         MessageToast.show(this.getText("exportSuccess"));
         this.byId("exportReportDialog").close();
@@ -188,7 +421,15 @@ sap.ui.define([
     },
 
     onAlvOutputPress: function (oEvent) {
-      this._showRowText(oEvent, "OutputName", "alvOutputDetailsTitle");
+      var oContext = (oEvent.getParameter("listItem") || oEvent.getSource()).getBindingContext("detail");
+      var oRow = oContext && oContext.getObject();
+
+      if (oRow && oRow.AnalysisId && oRow.OutputId) {
+        this.getRouter().navTo("alvOutputDetail", {
+          analysisId: encodeURIComponent(oRow.AnalysisId),
+          outputId: encodeURIComponent(oRow.OutputId)
+        });
+      }
     },
 
     onEvidencePress: function (oEvent) {
@@ -205,13 +446,43 @@ sap.ui.define([
       var oRecommendation = oContext && oContext.getObject();
 
       if (oRecommendation) {
-        this._oViewModel.setProperty("/selectedRecommendation", oRecommendation);
-        this._openRecommendationDetailDialog();
+        this.getRouter().navTo("recommendationDetail", {
+          analysisId: encodeURIComponent(oRecommendation.AnalysisId),
+          recommendationId: encodeURIComponent(oRecommendation.RecommendationId)
+        });
       }
     },
 
+    onCloseAlvOutputInlineDetail: function () {
+      this._oViewModel.setProperty("/selectedAlvOutput", null);
+      this._oViewModel.setProperty("/alvOutputDetail", {
+        loading: false,
+        error: null,
+        columns: [],
+        sorts: [],
+        filters: [],
+        events: []
+      });
+    },
+
     onCloseRecommendationDetail: function () {
-      this.byId("recommendationDetailDialog").close();
+      var oDialog = this.byId("recommendationDetailDialog");
+
+      if (oDialog) {
+        oDialog.close();
+        return;
+      }
+
+      this.onCloseRecommendationInlineDetail();
+    },
+
+    onCloseRecommendationInlineDetail: function () {
+      this._oViewModel.setProperty("/selectedRecommendation", null);
+      this._oViewModel.setProperty("/recommendationDetail", {
+        loading: false,
+        error: null,
+        annotations: []
+      });
     },
 
     _onRouteMatched: function (oEvent) {
@@ -220,13 +491,14 @@ sap.ui.define([
 
       this._resetState(sAnalysisId);
       this._loadHeader().then(function () {
-        return this._loadTabData(this._oViewModel.getProperty("/selectedTab"));
+        return this._loadAllTabData();
       }.bind(this));
     },
 
     _resetState: function (sAnalysisId) {
       this._oViewModel.setData(models.createAnalysisDetailModel().getData());
       this._oViewModel.setProperty("/analysisId", sAnalysisId);
+      this._loadPersistedPersonalizationStates();
     },
 
     _resetLoadedState: function () {
@@ -264,6 +536,10 @@ sap.ui.define([
         return Promise.resolve();
       }
 
+      if (sTabKey === Constants.section.sourceObjects) {
+        return this._loadList("sourceObjects", "getSourceObjects", "loadSourceObjectsError");
+      }
+
       if (sTabKey === Constants.section.uiFilters) {
         return this._loadList("uiFilters", "getUiFilters", "loadUiFiltersError");
       }
@@ -295,6 +571,12 @@ sap.ui.define([
       return Promise.resolve();
     },
 
+    _loadAllTabData: function () {
+      return Promise.all(Object.keys(this._oViewModel.getProperty("/loaded") || {}).map(function (sTabKey) {
+        return this._loadTabData(sTabKey);
+      }.bind(this)));
+    },
+
     _loadList: function (sStateKey, sServiceMethod, sErrorTextKey) {
       var sAnalysisId = this._oViewModel.getProperty("/analysisId");
 
@@ -306,6 +588,7 @@ sap.ui.define([
           this._oViewModel.setProperty("/" + sStateKey, aRows);
           this._oViewModel.setProperty("/counts/" + sStateKey, aRows.length);
           this._oViewModel.setProperty("/loaded/" + sStateKey, true);
+          this._applyTablePersonalization(sStateKey);
         }.bind(this))
         .catch(function (oError) {
           this._oViewModel.setProperty(
@@ -328,14 +611,100 @@ sap.ui.define([
       });
     },
 
+    _selectAlvOutput: function (oRow) {
+      var sAnalysisId = oRow && oRow.AnalysisId;
+      var sOutputId = oRow && oRow.OutputId;
+
+      this._oViewModel.setProperty("/selectedAlvOutput", oRow);
+      this._oViewModel.setProperty("/alvOutputDetail", {
+        loading: true,
+        error: null,
+        columns: [],
+        sorts: [],
+        filters: [],
+        events: []
+      });
+
+      Promise.all([
+        this.getAnalysisService().getAlvOutputChildren(sAnalysisId, sOutputId, "alvColumns"),
+        this.getAnalysisService().getAlvOutputChildren(sAnalysisId, sOutputId, "alvSorts"),
+        this.getAnalysisService().getAlvOutputChildren(sAnalysisId, sOutputId, "alvFilters"),
+        this.getAnalysisService().getAlvOutputChildren(sAnalysisId, sOutputId, "alvEvents")
+      ]).then(function (aResults) {
+        this._oViewModel.setProperty("/alvOutputDetail/columns", aResults[0] || []);
+        this._oViewModel.setProperty("/alvOutputDetail/sorts", aResults[1] || []);
+        this._oViewModel.setProperty("/alvOutputDetail/filters", aResults[2] || []);
+        this._oViewModel.setProperty("/alvOutputDetail/events", aResults[3] || []);
+      }.bind(this)).catch(function (oError) {
+        this._oViewModel.setProperty("/alvOutputDetail/error", oError && oError.message || this.getText("loadAlvOutputsError"));
+      }.bind(this)).finally(function () {
+        this._oViewModel.setProperty("/alvOutputDetail/loading", false);
+      }.bind(this));
+    },
+
+    _selectRecommendation: function (oRecommendation) {
+      var sAnalysisId = oRecommendation && oRecommendation.AnalysisId;
+      var sRecommendationId = oRecommendation && oRecommendation.RecommendationId;
+
+      this._oViewModel.setProperty("/selectedRecommendation", oRecommendation);
+      this._oViewModel.setProperty("/recommendationDetail", {
+        loading: true,
+        error: null,
+        annotations: []
+      });
+
+      this.getAnalysisService().getRecommendationAnnotations(sAnalysisId, sRecommendationId)
+        .then(function (aRows) {
+          this._oViewModel.setProperty("/recommendationDetail/annotations", aRows || []);
+        }.bind(this))
+        .catch(function (oError) {
+          this._oViewModel.setProperty("/recommendationDetail/error", oError && oError.message || this.getText("loadRecommendationsError"));
+        }.bind(this))
+        .finally(function () {
+          this._oViewModel.setProperty("/recommendationDetail/loading", false);
+        }.bind(this));
+    },
+
     _resetExportState: function () {
+      var sSelectedSection = this._oViewModel.getProperty("/selectedTab") || Constants.section.sourceObjects;
+      var oConfig = AnalysisTableConfig.getConfig(sSelectedSection);
+      var aFields = this._buildExportFieldSelection(sSelectedSection);
+
       this._oViewModel.setProperty("/export", {
         busy: false,
         fileFormat: Constants.fileFormat.excel,
-        exportSection: Constants.exportSection.all,
+        exportSection: oConfig && oConfig.exportSection || "",
         reportType: this._oViewModel.getProperty("/overview/ProgramName") || "",
-        dialogOpen: false
+        dialogOpen: false,
+        selectedSection: sSelectedSection,
+        selectedFields: aFields.filter(function (oField) {
+          return oField.selected;
+        }).map(function (oField) {
+          return oField.key;
+        }),
+        availableFields: aFields,
+        fileName: "",
+        message: ""
       });
+    },
+
+    onExportFieldSelectionChange: function () {
+      setTimeout(function () {
+        var aFields = this._oViewModel.getProperty("/export/availableFields") || [];
+        this._oViewModel.setProperty("/export/selectedFields", aFields.filter(function (oField) {
+          return oField.selected;
+        }).map(function (oField) {
+          return oField.key;
+        }));
+      }.bind(this), 0);
+    },
+
+    onSelectAllExportFields: function () {
+      this._setAllExportFieldsSelected(true);
+    },
+
+    onClearExportFields: function () {
+      this._setAllExportFieldsSelected(false);
     },
 
     _openExportDialog: function () {
@@ -352,6 +721,413 @@ sap.ui.define([
 
       this._pExportDialog.then(function (oDialog) {
         this._oViewModel.setProperty("/export/dialogOpen", true);
+        oDialog.open();
+      }.bind(this));
+    },
+
+    _buildExportFieldSelection: function (sSection) {
+      var oConfig = AnalysisTableConfig.getConfig(sSection);
+      var oState = this._getPersonalizationState(sSection);
+      var aFields = oConfig ? this._oTablePersonalization.getVisibleExportableFields(oConfig, oState) : [];
+
+      return aFields.map(function (oField) {
+        return {
+          key: oField.key,
+          label: this.getText(oField.labelKey),
+          selected: true,
+          priority: oField.priority
+        };
+      }.bind(this));
+    },
+
+    _getSelectedExportFieldKeys: function () {
+      return (this._oViewModel.getProperty("/export/availableFields") || []).filter(function (oField) {
+        return oField.selected === true;
+      }).map(function (oField) {
+        return oField.key;
+      });
+    },
+
+    _setAllExportFieldsSelected: function (bSelected) {
+      var aFields = (this._oViewModel.getProperty("/export/availableFields") || []).map(function (oField) {
+        return Object.assign({}, oField, {
+          selected: bSelected
+        });
+      });
+
+      this._oViewModel.setProperty("/export/availableFields", aFields);
+      this._oViewModel.setProperty("/export/selectedFields", bSelected ? aFields.map(function (oField) {
+        return oField.key;
+      }) : []);
+    },
+
+    _canPrepareSelectedExport: function () {
+      var oControl = this._oViewModel.getProperty("/overview/__OperationControl");
+      return oControl && oControl.PrepareSelectedExport === true;
+    },
+
+    _getDetailColumnSettings: function (sSection) {
+      var oConfig = AnalysisTableConfig.getConfig(sSection);
+
+      if (oConfig) {
+        return {
+          title: this.getText(oConfig.titleKey),
+          columns: AnalysisTableConfig.getPersonalizableFields(sSection).map(function (oField) {
+            return {
+              key: oField.stateKey,
+              fieldKey: oField.key,
+              label: this.getText(oField.labelKey),
+              priority: oField.priority,
+              defaultVisible: oField.defaultVisible === true,
+              exportable: oField.exportable !== false
+            };
+          }.bind(this))
+        };
+      }
+
+      var mSettings = {
+        uiFilters: {
+          title: this.getText("uiFilters"),
+          columns: [
+            { key: "fieldName", label: this.getText("fieldName"), defaultVisible: true },
+            { key: "fieldKind", label: this.getText("fieldKind"), defaultVisible: true },
+            { key: "dataElement", label: this.getText("dataElement"), defaultVisible: true },
+            { key: "selectionBlock", label: this.getText("selectionBlock"), defaultVisible: true },
+            { key: "mandatory", label: this.getText("mandatory"), defaultVisible: true },
+            { key: "multipleSelection", label: this.getText("multipleSelection"), defaultVisible: true },
+            { key: "confidence", label: this.getText("confidence"), defaultVisible: true }
+          ]
+        },
+        databaseObjects: {
+          title: this.getText("databaseObjects"),
+          columns: [
+            { key: "objectName", label: this.getText("objectName"), defaultVisible: true },
+            { key: "objectType", label: this.getText("objectType"), defaultVisible: true },
+            { key: "operation", label: this.getText("operation"), defaultVisible: true },
+            { key: "containingRoutine", label: this.getText("containingRoutine"), defaultVisible: true },
+            { key: "pagingCapability", label: this.getText("pagingCapability"), defaultVisible: true },
+            { key: "confidence", label: this.getText("confidence"), defaultVisible: true }
+          ]
+        },
+        businessLogic: {
+          title: this.getText("businessLogic"),
+          columns: [
+            { key: "objectName", label: this.getText("objectName"), defaultVisible: true },
+            { key: "objectType", label: this.getText("objectType"), defaultVisible: true },
+            { key: "containerName", label: this.getText("containerName"), defaultVisible: true },
+            { key: "callingRoutine", label: this.getText("callingRoutine"), defaultVisible: true },
+            { key: "reuseFeasibility", label: this.getText("reuseFeasibility"), defaultVisible: true },
+            { key: "confidence", label: this.getText("confidence"), defaultVisible: true }
+          ]
+        },
+        alvOutputs: {
+          title: this.getText("alvOutputs"),
+          columns: [
+            { key: "outputName", label: this.getText("outputName"), defaultVisible: true },
+            { key: "outputKind", label: this.getText("outputKind"), defaultVisible: true },
+            { key: "framework", label: this.getText("framework"), defaultVisible: true },
+            { key: "controlObject", label: this.getText("controlObject"), defaultVisible: true },
+            { key: "outputTable", label: this.getText("outputTable"), defaultVisible: true },
+            { key: "editable", label: this.getText("editable"), defaultVisible: true },
+            { key: "confidence", label: this.getText("confidence"), defaultVisible: true }
+          ]
+        },
+        evidences: {
+          title: this.getText("evidence"),
+          columns: [
+            { key: "sourceObject", label: this.getText("sourceObject"), defaultVisible: true },
+            { key: "startLine", label: this.getText("startLine"), defaultVisible: true },
+            { key: "endLine", label: this.getText("endLine"), defaultVisible: true },
+            { key: "statementId", label: this.getText("statementId"), defaultVisible: true },
+            { key: "statementText", label: this.getText("statementText"), defaultVisible: true }
+          ]
+        },
+        recommendations: {
+          title: this.getText("recommendationsTabTitle"),
+          columns: [
+            { key: "severity", label: this.getText("severity"), defaultVisible: true },
+            { key: "targetLayer", label: this.getText("targetLayer"), defaultVisible: true },
+            { key: "title", label: this.getText("title"), defaultVisible: true },
+            { key: "ruleId", label: this.getText("ruleId"), defaultVisible: true },
+            { key: "confidence", label: this.getText("confidence"), defaultVisible: true }
+          ]
+        },
+        messages: {
+          title: this.getText("messages"),
+          columns: [
+            { key: "messageNo", label: this.getText("messageNo"), defaultVisible: true },
+            { key: "messageType", label: this.getText("messageType"), defaultVisible: true },
+            { key: "messageCode", label: this.getText("messageCode"), defaultVisible: true },
+            { key: "sourceObject", label: this.getText("sourceObject"), defaultVisible: true },
+            { key: "sourceLine", label: this.getText("sourceLine"), defaultVisible: true },
+            { key: "messageText", label: this.getText("messageText"), defaultVisible: true }
+          ]
+        }
+      };
+
+      return mSettings[sSection] || { title: this.getText("viewSettings"), columns: [] };
+    },
+
+    _prepareDetailTableSettings: function (sSection) {
+      var oSettings = this._getDetailColumnSettings(sSection);
+      var oState = arguments.length > 1 ? arguments[1] : this._getPersonalizationState(sSection);
+      var mColumnState = {};
+      var aItems;
+
+      (oState.columns || []).forEach(function (oColumn) {
+        mColumnState[oColumn.key] = oColumn;
+      });
+
+      aItems = oSettings.columns.map(function (oColumn) {
+        var oColumnState = mColumnState[oColumn.fieldKey] || {};
+        return Object.assign({}, oColumn, {
+          visible: oColumnState.visible === true,
+          index: typeof oColumnState.index === "number" ? oColumnState.index : 999
+        });
+      }).sort(function (a, b) {
+        return a.index - b.index;
+      });
+
+      this._oViewModel.setProperty("/tableSettings", {
+        section: sSection,
+        title: oSettings.title,
+        items: aItems,
+        sorters: (oState.sorters || []).slice(),
+        groups: (oState.groups || []).slice(),
+        filters: (oState.filters || []).slice(),
+        sortFields: this._buildCapabilityItems(sSection, "sortable"),
+        groupFields: this._buildCapabilityItems(sSection, "groupable"),
+        filterFields: this._buildCapabilityItems(sSection, "filterable"),
+        search: "",
+        showSelected: false,
+        selectedCount: aItems.filter(function (oColumn) {
+          return oColumn.visible;
+        }).length,
+        totalCount: aItems.length
+      });
+    },
+
+    _updateDetailTableSettingsCount: function () {
+      var sSection = this._sDetailTableSettingsSection;
+      var aItems = this._oViewModel.getProperty("/tableSettings/items") || [];
+
+      if (!sSection) {
+        return;
+      }
+
+      aItems.forEach(function (oColumn) {
+        this._oViewModel.setProperty("/columns/" + sSection + "/" + oColumn.key, oColumn.visible !== false);
+      }.bind(this));
+      this._oViewModel.setProperty("/tableSettings/selectedCount", aItems.filter(function (oColumn) {
+        return oColumn.visible;
+      }).length);
+    },
+
+    _filterDetailTableSettingsList: function (sSearch) {
+      var oList = this.byId("detailTableSettingsList");
+      var oBinding = oList && oList.getBinding("items");
+      var sValue = String(sSearch || "").trim();
+      var aFilters = [];
+
+      this._oViewModel.setProperty("/tableSettings/search", sValue);
+
+      if (oBinding) {
+        if (sValue) {
+          aFilters.push(new Filter({
+            filters: [
+              new Filter("label", FilterOperator.Contains, sValue),
+              new Filter("fieldKey", FilterOperator.Contains, sValue)
+            ],
+            and: false
+          }));
+        }
+        if (this._oViewModel.getProperty("/tableSettings/showSelected")) {
+          aFilters.push(new Filter("visible", FilterOperator.EQ, true));
+        }
+        oBinding.filter(aFilters);
+      }
+    },
+
+    _loadPersistedPersonalizationStates: function () {
+      Object.keys(AnalysisTableConfig.configs).forEach(function (sSection) {
+        var oConfig = AnalysisTableConfig.getConfig(sSection);
+        this._setPersonalizationState(sSection, this._oTablePersonalization.loadState(oConfig));
+      }.bind(this));
+    },
+
+    _getPersonalizationState: function (sSection) {
+      var oConfig = AnalysisTableConfig.getConfig(sSection);
+      var oState = this._oViewModel.getProperty("/tableSettingsState/" + sSection);
+
+      return oState || this._oTablePersonalization.loadState(oConfig);
+    },
+
+    _setPersonalizationState: function (sSection, oState) {
+      var oConfig = AnalysisTableConfig.getConfig(sSection);
+
+      this._oViewModel.setProperty("/tableSettingsState/" + sSection, oState);
+      this._oViewModel.setProperty("/columns/" + sSection, this._oTablePersonalization.toColumnMap(oConfig, oState));
+    },
+
+    _buildCapabilityItems: function (sSection, sCapability) {
+      return AnalysisTableConfig.getPersonalizableFields(sSection).filter(function (oField) {
+        return oField[sCapability] !== false;
+      }).map(function (oField) {
+        return {
+          key: oField.key,
+          label: this.getText(oField.labelKey),
+          type: oField.type
+        };
+      }.bind(this));
+    },
+
+    _buildDetailSettingsStateFromDialog: function (sSection) {
+      var oConfig = AnalysisTableConfig.getConfig(sSection);
+
+      return {
+        schemaVersion: 2,
+        tableKey: oConfig && oConfig.tableKey,
+        columns: (this._oViewModel.getProperty("/tableSettings/items") || []).map(function (oColumn, iIndex) {
+          return {
+            key: oColumn.fieldKey,
+            visible: oColumn.visible === true,
+            index: iIndex
+          };
+        }),
+        sorters: this._normalizeCriteria(this._oViewModel.getProperty("/tableSettings/sorters")),
+        groups: this._normalizeCriteria(this._oViewModel.getProperty("/tableSettings/groups")),
+        filters: this._normalizeCriteria(this._oViewModel.getProperty("/tableSettings/filters"))
+      };
+    },
+
+    _normalizeCriteria: function (aItems) {
+      return (Array.isArray(aItems) ? aItems : []).filter(function (oItem) {
+        return oItem && oItem.key;
+      }).map(function (oItem, iIndex) {
+        return Object.assign({}, oItem, { index: iIndex });
+      });
+    },
+
+    _validateDetailSettingsState: function (oState) {
+      return (oState.columns || []).some(function (oColumn) {
+        return oColumn.visible === true;
+      });
+    },
+
+    _setAllDetailTableColumns: function (bVisible) {
+      var aItems = (this._oViewModel.getProperty("/tableSettings/items") || []).map(function (oColumn, iIndex) {
+        return Object.assign({}, oColumn, {
+          visible: bVisible === true || iIndex === 0
+        });
+      });
+
+      this._oViewModel.setProperty("/tableSettings/items", aItems);
+      this._updateDetailTableSettingsCount();
+      this._filterDetailTableSettingsList(this._oViewModel.getProperty("/tableSettings/search"));
+    },
+
+    _moveSelectedDetailColumn: function (sDirection) {
+      var oList = this.byId("detailTableSettingsList");
+      var oItem = oList && oList.getSelectedItem && oList.getSelectedItem();
+      var oContext = oItem && oItem.getBindingContext("detail");
+      var oColumn = oContext && oContext.getObject();
+      var aItems = (this._oViewModel.getProperty("/tableSettings/items") || []).slice();
+      var iIndex = aItems.indexOf(oColumn);
+      var iTarget = iIndex;
+
+      if (iIndex < 0) {
+        return;
+      }
+
+      if (sDirection === "top") { iTarget = 0; }
+      if (sDirection === "up") { iTarget = Math.max(0, iIndex - 1); }
+      if (sDirection === "down") { iTarget = Math.min(aItems.length - 1, iIndex + 1); }
+      if (sDirection === "bottom") { iTarget = aItems.length - 1; }
+
+      aItems.splice(iIndex, 1);
+      aItems.splice(iTarget, 0, oColumn);
+      this._oViewModel.setProperty("/tableSettings/items", this._reindexDetailColumns(aItems));
+    },
+
+    _reindexDetailColumns: function (aItems) {
+      return (aItems || []).map(function (oColumn, iIndex) {
+        return Object.assign({}, oColumn, {
+          index: iIndex + 1
+        });
+      });
+    },
+
+    _addDetailCriterion: function (sStateKey, sFieldsKey) {
+      var aFields = this._oViewModel.getProperty("/tableSettings/" + sFieldsKey) || [];
+      var aItems = (this._oViewModel.getProperty("/tableSettings/" + sStateKey) || []).slice();
+      var mUsed = aItems.reduce(function (mResult, oItem) {
+        mResult[oItem.key] = true;
+        return mResult;
+      }, {});
+      var oField = aFields.filter(function (oCandidate) {
+        return !mUsed[oCandidate.key];
+      })[0];
+
+      if (oField) {
+        aItems.push({
+          key: oField.key,
+          descending: false,
+          operator: oField.type === "Edm.Boolean" ? "EQ" : "Contains",
+          value: "",
+          value2: ""
+        });
+        this._oViewModel.setProperty("/tableSettings/" + sStateKey, aItems);
+      }
+    },
+
+    _removeDetailCriterion: function (oEvent, sStateKey) {
+      var oContext = oEvent.getSource().getBindingContext("detail");
+      var oItem = oContext && oContext.getObject();
+      var aItems = (this._oViewModel.getProperty("/tableSettings/" + sStateKey) || []).filter(function (oCandidate) {
+        return oCandidate !== oItem;
+      });
+
+      this._oViewModel.setProperty("/tableSettings/" + sStateKey, aItems);
+    },
+
+    _applyTablePersonalization: function (sSection) {
+      var oTable = this.byId(this._getDetailTableId(sSection));
+      var oBinding = oTable && oTable.getBinding("items");
+      var oState = this._getPersonalizationState(sSection);
+
+      if (oBinding) {
+        oBinding.sort(this._oTablePersonalization.buildSorters(oState.sorters, oState.groups));
+        oBinding.filter(this._oTablePersonalization.buildFilters(oState.filters), "Application");
+      }
+    },
+
+    _getDetailTableId: function (sSection) {
+      return {
+        sourceObjects: "sourceObjectsTable",
+        uiFilters: "uiFiltersTable",
+        databaseObjects: "databaseObjectsTable",
+        businessLogic: "businessLogicTable",
+        alvOutputs: "alvOutputsTable",
+        evidences: "evidencesTable",
+        recommendations: "recommendationsTable",
+        messages: "messagesTable"
+      }[sSection];
+    },
+
+    _openDetailTableSettingsDialog: function () {
+      if (!this._pDetailTableSettingsDialog) {
+        this._pDetailTableSettingsDialog = Fragment.load({
+          id: this.getView().getId(),
+          name: "abap.to.fiori.system.view.fragments.DetailTableSettings",
+          controller: this
+        }).then(function (oDialog) {
+          this.getView().addDependent(oDialog);
+          return oDialog;
+        }.bind(this));
+      }
+
+      this._pDetailTableSettingsDialog.then(function (oDialog) {
+        this._filterDetailTableSettingsList("");
         oDialog.open();
       }.bind(this));
     },
@@ -499,6 +1275,7 @@ sap.ui.define([
       var mSectionIds = {};
 
       mSectionIds[Constants.section.uiFilters] = "uiFiltersSection";
+      mSectionIds[Constants.section.sourceObjects] = "sourceObjectsSection";
       mSectionIds[Constants.section.databaseObjects] = "databaseObjectsSection";
       mSectionIds[Constants.section.businessLogic] = "businessLogicSection";
       mSectionIds[Constants.section.alvOutputs] = "alvOutputsSection";
@@ -513,6 +1290,12 @@ sap.ui.define([
 
     _setBusy: function (bBusy) {
       this._oViewModel.setProperty("/busy", bBusy);
+    },
+
+    _setComparisonProgress: function (bBusy, sState, sMessage) {
+      this._oViewModel.setProperty("/comparison/busy", bBusy);
+      this._oViewModel.setProperty("/comparison/state", sState);
+      this._oViewModel.setProperty("/comparison/message", sMessage || "");
     }
   });
 });

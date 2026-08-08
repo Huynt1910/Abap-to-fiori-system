@@ -91,7 +91,7 @@
         <VBox class="sapUiSmallMarginBottom">
           <MessageStrip text="{i18n>recipientSapUserHint}" type="Information" showIcon="true" class="sapUiSmallMarginBottom" />
           <MessageStrip text="{i18n>recipientOptionalHint}" type="Information" showIcon="true" class="sapUiSmallMarginBottom" />
-          <Toolbar>
+          <Toolbar visible="{= ${mailUi>/wizard/mode} !== 'edit' }">
             <Select selectedKey="{mailUi>/wizard/newRecipient/RecipientType}" width="8rem">
               <items>
                 <core:Item key="T" text="{i18n>recipientTypeTo}" />
@@ -106,14 +106,14 @@
             <columns>
               <Column width="8rem"><Text text="{i18n>recipientType}" /></Column>
               <Column><Text text="{i18n>sapUser}" /></Column>
-              <Column width="8rem"><Text text="{i18n>actions}" /></Column>
+              <Column width="8rem" visible="{= ${mailUi>/wizard/mode} !== 'edit' }"><Text text="{i18n>actions}" /></Column>
             </columns>
             <items>
               <ColumnListItem>
                 <cells>
                   <Text text="{path: 'mailUi>RecipientType', formatter: '.mailFormatter.formatRecipientType'}" />
                   <Text text="{mailUi>SapUser}" />
-                  <Button icon="sap-icon://delete" press=".onRemoveDraftRecipient" />
+                  <Button icon="sap-icon://delete" press=".onRemoveDraftRecipient" visible="{= ${mailUi>/wizard/mode} !== 'edit' }" />
                 </cells>
               </ColumnListItem>
             </items>

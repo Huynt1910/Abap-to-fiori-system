@@ -5,26 +5,31 @@
       <Title text="{i18n>messages}" level="H3" />
       <ObjectStatus text="{path: 'detail>/counts/messages', formatter: '.formatter.formatCountText'}" />
       <ToolbarSpacer />
+      <Button icon="sap-icon://action-settings" tooltip="{i18n>viewSettings}" press=".onOpenDetailTableSettings">
+        <customData>
+          <core:CustomData key="section" value="messages" />
+        </customData>
+      </Button>
     </OverflowToolbar>
     <IllustratedMessage visible="{path: 'detail>/messages', formatter: '.formatter.hasNoItems'}" illustrationType="sapIllus-NoEntries" title="{i18n>noMessages}" />
     <Table id="messagesTable" visible="{path: 'detail>/messages', formatter: '.formatter.hasItems'}" growing="true" growingThreshold="20" items="{detail>/messages}" itemPress=".onMessagePress">
       <columns>
-        <Column width="6rem" hAlign="End"><Text text="{i18n>messageNo}" /></Column>
-        <Column width="8rem"><Text text="{i18n>messageType}" /></Column>
-        <Column width="10rem"><Text text="{i18n>messageCode}" /></Column>
-        <Column width="12rem" demandPopin="true" minScreenWidth="Tablet"><Text text="{i18n>sourceObject}" /></Column>
-        <Column width="6rem" hAlign="End"><Text text="{i18n>sourceLine}" /></Column>
-        <Column><Text text="{i18n>messageText}" /></Column>
+        <Column width="6rem" hAlign="End" visible="{detail>/columns/messages/messageNo}"><Text text="{i18n>messageNo}" /></Column>
+        <Column width="8rem" visible="{detail>/columns/messages/messageType}"><Text text="{i18n>messageType}" /></Column>
+        <Column width="10rem" visible="{detail>/columns/messages/messageCode}"><Text text="{i18n>messageCode}" /></Column>
+        <Column width="12rem" demandPopin="true" minScreenWidth="Tablet" visible="{detail>/columns/messages/sourceObject}"><Text text="{i18n>sourceObject}" /></Column>
+        <Column width="6rem" hAlign="End" visible="{detail>/columns/messages/sourceLine}"><Text text="{i18n>sourceLine}" /></Column>
+        <Column visible="{detail>/columns/messages/messageText}"><Text text="{i18n>messageText}" /></Column>
       </columns>
       <items>
         <ColumnListItem type="Active" press=".onMessagePress">
           <cells>
-            <ObjectNumber number="{path: 'detail>MessageNo', formatter: '.formatter.formatNumber'}" />
-            <ObjectStatus text="{path: 'detail>MessageType', formatter: '.formatter.formatText'}" state="{path: 'detail>MessageType', formatter: '.formatter.formatSeverityState'}" icon="sap-icon://message-warning" />
-            <Text text="{path: 'detail>MessageCode', formatter: '.formatter.formatText'}" />
-            <Text text="{path: 'detail>SourceObject', formatter: '.formatter.formatText'}" />
-            <ObjectNumber number="{path: 'detail>SourceLine', formatter: '.formatter.formatNumber'}" />
-            <Text text="{path: 'detail>MessageText', formatter: '.formatter.formatText'}" maxLines="2" wrapping="true" />
+            <ObjectNumber number="{path: 'detail>MessageNo', formatter: '.formatter.formatNumber'}" visible="{detail>/columns/messages/messageNo}" />
+            <ObjectStatus text="{path: 'detail>MessageType', formatter: '.formatter.formatText'}" state="{path: 'detail>MessageType', formatter: '.formatter.formatSeverityState'}" icon="sap-icon://message-warning" visible="{detail>/columns/messages/messageType}" />
+            <Text text="{path: 'detail>MessageCode', formatter: '.formatter.formatText'}" visible="{detail>/columns/messages/messageCode}" />
+            <Text text="{path: 'detail>SourceObject', formatter: '.formatter.formatText'}" visible="{detail>/columns/messages/sourceObject}" />
+            <ObjectNumber number="{path: 'detail>SourceLine', formatter: '.formatter.formatNumber'}" visible="{detail>/columns/messages/sourceLine}" />
+            <Text text="{path: 'detail>MessageText', formatter: '.formatter.formatText'}" maxLines="2" wrapping="true" visible="{detail>/columns/messages/messageText}" />
           </cells>
         </ColumnListItem>
       </items>

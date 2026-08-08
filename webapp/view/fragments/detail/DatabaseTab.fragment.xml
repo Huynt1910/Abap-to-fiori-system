@@ -5,26 +5,47 @@
       <Title text="{i18n>databaseObjects}" level="H3" />
       <ObjectStatus text="{path: 'detail>/counts/databaseObjects', formatter: '.formatter.formatCountText'}" />
       <ToolbarSpacer />
+      <Button icon="sap-icon://action-settings" tooltip="{i18n>viewSettings}" press=".onOpenDetailTableSettings">
+        <customData>
+          <core:CustomData key="section" value="databaseObjects" />
+        </customData>
+      </Button>
     </OverflowToolbar>
     <IllustratedMessage visible="{path: 'detail>/databaseObjects', formatter: '.formatter.hasNoItems'}" illustrationType="sapIllus-NoEntries" title="{i18n>noDatabaseAccesses}" />
     <Table id="databaseObjectsTable" visible="{path: 'detail>/databaseObjects', formatter: '.formatter.hasItems'}" growing="true" growingThreshold="20" items="{detail>/databaseObjects}" itemPress=".onDatabaseObjectPress">
       <columns>
-        <Column width="12rem"><Text text="{i18n>objectName}" /></Column>
-        <Column width="8rem"><Text text="{i18n>objectType}" /></Column>
-        <Column width="10rem" demandPopin="true" minScreenWidth="Tablet"><Text text="{i18n>operation}" /></Column>
-        <Column width="14rem" demandPopin="true" minScreenWidth="Tablet"><Text text="{i18n>containingRoutine}" /></Column>
-        <Column width="10rem"><Text text="{i18n>pagingCapability}" /></Column>
-        <Column width="8rem"><Text text="{i18n>confidence}" /></Column>
+        <Column width="12rem" visible="{detail>/columns/databaseObjects/objectName}"><Text text="{i18n>objectName}" /></Column>
+        <Column width="8rem" visible="{detail>/columns/databaseObjects/objectType}"><Text text="{i18n>objectType}" /></Column>
+        <Column width="10rem" demandPopin="true" minScreenWidth="Tablet" visible="{detail>/columns/databaseObjects/operation}"><Text text="{i18n>operation}" /></Column>
+        <Column width="16rem" demandPopin="true" minScreenWidth="Desktop" visible="{detail>/columns/databaseObjects/selectedFields}"><Text text="{i18n>selectedFields}" /></Column>
+        <Column width="16rem" demandPopin="true" minScreenWidth="Desktop" visible="{detail>/columns/databaseObjects/whereFields}"><Text text="{i18n>whereFields}" /></Column>
+        <Column width="16rem" demandPopin="true" minScreenWidth="Desktop" visible="{detail>/columns/databaseObjects/joinedObjects}"><Text text="{i18n>joinedObjects}" /></Column>
+        <Column width="16rem" demandPopin="true" minScreenWidth="Desktop" visible="{detail>/columns/databaseObjects/joinCondition}"><Text text="{i18n>joinCondition}" /></Column>
+        <Column width="14rem" demandPopin="true" minScreenWidth="Desktop" visible="{detail>/columns/databaseObjects/aggregation}"><Text text="{i18n>aggregation}" /></Column>
+        <Column width="14rem" demandPopin="true" minScreenWidth="Tablet" visible="{detail>/columns/databaseObjects/containingRoutine}"><Text text="{i18n>containingRoutine}" /></Column>
+        <Column width="8rem" demandPopin="true" minScreenWidth="Tablet" visible="{detail>/columns/databaseObjects/dynamicAccess}"><Text text="{i18n>dynamicAccess}" /></Column>
+        <Column width="8rem" demandPopin="true" minScreenWidth="Tablet" visible="{detail>/columns/databaseObjects/readOnly}"><Text text="{i18n>readOnly}" /></Column>
+        <Column width="10rem" visible="{detail>/columns/databaseObjects/pagingCapability}"><Text text="{i18n>pagingCapability}" /></Column>
+        <Column width="16rem" demandPopin="true" minScreenWidth="Desktop" visible="{detail>/columns/databaseObjects/description}"><Text text="{i18n>description}" /></Column>
+        <Column width="8rem" visible="{detail>/columns/databaseObjects/confidence}"><Text text="{i18n>confidence}" /></Column>
       </columns>
       <items>
         <ColumnListItem type="Active" press=".onDatabaseObjectPress">
           <cells>
-            <Text text="{path: 'detail>ObjectName', formatter: '.formatter.formatText'}" />
-            <Text text="{path: 'detail>ObjectType', formatter: '.formatter.formatText'}" />
-            <Text text="{path: 'detail>Operation', formatter: '.formatter.formatText'}" />
-            <Text text="{path: 'detail>ContainingRoutine', formatter: '.formatter.formatText'}" />
-            <Text text="{path: 'detail>PagingCapability', formatter: '.formatter.formatText'}" />
-            <Text text="{path: 'detail>Confidence', formatter: '.formatter.formatText'}" />
+            <Text text="{path: 'detail>ObjectName', formatter: '.formatter.formatText'}" visible="{detail>/columns/databaseObjects/objectName}" />
+            <Text text="{path: 'detail>ObjectType', formatter: '.formatter.formatText'}" visible="{detail>/columns/databaseObjects/objectType}" />
+            <Text text="{path: 'detail>Operation', formatter: '.formatter.formatText'}" visible="{detail>/columns/databaseObjects/operation}" />
+            <Text text="{path: 'detail>SelectedFields', formatter: '.formatter.formatText'}" maxLines="2" wrapping="true" visible="{detail>/columns/databaseObjects/selectedFields}" />
+            <Text text="{path: 'detail>WhereFields', formatter: '.formatter.formatText'}" maxLines="2" wrapping="true" visible="{detail>/columns/databaseObjects/whereFields}" />
+            <Text text="{path: 'detail>JoinedObjects', formatter: '.formatter.formatText'}" maxLines="2" wrapping="true" visible="{detail>/columns/databaseObjects/joinedObjects}" />
+            <Text text="{path: 'detail>JoinCondition', formatter: '.formatter.formatText'}" maxLines="2" wrapping="true" visible="{detail>/columns/databaseObjects/joinCondition}" />
+            <Text text="{path: 'detail>Aggregation', formatter: '.formatter.formatText'}" maxLines="2" wrapping="true" visible="{detail>/columns/databaseObjects/aggregation}" />
+            <Text text="{path: 'detail>ContainingRoutine', formatter: '.formatter.formatText'}" visible="{detail>/columns/databaseObjects/containingRoutine}" />
+            <Text text="{path: 'detail>DynamicAccess', formatter: '.formatter.formatBoolean'}" visible="{detail>/columns/databaseObjects/dynamicAccess}" />
+            <Text text="{path: 'detail>ReadOnly', formatter: '.formatter.formatBoolean'}" visible="{detail>/columns/databaseObjects/readOnly}" />
+            <Text text="{path: 'detail>PagingCapability', formatter: '.formatter.formatText'}" visible="{detail>/columns/databaseObjects/pagingCapability}" />
+            <Text text="{path: 'detail>Description', formatter: '.formatter.formatText'}" maxLines="2" wrapping="true" visible="{detail>/columns/databaseObjects/description}" />
+            <Text text="{path: 'detail>Confidence', formatter: '.formatter.formatText'}" visible="{detail>/columns/databaseObjects/confidence}" />
           </cells>
         </ColumnListItem>
       </items>

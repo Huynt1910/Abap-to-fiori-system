@@ -69,11 +69,13 @@ sap.ui.define([
   };
 
   MailService.prototype.updateContext = function (oContext, oPayload) {
-    var aPromises = Object.keys(oPayload || {}).map(function (sProperty) {
-      return oContext.setProperty(sProperty, oPayload[sProperty]);
-    });
+    var aProperties = this._getChangedProperties(oContext, oPayload);
 
-    return Promise.all(aPromises).then(function () {
+    return aProperties.reduce(function (pChain, sProperty) {
+      return pChain.then(function () {
+        return oContext.setProperty(sProperty, oPayload[sProperty]);
+      });
+    }, Promise.resolve()).then(function () {
       return oContext.requestObject();
     });
   };
@@ -312,7 +314,7 @@ sap.ui.define([
   };
 
   MailService.prototype._buildJobPayload = function (oJob, bPatch) {
-    var oPayload = this._pick(oJob, [
+    var aFields = [
       "AnalysisId",
       "JobName",
       "ReportType",
@@ -321,8 +323,17 @@ sap.ui.define([
       "MailSubject",
       "MailBody",
       "Status"
-    ], bPatch);
+    ];
+    var oPayload;
     var sFrequency = String(oJob && oJob.Frequency || "").toUpperCase();
+
+    if (bPatch) {
+      aFields = aFields.filter(function (sField) {
+        return sField !== "AnalysisId";
+      });
+    }
+
+    oPayload = this._pick(oJob, aFields, bPatch);
 
     if (sFrequency === MailConstants.frequency.onDemand) {
       oPayload.StartDate = oJob && oJob.StartDate || MailConstants.scheduleDefaults.startDate;
@@ -367,6 +378,18 @@ sap.ui.define([
     });
 
     return oPayload;
+  };
+
+  MailService.prototype._getChangedProperties = function (oContext, oPayload) {
+    var oCurrent = oContext && typeof oContext.getObject === "function"
+      ? oContext.getObject() || {}
+      : null;
+
+    return Object.keys(oPayload || {}).filter(function (sProperty) {
+      return !oCurrent ||
+        !Object.prototype.hasOwnProperty.call(oCurrent, sProperty) ||
+        oCurrent[sProperty] !== oPayload[sProperty];
+    });
   };
 
   MailService.prototype._assignIfFilled = function (oPayload, oSource, sField) {

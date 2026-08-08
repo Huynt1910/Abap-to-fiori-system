@@ -5,17 +5,27 @@
 
 .migrationAnalyzerFilterBar {
   gap: 1rem;
+  justify-content: flex-start;
   width: 100%;
 }
 
 .migrationAnalyzerFilterField {
-  flex: 1 1 14rem;
-  max-width: 26rem;
+  flex: 0 1 14rem;
   min-width: 12rem;
 }
 
 .migrationAnalyzerFilterBar .sapMBtn {
   flex: 0 0 auto;
+}
+
+.migrationAnalyzerSearchFilterField {
+  flex-basis: 26rem;
+  max-width: 26rem;
+}
+
+.migrationAnalyzerSelectFilterField {
+  flex-basis: 13rem;
+  max-width: 13rem;
 }
 
 .migrationAnalyzerContent,
@@ -25,7 +35,59 @@
   border-radius: 0.5rem;
   box-shadow: var(--sapContent_Shadow0);
   box-sizing: border-box;
+  overflow-x: auto;
+  overflow-y: hidden;
   padding: 1rem;
+  scrollbar-color: var(--sapContent_ForegroundBorderColor) transparent;
+  scrollbar-width: thin;
+}
+
+.tabSurface .sapMListTbl,
+.migrationAnalyzerContent .sapMListTbl,
+.sapUxAPObjectPageSubSection .sapMListTbl {
+  min-width: 64rem;
+}
+
+.sapUxAPObjectPageSubSection .sapMListTblCnt {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 0.35rem;
+  scrollbar-color: var(--sapContent_ForegroundBorderColor) transparent;
+  scrollbar-width: thin;
+}
+
+.migrationAnalyzerContent::-webkit-scrollbar,
+.tabSurface::-webkit-scrollbar,
+.sapUxAPObjectPageSubSection .sapMListTblCnt::-webkit-scrollbar {
+  height: 0.55rem;
+  width: 0.55rem;
+}
+
+.migrationAnalyzerContent::-webkit-scrollbar-track,
+.tabSurface::-webkit-scrollbar-track,
+.sapUxAPObjectPageSubSection .sapMListTblCnt::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 999px;
+}
+
+.migrationAnalyzerContent::-webkit-scrollbar-thumb,
+.tabSurface::-webkit-scrollbar-thumb,
+.sapUxAPObjectPageSubSection .sapMListTblCnt::-webkit-scrollbar-thumb {
+  background-color: color-mix(in srgb, var(--sapContent_ForegroundBorderColor) 72%, transparent);
+  border: 0.18rem solid transparent;
+  border-radius: 999px;
+  background-clip: content-box;
+}
+
+.migrationAnalyzerContent::-webkit-scrollbar-thumb:hover,
+.tabSurface::-webkit-scrollbar-thumb:hover,
+.sapUxAPObjectPageSubSection .sapMListTblCnt::-webkit-scrollbar-thumb:hover {
+  background-color: color-mix(in srgb, var(--sapSelectedColor) 70%, var(--sapContent_ForegroundBorderColor));
+}
+
+.tabSurface:has(.sapMListTbl),
+.migrationAnalyzerContent:has(.sapMListTbl) {
+  padding-bottom: 0.65rem;
 }
 
 .migrationAnalyzerContent {
@@ -41,6 +103,28 @@
   gap: 1rem;
   justify-content: flex-start;
   width: 100%;
+}
+
+.analysisOverviewGrid {
+  border-bottom: 1px solid var(--sapGroup_ContentBorderColor);
+  box-sizing: border-box;
+  padding: 0.25rem 0 1.5rem;
+  width: 100%;
+}
+
+.analysisOverviewCell {
+  min-width: 0;
+}
+
+.analysisOverviewCell .sapMLabel {
+  color: var(--sapContent_LabelColor);
+  margin-bottom: 0.25rem;
+}
+
+.analysisOverviewCell .sapMText,
+.analysisOverviewCell .sapMObjStatusText {
+  color: var(--sapTextColor);
+  font-size: 0.875rem;
 }
 
 .migrationAnalyzerKpiGrid {

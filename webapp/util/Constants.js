@@ -10,29 +10,44 @@ sap.ui.define([], function () {
 
     entitySet: Object.freeze({
       analyses: "/Analyses",
+      programValueHelp: "/ProgramValueHelp",
+      sourceObjects: "/SourceObjects",
       uiFilters: "/UiFilters",
       databaseObjects: "/DatabaseObjects",
       businessLogic: "/BusinessLogic",
       alvOutputs: "/AlvOutputs",
       evidences: "/Evidences",
       recommendations: "/Recommendations",
+      alvColumns: "/AlvColumns",
+      alvSorts: "/AlvSorts",
+      alvFilters: "/AlvFilters",
+      alvEvents: "/AlvEvents",
+      annotations: "/Annotations",
       analysisMessages: "/AnalysisMessages",
-      exportResult: "/ExportResult"
+      exportResult: "/ExportResult",
+      exportJobs: "/ExportJobs"
     }),
 
     navigation: Object.freeze({
       uiFilters: "_UiFilters",
+      sourceObjects: "_SourceObjects",
       databaseObjects: "_DatabaseObjects",
       businessLogic: "_BusinessLogic",
       alvOutputs: "_AlvOutputs",
       evidences: "_Evidences",
       recommendations: "_Recommendations",
+      alvColumns: "_Columns",
+      alvSorts: "_Sorts",
+      alvFilters: "_Filters",
+      alvEvents: "_Events",
+      annotations: "_Annotations",
       messages: "_Messages"
     }),
 
     action: Object.freeze({
       analyzeHttpPath: "/Analyses/com.sap.gateway.srvd.zui_mig_analysis.v0001.Analyze",
-      analyzeBindingPath: "/Analyses/com.sap.gateway.srvd.zui_mig_analysis.v0001.Analyze(...)"
+      analyzeBindingPath: "/Analyses/com.sap.gateway.srvd.zui_mig_analysis.v0001.Analyze(...)",
+      prepareSelectedExportSuffix: "com.sap.gateway.srvd.zui_mig_analysis.v0001.PrepareSelectedExport(...)"
     }),
 
     fileFormat: Object.freeze({
@@ -56,6 +71,7 @@ sap.ui.define([], function () {
     field: Object.freeze({
       analysisId: "AnalysisId",
       programName: "ProgramName",
+      programNameMaxLength: 40,
       status: "Status",
       createdAt: "CreatedAt",
       analyses: Object.freeze([
@@ -78,7 +94,18 @@ sap.ui.define([], function () {
         "CreatedBy",
         "CreatedAt",
         "LastChangedBy",
-        "LocalLastChangedAt"
+        "LocalLastChangedAt",
+        "__OperationControl"
+      ]),
+      sourceObjects: Object.freeze([
+        "AnalysisId",
+        "ItemId",
+        "ObjectName",
+        "ObjectType",
+        "ParentObject",
+        "IncludeDepth",
+        "LineCount",
+        "SourceHash"
       ]),
       uiFilters: Object.freeze([
         "AnalysisId",
@@ -194,10 +221,84 @@ sap.ui.define([], function () {
         "AutoWidth",
         "SelectionMode",
         "Confidence"
+      ]),
+      alvColumns: Object.freeze([
+        "AnalysisId",
+        "OutputId",
+        "ItemId",
+        "EvidenceId",
+        "FieldName",
+        "ColumnLabel",
+        "ColumnPosition",
+        "DataType",
+        "DataElement",
+        "ReferenceTable",
+        "ReferenceField",
+        "FieldLength",
+        "Decimals",
+        "Visible",
+        "KeyField",
+        "Technical",
+        "Editable",
+        "Hotspot",
+        "Checkbox",
+        "Icon",
+        "CurrencyField",
+        "UnitField",
+        "Aggregation",
+        "SourceMapping",
+        "Confidence"
+      ]),
+      alvSorts: Object.freeze([
+        "AnalysisId",
+        "OutputId",
+        "ItemId",
+        "EvidenceId",
+        "FieldName",
+        "SortPosition",
+        "IsAscending",
+        "IsDescending",
+        "Subtotal",
+        "Confidence"
+      ]),
+      alvFilters: Object.freeze([
+        "AnalysisId",
+        "OutputId",
+        "ItemId",
+        "EvidenceId",
+        "FieldName",
+        "FilterSign",
+        "FilterOption",
+        "LowValue",
+        "HighValue",
+        "Confidence"
+      ]),
+      alvEvents: Object.freeze([
+        "AnalysisId",
+        "OutputId",
+        "ItemId",
+        "EvidenceId",
+        "EventName",
+        "HandlerName",
+        "HandlerKind",
+        "ControlObject",
+        "GuiDependency",
+        "Confidence"
+      ]),
+      annotations: Object.freeze([
+        "AnalysisId",
+        "RecommendationId",
+        "ItemId",
+        "TargetEntity",
+        "TargetElement",
+        "AnnotationName",
+        "AnnotationValue",
+        "AnnotationSequence"
       ])
     }),
 
     section: Object.freeze({
+      sourceObjects: "sourceObjects",
       uiFilters: "uiFilters",
       databaseObjects: "databaseObjects",
       businessLogic: "businessLogic",

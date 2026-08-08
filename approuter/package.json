@@ -1,0 +1,14 @@
+{
+  "name": "abap-to-fiori-approuter",
+  "version": "1.0.0",
+  "private": true,
+  "engines": {
+    "node": "22.x"
+  },
+  "scripts": {
+    "start": "node node_modules/@sap/approuter/approuter.js"
+  },
+  "dependencies": {
+    "@sap/approuter": "^22.0.3"
+  }
+}

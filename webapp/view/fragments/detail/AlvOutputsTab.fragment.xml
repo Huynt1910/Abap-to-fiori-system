@@ -5,31 +5,111 @@
       <Title text="{i18n>alvOutputs}" level="H3" />
       <ObjectStatus text="{path: 'detail>/counts/alvOutputs', formatter: '.formatter.formatCountText'}" />
       <ToolbarSpacer />
+      <Button icon="sap-icon://action-settings" tooltip="{i18n>viewSettings}" press=".onOpenDetailTableSettings">
+        <customData>
+          <core:CustomData key="section" value="alvOutputs" />
+        </customData>
+      </Button>
     </OverflowToolbar>
     <IllustratedMessage visible="{path: 'detail>/alvOutputs', formatter: '.formatter.hasNoItems'}" illustrationType="sapIllus-NoEntries" title="{i18n>noAlvOutputs}" />
     <Table id="alvOutputsTable" visible="{path: 'detail>/alvOutputs', formatter: '.formatter.hasItems'}" growing="true" growingThreshold="20" items="{detail>/alvOutputs}" itemPress=".onAlvOutputPress">
       <columns>
-        <Column width="14rem"><Text text="{i18n>outputName}" /></Column>
-        <Column width="10rem"><Text text="{i18n>outputKind}" /></Column>
-        <Column width="10rem"><Text text="{i18n>framework}" /></Column>
-        <Column width="12rem" demandPopin="true" minScreenWidth="Tablet"><Text text="{i18n>controlObject}" /></Column>
-        <Column width="12rem" demandPopin="true" minScreenWidth="Tablet"><Text text="{i18n>outputTable}" /></Column>
-        <Column width="8rem"><Text text="{i18n>editable}" /></Column>
-        <Column width="8rem"><Text text="{i18n>confidence}" /></Column>
+        <Column width="14rem" visible="{detail>/columns/alvOutputs/outputName}"><Text text="{i18n>outputName}" /></Column>
+        <Column width="10rem" visible="{detail>/columns/alvOutputs/outputKind}"><Text text="{i18n>outputKind}" /></Column>
+        <Column width="10rem" visible="{detail>/columns/alvOutputs/framework}"><Text text="{i18n>framework}" /></Column>
+        <Column width="12rem" demandPopin="true" minScreenWidth="Tablet" visible="{detail>/columns/alvOutputs/controlObject}"><Text text="{i18n>controlObject}" /></Column>
+        <Column width="12rem" demandPopin="true" minScreenWidth="Tablet" visible="{detail>/columns/alvOutputs/outputTable}"><Text text="{i18n>outputTable}" /></Column>
+        <Column width="12rem" demandPopin="true" minScreenWidth="Tablet" visible="{detail>/columns/alvOutputs/rowType}"><Text text="{i18n>rowType}" /></Column>
+        <Column width="12rem" demandPopin="true" minScreenWidth="Desktop" visible="{detail>/columns/alvOutputs/fieldCatalog}"><Text text="{i18n>fieldCatalog}" /></Column>
+        <Column width="12rem" demandPopin="true" minScreenWidth="Desktop" visible="{detail>/columns/alvOutputs/sortTable}"><Text text="{i18n>sortTable}" /></Column>
+        <Column width="12rem" demandPopin="true" minScreenWidth="Desktop" visible="{detail>/columns/alvOutputs/filterTable}"><Text text="{i18n>filterTable}" /></Column>
+        <Column width="12rem" demandPopin="true" minScreenWidth="Desktop" visible="{detail>/columns/alvOutputs/layoutObject}"><Text text="{i18n>layoutObject}" /></Column>
+        <Column width="12rem" demandPopin="true" minScreenWidth="Desktop" visible="{detail>/columns/alvOutputs/variantObject}"><Text text="{i18n>variantObject}" /></Column>
+        <Column width="8rem" visible="{detail>/columns/alvOutputs/editable}"><Text text="{i18n>editable}" /></Column>
+        <Column width="8rem" demandPopin="true" minScreenWidth="Tablet" visible="{detail>/columns/alvOutputs/hierarchical}"><Text text="{i18n>hierarchical}" /></Column>
+        <Column width="8rem" demandPopin="true" minScreenWidth="Tablet" visible="{detail>/columns/alvOutputs/zebra}"><Text text="{i18n>zebra}" /></Column>
+        <Column width="8rem" demandPopin="true" minScreenWidth="Tablet" visible="{detail>/columns/alvOutputs/autoWidth}"><Text text="{i18n>autoWidth}" /></Column>
+        <Column width="10rem" demandPopin="true" minScreenWidth="Tablet" visible="{detail>/columns/alvOutputs/selectionMode}"><Text text="{i18n>selectionMode}" /></Column>
+        <Column width="8rem" visible="{detail>/columns/alvOutputs/confidence}"><Text text="{i18n>confidence}" /></Column>
       </columns>
       <items>
         <ColumnListItem type="Active" press=".onAlvOutputPress">
           <cells>
-            <Text text="{path: 'detail>OutputName', formatter: '.formatter.formatText'}" />
-            <Text text="{path: 'detail>OutputKind', formatter: '.formatter.formatText'}" />
-            <Text text="{path: 'detail>Framework', formatter: '.formatter.formatText'}" />
-            <Text text="{path: 'detail>ControlObject', formatter: '.formatter.formatText'}" />
-            <Text text="{path: 'detail>OutputTable', formatter: '.formatter.formatText'}" />
-            <Text text="{path: 'detail>Editable', formatter: '.formatter.formatBoolean'}" />
-            <Text text="{path: 'detail>Confidence', formatter: '.formatter.formatText'}" />
+            <Text text="{path: 'detail>OutputName', formatter: '.formatter.formatText'}" visible="{detail>/columns/alvOutputs/outputName}" />
+            <Text text="{path: 'detail>OutputKind', formatter: '.formatter.formatText'}" visible="{detail>/columns/alvOutputs/outputKind}" />
+            <Text text="{path: 'detail>Framework', formatter: '.formatter.formatText'}" visible="{detail>/columns/alvOutputs/framework}" />
+            <Text text="{path: 'detail>ControlObject', formatter: '.formatter.formatText'}" visible="{detail>/columns/alvOutputs/controlObject}" />
+            <Text text="{path: 'detail>OutputTable', formatter: '.formatter.formatText'}" visible="{detail>/columns/alvOutputs/outputTable}" />
+            <Text text="{path: 'detail>RowType', formatter: '.formatter.formatText'}" visible="{detail>/columns/alvOutputs/rowType}" />
+            <Text text="{path: 'detail>FieldCatalog', formatter: '.formatter.formatText'}" visible="{detail>/columns/alvOutputs/fieldCatalog}" />
+            <Text text="{path: 'detail>SortTable', formatter: '.formatter.formatText'}" visible="{detail>/columns/alvOutputs/sortTable}" />
+            <Text text="{path: 'detail>FilterTable', formatter: '.formatter.formatText'}" visible="{detail>/columns/alvOutputs/filterTable}" />
+            <Text text="{path: 'detail>LayoutObject', formatter: '.formatter.formatText'}" visible="{detail>/columns/alvOutputs/layoutObject}" />
+            <Text text="{path: 'detail>VariantObject', formatter: '.formatter.formatText'}" visible="{detail>/columns/alvOutputs/variantObject}" />
+            <Text text="{path: 'detail>Editable', formatter: '.formatter.formatBoolean'}" visible="{detail>/columns/alvOutputs/editable}" />
+            <Text text="{path: 'detail>Hierarchical', formatter: '.formatter.formatBoolean'}" visible="{detail>/columns/alvOutputs/hierarchical}" />
+            <Text text="{path: 'detail>Zebra', formatter: '.formatter.formatBoolean'}" visible="{detail>/columns/alvOutputs/zebra}" />
+            <Text text="{path: 'detail>AutoWidth', formatter: '.formatter.formatBoolean'}" visible="{detail>/columns/alvOutputs/autoWidth}" />
+            <Text text="{path: 'detail>SelectionMode', formatter: '.formatter.formatText'}" visible="{detail>/columns/alvOutputs/selectionMode}" />
+            <Text text="{path: 'detail>Confidence', formatter: '.formatter.formatText'}" visible="{detail>/columns/alvOutputs/confidence}" />
           </cells>
         </ColumnListItem>
       </items>
     </Table>
+    <VBox visible="{path: 'detail>/selectedAlvOutput', formatter: '.formatter.hasValue'}" busy="{detail>/alvOutputDetail/loading}" busyIndicatorDelay="0" class="inlineDetailPanel sapUiMediumMarginTop">
+      <OverflowToolbar class="sectionToolbar">
+        <Title text="{path: 'detail>/selectedAlvOutput/OutputName', formatter: '.formatter.formatText'}" level="H4" />
+        <ObjectStatus text="{path: 'detail>/selectedAlvOutput/OutputKind', formatter: '.formatter.formatText'}" />
+        <ToolbarSpacer />
+        <Button icon="sap-icon://decline" tooltip="{i18n>close}" press=".onCloseAlvOutputInlineDetail" />
+      </OverflowToolbar>
+      <MessageStrip visible="{path: 'detail>/alvOutputDetail/error', formatter: '.formatter.hasValue'}" text="{detail>/alvOutputDetail/error}" type="Error" showIcon="true" class="sapUiSmallMarginBottom" />
+      <IconTabBar expandable="false" class="sapUiNoContentPadding">
+        <items>
+          <IconTabFilter text="{i18n>alvColumns}" count="{detail>/alvOutputDetail/columns/length}">
+            <Table growing="true" growingThreshold="20" items="{detail>/alvOutputDetail/columns}">
+              <columns>
+                <Column><Text text="{i18n>fieldName}" /></Column>
+                <Column><Text text="{i18n>columnLabel}" /></Column>
+                <Column hAlign="End"><Text text="{i18n>columnPosition}" /></Column>
+                <Column><Text text="{i18n>dataType}" /></Column>
+                <Column><Text text="{i18n>visible}" /></Column>
+                <Column><Text text="{i18n>confidence}" /></Column>
+              </columns>
+              <items>
+                <ColumnListItem>
+                  <cells>
+                    <Text text="{path: 'detail>FieldName', formatter: '.formatter.formatText'}" />
+                    <Text text="{path: 'detail>ColumnLabel', formatter: '.formatter.formatText'}" />
+                    <ObjectNumber number="{path: 'detail>ColumnPosition', formatter: '.formatter.formatNumber'}" />
+                    <Text text="{path: 'detail>DataType', formatter: '.formatter.formatText'}" />
+                    <Text text="{path: 'detail>Visible', formatter: '.formatter.formatBoolean'}" />
+                    <Text text="{path: 'detail>Confidence', formatter: '.formatter.formatText'}" />
+                  </cells>
+                </ColumnListItem>
+              </items>
+            </Table>
+          </IconTabFilter>
+          <IconTabFilter text="{i18n>alvSorts}" count="{detail>/alvOutputDetail/sorts/length}">
+            <Table growing="true" items="{detail>/alvOutputDetail/sorts}">
+              <columns><Column><Text text="{i18n>fieldName}" /></Column><Column hAlign="End"><Text text="{i18n>sortPosition}" /></Column><Column><Text text="{i18n>isAscending}" /></Column><Column><Text text="{i18n>subtotal}" /></Column><Column><Text text="{i18n>confidence}" /></Column></columns>
+              <items><ColumnListItem><cells><Text text="{path: 'detail>FieldName', formatter: '.formatter.formatText'}" /><ObjectNumber number="{path: 'detail>SortPosition', formatter: '.formatter.formatNumber'}" /><Text text="{path: 'detail>IsAscending', formatter: '.formatter.formatBoolean'}" /><Text text="{path: 'detail>Subtotal', formatter: '.formatter.formatBoolean'}" /><Text text="{path: 'detail>Confidence', formatter: '.formatter.formatText'}" /></cells></ColumnListItem></items>
+            </Table>
+          </IconTabFilter>
+          <IconTabFilter text="{i18n>alvFilters}" count="{detail>/alvOutputDetail/filters/length}">
+            <Table growing="true" items="{detail>/alvOutputDetail/filters}">
+              <columns><Column><Text text="{i18n>fieldName}" /></Column><Column><Text text="{i18n>filterSign}" /></Column><Column><Text text="{i18n>filterOption}" /></Column><Column><Text text="{i18n>lowValue}" /></Column><Column><Text text="{i18n>highValue}" /></Column><Column><Text text="{i18n>confidence}" /></Column></columns>
+              <items><ColumnListItem><cells><Text text="{path: 'detail>FieldName', formatter: '.formatter.formatText'}" /><Text text="{path: 'detail>FilterSign', formatter: '.formatter.formatText'}" /><Text text="{path: 'detail>FilterOption', formatter: '.formatter.formatText'}" /><Text text="{path: 'detail>LowValue', formatter: '.formatter.formatText'}" /><Text text="{path: 'detail>HighValue', formatter: '.formatter.formatText'}" /><Text text="{path: 'detail>Confidence', formatter: '.formatter.formatText'}" /></cells></ColumnListItem></items>
+            </Table>
+          </IconTabFilter>
+          <IconTabFilter text="{i18n>alvEvents}" count="{detail>/alvOutputDetail/events/length}">
+            <Table growing="true" items="{detail>/alvOutputDetail/events}">
+              <columns><Column><Text text="{i18n>eventName}" /></Column><Column><Text text="{i18n>handlerName}" /></Column><Column><Text text="{i18n>handlerKind}" /></Column><Column><Text text="{i18n>guiDependency}" /></Column><Column><Text text="{i18n>confidence}" /></Column></columns>
+              <items><ColumnListItem><cells><Text text="{path: 'detail>EventName', formatter: '.formatter.formatText'}" /><Text text="{path: 'detail>HandlerName', formatter: '.formatter.formatText'}" /><Text text="{path: 'detail>HandlerKind', formatter: '.formatter.formatText'}" /><Text text="{path: 'detail>GuiDependency', formatter: '.formatter.formatBoolean'}" /><Text text="{path: 'detail>Confidence', formatter: '.formatter.formatText'}" /></cells></ColumnListItem></items>
+            </Table>
+          </IconTabFilter>
+        </items>
+      </IconTabBar>
+    </VBox>
   </VBox>
 </core:FragmentDefinition>

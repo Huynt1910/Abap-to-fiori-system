@@ -27,6 +27,14 @@ sap.ui.define([
       return this.getOwnerComponent().getAnalysisService();
     },
 
+    getProgramValueHelpService: function () {
+      return this.getOwnerComponent().getProgramValueHelpService();
+    },
+
+    getComparisonService: function () {
+      return this.getOwnerComponent().getComparisonService();
+    },
+
     getDocumentService: function () {
       return this.getOwnerComponent().getDocumentService();
     },

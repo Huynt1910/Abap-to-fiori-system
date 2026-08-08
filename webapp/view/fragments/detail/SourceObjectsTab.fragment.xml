@@ -1,0 +1,36 @@
+<core:FragmentDefinition xmlns:core="sap.ui.core" xmlns="sap.m">
+  <VBox class="tabSurface" busy="{detail>/loading/sourceObjects}" busyIndicatorDelay="0">
+    <MessageStrip visible="{path: 'detail>/errors/sourceObjects', formatter: '.formatter.hasValue'}" text="{detail>/errors/sourceObjects}" type="Error" showIcon="true" class="sapUiSmallMarginBottom" />
+    <OverflowToolbar class="sectionToolbar" visible="{path: 'detail>/sourceObjects', formatter: '.formatter.hasItems'}">
+      <Title text="{i18n>sourceObjects}" level="H3" />
+      <ObjectStatus text="{path: 'detail>/counts/sourceObjects', formatter: '.formatter.formatCountText'}" />
+      <ToolbarSpacer />
+      <Button icon="sap-icon://action-settings" tooltip="{i18n>viewSettings}" press=".onOpenDetailTableSettings">
+        <customData>
+          <core:CustomData key="section" value="sourceObjects" />
+        </customData>
+      </Button>
+    </OverflowToolbar>
+    <IllustratedMessage visible="{path: 'detail>/sourceObjects', formatter: '.formatter.hasNoItems'}" illustrationType="sapIllus-NoEntries" title="{i18n>noSourceObjects}" />
+    <Table id="sourceObjectsTable" visible="{path: 'detail>/sourceObjects', formatter: '.formatter.hasItems'}" growing="true" growingThreshold="20" items="{detail>/sourceObjects}">
+      <columns>
+        <Column width="14rem" visible="{detail>/columns/sourceObjects/objectName}"><Text text="{i18n>objectName}" /></Column>
+        <Column width="10rem" visible="{detail>/columns/sourceObjects/objectType}"><Text text="{i18n>objectType}" /></Column>
+        <Column width="14rem" demandPopin="true" minScreenWidth="Tablet" visible="{detail>/columns/sourceObjects/parentObject}"><Text text="{i18n>parentObject}" /></Column>
+        <Column width="7rem" hAlign="End" visible="{detail>/columns/sourceObjects/includeDepth}"><Text text="{i18n>includeDepth}" /></Column>
+        <Column width="7rem" hAlign="End" visible="{detail>/columns/sourceObjects/lineCount}"><Text text="{i18n>lineCount}" /></Column>
+      </columns>
+      <items>
+        <ColumnListItem>
+          <cells>
+            <Text text="{path: 'detail>ObjectName', formatter: '.formatter.formatText'}" visible="{detail>/columns/sourceObjects/objectName}" />
+            <Text text="{path: 'detail>ObjectType', formatter: '.formatter.formatText'}" visible="{detail>/columns/sourceObjects/objectType}" />
+            <Text text="{path: 'detail>ParentObject', formatter: '.formatter.formatText'}" visible="{detail>/columns/sourceObjects/parentObject}" />
+            <ObjectNumber number="{path: 'detail>IncludeDepth', formatter: '.formatter.formatNumber'}" visible="{detail>/columns/sourceObjects/includeDepth}" />
+            <ObjectNumber number="{path: 'detail>LineCount', formatter: '.formatter.formatNumber'}" visible="{detail>/columns/sourceObjects/lineCount}" />
+          </cells>
+        </ColumnListItem>
+      </items>
+    </Table>
+  </VBox>
+</core:FragmentDefinition>

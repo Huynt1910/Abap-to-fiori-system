@@ -1,0 +1,51 @@
+<core:FragmentDefinition
+  xmlns="sap.m"
+  xmlns:core="sap.ui.core"
+  xmlns:form="sap.ui.layout.form">
+  <Dialog
+    id="comparisonItemDetailDialog"
+    title="{i18n>comparisonItemDetail}"
+    contentWidth="42rem"
+    resizable="true"
+    draggable="true">
+    <content>
+      <form:SimpleForm
+        editable="false"
+        layout="ResponsiveGridLayout"
+        labelSpanXL="3"
+        labelSpanL="3"
+        labelSpanM="4"
+        columnsXL="1"
+        columnsL="1"
+        columnsM="1">
+        <Label text="{i18n>category}" />
+        <Text text="{path: 'comparisonUi>/selectedItem/Category', formatter: '.comparisonFormatter.formatText'}" />
+        <Label text="{i18n>sourceElement}" />
+        <Text text="{path: 'comparisonUi>/selectedItem/SourceElement', formatter: '.comparisonFormatter.formatText'}" />
+        <Label text="{i18n>sourceType}" />
+        <Text text="{path: 'comparisonUi>/selectedItem/SourceType', formatter: '.comparisonFormatter.formatText'}" />
+        <Label text="{i18n>sourceValue}" />
+        <Text text="{path: 'comparisonUi>/selectedItem/SourceValue', formatter: '.comparisonFormatter.formatText'}" />
+        <Label text="{i18n>targetElement}" />
+        <Text text="{path: 'comparisonUi>/selectedItem/TargetElement', formatter: '.comparisonFormatter.formatText'}" />
+        <Label text="{i18n>targetType}" />
+        <Text text="{path: 'comparisonUi>/selectedItem/TargetType', formatter: '.comparisonFormatter.formatText'}" />
+        <Label text="{i18n>targetValue}" />
+        <Text text="{path: 'comparisonUi>/selectedItem/TargetValue', formatter: '.comparisonFormatter.formatText'}" />
+        <Label text="{i18n>mappingRule}" />
+        <Text text="{path: 'comparisonUi>/selectedItem/MappingRule', formatter: '.comparisonFormatter.formatText'}" />
+        <Label text="{i18n>status}" />
+        <ObjectStatus text="{path: 'comparisonUi>/selectedItem/Status', formatter: '.comparisonFormatter.formatText'}" state="{path: 'comparisonUi>/selectedItem/Status', formatter: '.comparisonFormatter.statusToValueState'}" />
+        <Label text="{i18n>severity}" />
+        <ObjectStatus text="{path: 'comparisonUi>/selectedItem/Severity', formatter: '.comparisonFormatter.formatText'}" state="{path: 'comparisonUi>/selectedItem/Severity', formatter: '.comparisonFormatter.statusToValueState'}" />
+        <Label text="{i18n>messageText}" />
+        <Text text="{path: 'comparisonUi>/selectedItem/Message', formatter: '.comparisonFormatter.formatText'}" />
+        <Label text="{i18n>recommendation}" />
+        <Text text="{path: 'comparisonUi>/selectedItem/Recommendation', formatter: '.comparisonFormatter.formatText'}" />
+      </form:SimpleForm>
+    </content>
+    <beginButton>
+      <Button text="{i18n>close}" press=".onCloseItemDetail" />
+    </beginButton>
+  </Dialog>
+</core:FragmentDefinition>

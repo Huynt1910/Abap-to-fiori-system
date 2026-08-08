@@ -74,6 +74,13 @@ sap.ui.define([
     });
   };
 
+  AnalysisService.prototype.getSourceObjects = function (sAnalysisId) {
+    return this._readNavigationList(sAnalysisId, Constants.navigation.sourceObjects, {
+      parameters: { $select: Constants.field.sourceObjects.join(",") },
+      sorters: [new Sorter("ObjectName", false)]
+    });
+  };
+
   AnalysisService.prototype.getDatabaseObjects = function (sAnalysisId) {
     return this._readNavigationList(sAnalysisId, Constants.navigation.databaseObjects, {
       parameters: { $select: Constants.field.databaseObjects.join(",") }
@@ -92,6 +99,35 @@ sap.ui.define([
     });
   };
 
+  AnalysisService.prototype.getAlvOutputById = function (sAnalysisId, sOutputId) {
+    return this._readContext(this._buildAlvOutputPath(sAnalysisId, sOutputId), {
+      $select: Constants.field.alvOutputs.join(","),
+      $$groupId: "$direct"
+    });
+  };
+
+  AnalysisService.prototype.getAlvOutputChildren = function (sAnalysisId, sOutputId, sChildKey) {
+    var mChild = {
+      alvColumns: { nav: Constants.navigation.alvColumns, fields: Constants.field.alvColumns, sort: new Sorter("ColumnPosition", false) },
+      alvSorts: { nav: Constants.navigation.alvSorts, fields: Constants.field.alvSorts, sort: new Sorter("SortPosition", false) },
+      alvFilters: { nav: Constants.navigation.alvFilters, fields: Constants.field.alvFilters },
+      alvEvents: { nav: Constants.navigation.alvEvents, fields: Constants.field.alvEvents }
+    }[sChildKey];
+
+    if (!mChild) {
+      return Promise.reject(new Error("Unsupported ALV child table."));
+    }
+
+    return this._readList(this._buildAlvOutputPath(sAnalysisId, sOutputId) + "/" + mChild.nav, {
+      sorters: mChild.sort ? [mChild.sort] : [],
+      parameters: {
+        $select: mChild.fields.join(","),
+        $$groupId: "$direct"
+      },
+      length: 1000
+    });
+  };
+
   AnalysisService.prototype.getEvidences = function (sAnalysisId) {
     return this._readNavigationList(sAnalysisId, Constants.navigation.evidences, {
       parameters: { $select: Constants.field.evidences.join(",") }
@@ -101,6 +137,24 @@ sap.ui.define([
   AnalysisService.prototype.getRecommendations = function (sAnalysisId) {
     return this._readNavigationList(sAnalysisId, Constants.navigation.recommendations, {
       parameters: { $select: Constants.field.recommendations.join(",") }
+    });
+  };
+
+  AnalysisService.prototype.getRecommendationById = function (sAnalysisId, sRecommendationId) {
+    return this._readContext(this._buildRecommendationPath(sAnalysisId, sRecommendationId), {
+      $select: Constants.field.recommendations.join(","),
+      $$groupId: "$direct"
+    });
+  };
+
+  AnalysisService.prototype.getRecommendationAnnotations = function (sAnalysisId, sRecommendationId) {
+    return this._readList(this._buildRecommendationPath(sAnalysisId, sRecommendationId) + "/" + Constants.navigation.annotations, {
+      sorters: [new Sorter("AnnotationSequence", false)],
+      parameters: {
+        $select: Constants.field.annotations.join(","),
+        $$groupId: "$direct"
+      },
+      length: 1000
     });
   };
 
@@ -167,6 +221,28 @@ sap.ui.define([
     }
 
     return Constants.entitySet.analyses + "(" + encodeURIComponent(sId) + ")";
+  };
+
+  AnalysisService.prototype._buildAlvOutputPath = function (sAnalysisId, sOutputId) {
+    var sAnalysis = String(sAnalysisId || "").trim();
+    var sOutput = String(sOutputId || "").trim();
+
+    if (!sAnalysis || !sOutput) {
+      throw new Error("AnalysisId and OutputId are required.");
+    }
+
+    return Constants.entitySet.alvOutputs + "(AnalysisId=" + encodeURIComponent(sAnalysis) + ",OutputId=" + encodeURIComponent(sOutput) + ")";
+  };
+
+  AnalysisService.prototype._buildRecommendationPath = function (sAnalysisId, sRecommendationId) {
+    var sAnalysis = String(sAnalysisId || "").trim();
+    var sRecommendation = String(sRecommendationId || "").trim();
+
+    if (!sAnalysis || !sRecommendation) {
+      throw new Error("AnalysisId and RecommendationId are required.");
+    }
+
+    return Constants.entitySet.recommendations + "(AnalysisId=" + encodeURIComponent(sAnalysis) + ",RecommendationId=" + encodeURIComponent(sRecommendation) + ")";
   };
 
   return AnalysisService;
