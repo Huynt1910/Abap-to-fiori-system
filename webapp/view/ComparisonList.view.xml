@@ -1,132 +1,277 @@
 <mvc:View
-  controllerName="abap.to.fiori.system.controller.ComparisonList"
-  xmlns:mvc="sap.ui.core.mvc"
-  xmlns:core="sap.ui.core"
-  xmlns:f="sap.f"
-  xmlns="sap.m"
-  displayBlock="true">
-  <f:DynamicPage
-    id="comparisonListPage"
-    busy="{comparisonUi>/busy}"
-    busyIndicatorDelay="0"
-    class="migrationAnalyzerPage">
-    <f:title>
-      <f:DynamicPageTitle>
-        <f:heading>
-          <Title text="{i18n>comparisonTitle}" level="H2" />
-        </f:heading>
-        <f:actions>
-          <Button icon="sap-icon://nav-back" text="{i18n>back}" type="Transparent" press=".onBackToDashboard" />
-          <Button icon="sap-icon://refresh" text="{i18n>refresh}" type="Transparent" press=".onRefresh" />
-        </f:actions>
-      </f:DynamicPageTitle>
-    </f:title>
-    <f:header>
-      <f:DynamicPageHeader pinnable="false">
-        <HBox alignItems="End" wrap="Wrap" class="migrationAnalyzerFilterBar">
-          <VBox class="migrationAnalyzerFilterField migrationAnalyzerSearchFilterField">
-            <Label text="{i18n>rootProgram}" labelFor="comparisonProgramSearch" />
-            <SearchField
-              id="comparisonProgramSearch"
-              value="{comparisonUi>/filters/programName}"
-              placeholder="{i18n>searchProgramName}"
-              search=".onSearch" />
-          </VBox>
-          <VBox class="migrationAnalyzerFilterField migrationAnalyzerSelectFilterField">
-            <Label text="{i18n>targetStrategy}" labelFor="comparisonTargetStrategy" />
-            <Input
-              id="comparisonTargetStrategy"
-              value="{comparisonUi>/filters/targetStrategy}"
-              submit=".onSearch" />
-          </VBox>
-          <VBox class="migrationAnalyzerFilterField migrationAnalyzerSelectFilterField">
-            <Label text="{i18n>overallStatus}" labelFor="comparisonOverallStatus" />
-            <Select
-              id="comparisonOverallStatus"
-              selectedKey="{comparisonUi>/filters/overallStatus}"
-              change=".onSearch">
-              <items>
-                <core:Item key="" text="{i18n>allStatuses}" />
-                <core:Item key="COMPATIBLE" text="COMPATIBLE" />
-                <core:Item key="WARNING" text="WARNING" />
-                <core:Item key="UNSUPPORTED" text="UNSUPPORTED" />
-                <core:Item key="ERROR" text="ERROR" />
-              </items>
-            </Select>
-          </VBox>
-          <VBox class="migrationAnalyzerFilterField migrationAnalyzerSelectFilterField">
-            <Label text="{i18n>runStatus}" labelFor="comparisonRunStatus" />
-            <Select
-              id="comparisonRunStatus"
-              selectedKey="{comparisonUi>/filters/runStatus}"
-              change=".onSearch">
-              <items>
-                <core:Item key="" text="{i18n>allStatuses}" />
-                <core:Item key="QUEUED" text="QUEUED" />
-                <core:Item key="RUNNING" text="RUNNING" />
-                <core:Item key="PROCESSING" text="PROCESSING" />
-                <core:Item key="COMPLETED" text="COMPLETED" />
-                <core:Item key="SUCCESS" text="SUCCESS" />
-                <core:Item key="FAILED" text="FAILED" />
-                <core:Item key="ERROR" text="ERROR" />
-              </items>
-            </Select>
-          </VBox>
-        </HBox>
-      </f:DynamicPageHeader>
-    </f:header>
-    <f:content>
-      <VBox class="migrationAnalyzerContent">
-        <MessageStrip
-          text="{comparisonUi>/errorMessage}"
-          type="Error"
-          showIcon="true"
-          visible="{= !!${comparisonUi>/errorMessage} }" />
-        <Table
-          id="comparisonRunsTable"
-          growing="true"
-          growingThreshold="20"
-          sticky="ColumnHeaders"
-          itemPress=".onRunPress"
-          items="{comparisonUi>/runs}">
-          <noData>
-            <IllustratedMessage
-              illustrationType="sapIllus-NoEntries"
-              title="{i18n>noComparisonRuns}"
-              description="{i18n>noComparisonRunsDescription}" />
-          </noData>
-          <columns>
-            <Column width="14rem" importance="High"><Text text="{i18n>rootProgram}" /></Column>
-            <Column width="10rem" importance="High"><Text text="{i18n>runStatus}" /></Column>
-            <Column width="10rem"><Text text="{i18n>overallStatus}" /></Column>
-            <Column width="10rem" hAlign="End"><Text text="{i18n>compatibilityRate}" /></Column>
-            <Column width="8rem" hAlign="End" demandPopin="true" minScreenWidth="Tablet"><Text text="{i18n>totalItems}" /></Column>
-            <Column width="10rem" demandPopin="true" minScreenWidth="Tablet"><Text text="{i18n>targetStrategy}" /></Column>
-            <Column width="12rem" demandPopin="true" minScreenWidth="Desktop"><Text text="{i18n>createdAt}" /></Column>
-            <Column width="10rem" demandPopin="true" minScreenWidth="Desktop"><Text text="{i18n>createdBy}" /></Column>
-          </columns>
-          <items>
-            <ColumnListItem type="Navigation" press=".onRunPress">
-              <cells>
-                <ObjectIdentifier
-                  title="{path: 'comparisonUi>ProgramName', formatter: '.comparisonFormatter.formatText'}"
-                  text="{path: 'comparisonUi>CmpRunId', formatter: '.comparisonFormatter.formatText'}" />
-                <ObjectStatus
-                  text="{path: 'comparisonUi>RunStatus', formatter: '.comparisonFormatter.formatText'}"
-                  state="{path: 'comparisonUi>RunStatus', formatter: '.comparisonFormatter.statusToValueState'}" />
-                <ObjectStatus
-                  text="{path: 'comparisonUi>OverallStatus', formatter: '.comparisonFormatter.formatText'}"
-                  state="{path: 'comparisonUi>OverallStatus', formatter: '.comparisonFormatter.statusToValueState'}" />
-                <ObjectNumber number="{path: 'comparisonUi>CompatibilityRate', formatter: '.comparisonFormatter.formatCompatibilityRate'}" unit="%" />
-                <ObjectNumber number="{path: 'comparisonUi>TotalItems', formatter: '.comparisonFormatter.formatCount'}" />
-                <Text text="{path: 'comparisonUi>TargetStrategy', formatter: '.comparisonFormatter.formatText'}" />
-                <Text text="{path: 'comparisonUi>CreatedAt', formatter: '.comparisonFormatter.formatDateTime'}" />
-                <Text text="{path: 'comparisonUi>CreatedBy', formatter: '.comparisonFormatter.formatText'}" />
-              </cells>
-            </ColumnListItem>
-          </items>
-        </Table>
-      </VBox>
-    </f:content>
-  </f:DynamicPage>
+    controllerName="abap.to.fiori.system.controller.ComparisonList"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns:core="sap.ui.core"
+    xmlns:f="sap.f"
+    xmlns="sap.m"
+    displayBlock="true"
+>
+    <f:DynamicPage
+        id="comparisonListPage"
+        busy="{comparisonUi>/busy}"
+        busyIndicatorDelay="0"
+        class="migrationAnalyzerPage"
+    >
+        <f:title>
+            <f:DynamicPageTitle>
+                <f:heading>
+                    <HBox class="pageTitleWithBack">
+                        <Button
+                            icon="sap-icon://nav-back"
+                            type="Transparent"
+                            press=".onBackToDashboard"
+                        />
+                        <Title
+                            text="{i18n>comparisonTitle}"
+                            level="H2"
+                        />
+                    </HBox>
+                </f:heading>
+                <f:actions>
+                    <Button
+                        icon="sap-icon://refresh"
+                        text="{i18n>refresh}"
+                        type="Transparent"
+                        press=".onRefresh"
+                    />
+                </f:actions>
+            </f:DynamicPageTitle>
+        </f:title>
+        <f:header>
+            <f:DynamicPageHeader pinnable="false">
+                <HBox
+                    alignItems="End"
+                    wrap="Wrap"
+                    class="migrationAnalyzerFilterBar"
+                >
+                    <VBox
+                        class="migrationAnalyzerFilterField migrationAnalyzerSearchFilterField"
+                    >
+                        <Label
+                            text="{i18n>rootProgram}"
+                            labelFor="comparisonProgramSearch"
+                        />
+                        <SearchField
+                            id="comparisonProgramSearch"
+                            value="{comparisonUi>/filters/programName}"
+                            placeholder="{i18n>searchProgramName}"
+                            search=".onSearch"
+                        />
+                    </VBox>
+                    <VBox
+                        class="migrationAnalyzerFilterField migrationAnalyzerSelectFilterField"
+                    >
+                        <Label
+                            text="{i18n>targetStrategy}"
+                            labelFor="comparisonTargetStrategy"
+                        />
+                        <Input
+                            id="comparisonTargetStrategy"
+                            value="{comparisonUi>/filters/targetStrategy}"
+                            submit=".onSearch"
+                        />
+                    </VBox>
+                    <VBox
+                        class="migrationAnalyzerFilterField migrationAnalyzerSelectFilterField"
+                    >
+                        <Label
+                            text="{i18n>overallStatus}"
+                            labelFor="comparisonOverallStatus"
+                        />
+                        <Select
+                            id="comparisonOverallStatus"
+                            selectedKey="{comparisonUi>/filters/overallStatus}"
+                            change=".onSearch"
+                        >
+                            <items>
+                                <core:Item
+                                    key=""
+                                    text="{i18n>allStatuses}"
+                                />
+                                <core:Item
+                                    key="COMPATIBLE"
+                                    text="COMPATIBLE"
+                                />
+                                <core:Item
+                                    key="WARNING"
+                                    text="WARNING"
+                                />
+                                <core:Item
+                                    key="UNSUPPORTED"
+                                    text="UNSUPPORTED"
+                                />
+                                <core:Item
+                                    key="ERROR"
+                                    text="ERROR"
+                                />
+                            </items>
+                        </Select>
+                    </VBox>
+                    <VBox
+                        class="migrationAnalyzerFilterField migrationAnalyzerSelectFilterField"
+                    >
+                        <Label
+                            text="{i18n>runStatus}"
+                            labelFor="comparisonRunStatus"
+                        />
+                        <Select
+                            id="comparisonRunStatus"
+                            selectedKey="{comparisonUi>/filters/runStatus}"
+                            change=".onSearch"
+                        >
+                            <items>
+                                <core:Item
+                                    key=""
+                                    text="{i18n>allStatuses}"
+                                />
+                                <core:Item
+                                    key="QUEUED"
+                                    text="QUEUED"
+                                />
+                                <core:Item
+                                    key="RUNNING"
+                                    text="RUNNING"
+                                />
+                                <core:Item
+                                    key="PROCESSING"
+                                    text="PROCESSING"
+                                />
+                                <core:Item
+                                    key="COMPLETED"
+                                    text="COMPLETED"
+                                />
+                                <core:Item
+                                    key="SUCCESS"
+                                    text="SUCCESS"
+                                />
+                                <core:Item
+                                    key="FAILED"
+                                    text="FAILED"
+                                />
+                                <core:Item
+                                    key="ERROR"
+                                    text="ERROR"
+                                />
+                            </items>
+                        </Select>
+                    </VBox>
+                </HBox>
+            </f:DynamicPageHeader>
+        </f:header>
+        <f:content>
+            <VBox class="migrationAnalyzerContent">
+                <MessageStrip
+                    text="{comparisonUi>/errorMessage}"
+                    type="Error"
+                    showIcon="true"
+                    visible="{= !!${comparisonUi>/errorMessage} }"
+                />
+                <Table
+                    id="comparisonRunsTable"
+                    growing="true"
+                    growingThreshold="20"
+                    sticky="ColumnHeaders"
+                    itemPress=".onRunPress"
+                    items="{comparisonUi>/runs}"
+                >
+                    <noData>
+                        <IllustratedMessage
+                            illustrationType="sapIllus-NoEntries"
+                            title="{i18n>noComparisonRuns}"
+                            description="{i18n>noComparisonRunsDescription}"
+                        />
+                    </noData>
+                    <columns>
+                        <Column
+                            width="14rem"
+                            importance="High"
+                        >
+                            <Text text="{i18n>rootProgram}" />
+                        </Column>
+                        <Column
+                            width="10rem"
+                            importance="High"
+                        >
+                            <Text text="{i18n>runStatus}" />
+                        </Column>
+                        <Column width="10rem">
+                            <Text text="{i18n>overallStatus}" />
+                        </Column>
+                        <Column
+                            width="10rem"
+                            hAlign="End"
+                        >
+                            <Text text="{i18n>compatibilityRate}" />
+                        </Column>
+                        <Column
+                            width="8rem"
+                            hAlign="End"
+                            demandPopin="true"
+                            minScreenWidth="Tablet"
+                        >
+                            <Text text="{i18n>totalItems}" />
+                        </Column>
+                        <Column
+                            width="10rem"
+                            demandPopin="true"
+                            minScreenWidth="Tablet"
+                        >
+                            <Text text="{i18n>targetStrategy}" />
+                        </Column>
+                        <Column
+                            width="12rem"
+                            demandPopin="true"
+                            minScreenWidth="Desktop"
+                        >
+                            <Text text="{i18n>createdAt}" />
+                        </Column>
+                        <Column
+                            width="10rem"
+                            demandPopin="true"
+                            minScreenWidth="Desktop"
+                        >
+                            <Text text="{i18n>createdBy}" />
+                        </Column>
+                    </columns>
+                    <items>
+                        <ColumnListItem
+                            type="Navigation"
+                            press=".onRunPress"
+                        >
+                            <cells>
+                                <ObjectIdentifier
+                                    title="{path: 'comparisonUi>ProgramName', formatter: '.comparisonFormatter.formatText'}"
+                                    text="{path: 'comparisonUi>CmpRunId', formatter: '.comparisonFormatter.formatText'}"
+                                />
+                                <ObjectStatus
+                                    text="{path: 'comparisonUi>RunStatus', formatter: '.comparisonFormatter.formatText'}"
+                                    state="{path: 'comparisonUi>RunStatus', formatter: '.comparisonFormatter.statusToValueState'}"
+                                />
+                                <ObjectStatus
+                                    text="{path: 'comparisonUi>OverallStatus', formatter: '.comparisonFormatter.formatText'}"
+                                    state="{path: 'comparisonUi>OverallStatus', formatter: '.comparisonFormatter.statusToValueState'}"
+                                />
+                                <ObjectNumber
+                                    number="{path: 'comparisonUi>CompatibilityRate', formatter: '.comparisonFormatter.formatCompatibilityRate'}"
+                                    unit="%"
+                                />
+                                <ObjectNumber
+                                    number="{path: 'comparisonUi>TotalItems', formatter: '.comparisonFormatter.formatCount'}"
+                                />
+                                <Text
+                                    text="{path: 'comparisonUi>TargetStrategy', formatter: '.comparisonFormatter.formatText'}"
+                                />
+                                <Text
+                                    text="{path: 'comparisonUi>CreatedAt', formatter: '.comparisonFormatter.formatDateTime'}"
+                                />
+                                <Text
+                                    text="{path: 'comparisonUi>CreatedBy', formatter: '.comparisonFormatter.formatText'}"
+                                />
+                            </cells>
+                        </ColumnListItem>
+                    </items>
+                </Table>
+            </VBox>
+        </f:content>
+    </f:DynamicPage>
 </mvc:View>

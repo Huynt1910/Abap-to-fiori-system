@@ -60,8 +60,29 @@ sap.ui.define([
       }.bind(this));
     },
 
+    onOpenExportAllDialog: function () {
+      this._resetExportState({
+        exportSection: Constants.exportSection.all,
+        selectedSection: Constants.exportSection.all,
+        sections: this._buildAllExportSectionSelection()
+      });
+      this._openExportDialog();
+    },
+
     onOpenExportDialog: function () {
-      this._resetExportState();
+      this.onOpenExportAllDialog();
+    },
+
+    onOpenSectionExportDialog: function (oEvent) {
+      var sSection = oEvent.getSource().data("section");
+
+      if (!this._isSectionExportAvailable(sSection)) {
+        return;
+      }
+
+      this._resetExportState({
+        section: sSection
+      });
       this._openExportDialog();
     },
 
@@ -194,6 +215,7 @@ sap.ui.define([
       oState = this._oTablePersonalization.saveState(oConfig, oState);
       this._setPersonalizationState(sSection, oState);
       this._applyTablePersonalization(sSection);
+      this._refreshExportAvailability();
       this._mDetailColumnSnapshot = null;
       this._mDetailSettingsSnapshot = null;
       this._sDetailTableSettingsSection = "";
@@ -376,7 +398,8 @@ sap.ui.define([
 
     onDownloadExport: function () {
       var oExport = this._oViewModel.getProperty("/export");
-      var aSelectedFields = this._getSelectedExportFieldKeys();
+      var sSelectedFields = this._getSelectedExportFieldExpression();
+      var sFileName = this._getExportFileName(oExport);
 
       if (oExport.busy) {
         return;
@@ -387,16 +410,12 @@ sap.ui.define([
         return;
       }
 
-      if (!aSelectedFields.length) {
-        MessageBox.error(this.getText("exportSelectColumnRequired"));
-        return;
-      }
-
       this._oViewModel.setProperty("/export/busy", true);
       this.getDocumentService().downloadSelectedExport(this._oViewModel.getProperty("/analysisId"), {
         fileFormat: oExport.fileFormat,
         exportSection: oExport.exportSection,
-        selectedFields: aSelectedFields
+        selectedFields: sSelectedFields,
+        fileName: sFileName
       }).then(function () {
         MessageToast.show(this.getText("exportSuccess"));
         this.byId("exportReportDialog").close();
@@ -499,6 +518,7 @@ sap.ui.define([
       this._oViewModel.setData(models.createAnalysisDetailModel().getData());
       this._oViewModel.setProperty("/analysisId", sAnalysisId);
       this._loadPersistedPersonalizationStates();
+      this._refreshExportAvailability();
     },
 
     _resetLoadedState: function () {
@@ -665,38 +685,108 @@ sap.ui.define([
         }.bind(this));
     },
 
-    _resetExportState: function () {
-      var sSelectedSection = this._oViewModel.getProperty("/selectedTab") || Constants.section.sourceObjects;
+    _resetExportState: function (mOptions) {
+      var sSelectedSection = mOptions && mOptions.section || this._oViewModel.getProperty("/selectedTab") || Constants.section.sourceObjects;
       var oConfig = AnalysisTableConfig.getConfig(sSelectedSection);
-      var aFields = this._buildExportFieldSelection(sSelectedSection);
+      var aSections = mOptions && mOptions.sections || this._buildSectionExportSelection(sSelectedSection);
+      var aFields = this._flattenExportSections(aSections);
+      var sFileFormat = Constants.fileFormat.excel;
+      var sExportSection = mOptions && mOptions.exportSection || oConfig && oConfig.exportSection || "";
+      var sReportType = this._oViewModel.getProperty("/overview/ProgramName") || "";
+      var sDefaultFileName = this.getDocumentService().getFallbackFileName({
+        reportType: sReportType,
+        fileFormat: sFileFormat,
+        exportSection: sExportSection || Constants.exportSection.all
+      });
 
       this._oViewModel.setProperty("/export", {
         busy: false,
-        fileFormat: Constants.fileFormat.excel,
-        exportSection: oConfig && oConfig.exportSection || "",
-        reportType: this._oViewModel.getProperty("/overview/ProgramName") || "",
+        fileFormat: sFileFormat,
+        exportSection: sExportSection,
+        reportType: sReportType,
         dialogOpen: false,
-        selectedSection: sSelectedSection,
+        isAll: (mOptions && mOptions.exportSection) === Constants.exportSection.all,
+        selectedSection: mOptions && mOptions.selectedSection || sSelectedSection,
+        selectedSectionLabel: (mOptions && mOptions.selectedSection) === Constants.exportSection.all ? "" : this._getExportSectionLabel(sSelectedSection),
         selectedFields: aFields.filter(function (oField) {
           return oField.selected;
         }).map(function (oField) {
           return oField.key;
         }),
+        availableSections: aSections,
         availableFields: aFields,
-        fileName: "",
+        fileName: sDefaultFileName,
+        defaultFileName: sDefaultFileName,
         message: ""
+      });
+    },
+
+    onExportFileFormatChange: function () {
+      var oExport = this._oViewModel.getProperty("/export") || {};
+      var sPreviousDefault = oExport.defaultFileName || "";
+      var sCurrentFileName = oExport.fileName || "";
+      var sDefaultFileName = this.getDocumentService().getFallbackFileName({
+        reportType: oExport.reportType,
+        fileFormat: oExport.fileFormat,
+        exportSection: oExport.exportSection || Constants.exportSection.all
+      });
+
+      this._oViewModel.setProperty("/export/defaultFileName", sDefaultFileName);
+      if (!String(sCurrentFileName).trim() || sCurrentFileName === sPreviousDefault) {
+        this._oViewModel.setProperty("/export/fileName", sDefaultFileName);
+      }
+    },
+
+    _getExportFileName: function (oExport) {
+      var sFileName = String(oExport && oExport.fileName || "").trim();
+
+      return sFileName || oExport && oExport.defaultFileName || this.getDocumentService().getFallbackFileName({
+        reportType: oExport && oExport.reportType,
+        fileFormat: oExport && oExport.fileFormat,
+        exportSection: oExport && oExport.exportSection || Constants.exportSection.all
       });
     },
 
     onExportFieldSelectionChange: function () {
       setTimeout(function () {
-        var aFields = this._oViewModel.getProperty("/export/availableFields") || [];
-        this._oViewModel.setProperty("/export/selectedFields", aFields.filter(function (oField) {
-          return oField.selected;
-        }).map(function (oField) {
-          return oField.key;
-        }));
+        this._syncExportSelection();
       }.bind(this), 0);
+    },
+
+    onToggleExportSection: function (oEvent) {
+      var oContext = oEvent.getSource().getBindingContext("detail");
+      var sPath = oContext && oContext.getPath();
+      var bSelected = oEvent.getParameter("selected");
+      var aFields;
+
+      if (!sPath) {
+        return;
+      }
+
+      aFields = this._oViewModel.getProperty(sPath + "/fields") || [];
+      aFields.forEach(function (oField, iIndex) {
+        this._oViewModel.setProperty(sPath + "/fields/" + iIndex + "/selected", bSelected);
+      }.bind(this));
+      this._syncExportSelection();
+    },
+
+    onToggleExportField: function (oEvent) {
+      var oContext = oEvent.getSource().getBindingContext("detail");
+      var sPath = oContext && oContext.getPath();
+      var sSectionPath = sPath && sPath.replace(/\/fields\/\d+$/, "");
+      var aFields;
+      var bAnySelected;
+
+      if (!sSectionPath) {
+        return;
+      }
+
+      aFields = this._oViewModel.getProperty(sSectionPath + "/fields") || [];
+      bAnySelected = aFields.some(function (oField) {
+        return oField.selected === true;
+      });
+      this._oViewModel.setProperty(sSectionPath + "/selected", bAnySelected);
+      this._syncExportSelection();
     },
 
     onSelectAllExportFields: function () {
@@ -740,30 +830,150 @@ sap.ui.define([
       }.bind(this));
     },
 
+    _buildAllExportFieldSelection: function () {
+      var mSeen = {};
+      var aFields = [];
+
+      Object.keys(AnalysisTableConfig.configs).forEach(function (sSection) {
+        if (!this._isSectionExportAvailable(sSection)) {
+          return;
+        }
+
+        this._buildExportFieldSelection(sSection).forEach(function (oField) {
+          var sKey = oField.key;
+          if (!mSeen[sKey]) {
+            mSeen[sKey] = true;
+            aFields.push(Object.assign({}, oField, {
+              label: this._getExportSectionLabel(sSection) + " - " + oField.label
+            }));
+          }
+        }.bind(this));
+      }.bind(this));
+
+      return aFields;
+    },
+
+    _buildSectionExportSelection: function (sSection) {
+      var oConfig = AnalysisTableConfig.getConfig(sSection);
+      var aFields = this._buildExportFieldSelection(sSection);
+
+      if (!oConfig || !oConfig.exportSection || !aFields.length) {
+        return [];
+      }
+
+      return [{
+        key: sSection,
+        label: this._getExportSectionLabel(sSection),
+        exportSection: oConfig.exportSection,
+        selected: true,
+        fields: aFields
+      }];
+    },
+
+    _buildAllExportSectionSelection: function () {
+      return Object.keys(AnalysisTableConfig.configs).map(function (sSection) {
+        return this._buildSectionExportSelection(sSection)[0];
+      }.bind(this)).filter(Boolean);
+    },
+
     _getSelectedExportFieldKeys: function () {
-      return (this._oViewModel.getProperty("/export/availableFields") || []).filter(function (oField) {
+      return (this._flattenExportSections(this._oViewModel.getProperty("/export/availableSections")) || []).filter(function (oField) {
         return oField.selected === true;
       }).map(function (oField) {
         return oField.key;
+      }).filter(function (sKey, iIndex, aKeys) {
+        return aKeys.indexOf(sKey) === iIndex;
       });
     },
 
+    _getSelectedExportFieldExpression: function () {
+      var oExport = this._oViewModel.getProperty("/export") || {};
+      var aSections = this._oViewModel.getProperty("/export/availableSections") || [];
+
+      if (oExport.exportSection === Constants.exportSection.all) {
+        return aSections.filter(function (oSection) {
+          return oSection && oSection.selected !== false;
+        }).map(function (oSection) {
+          var aFields = (oSection.fields || []).filter(function (oField) {
+            return oField.selected === true;
+          }).map(function (oField) {
+            return oField.key;
+          });
+
+          return aFields.length ? oSection.exportSection + ":" + aFields.join(",") : "";
+        }).filter(Boolean).join(";");
+      }
+
+      return this._getSelectedExportFieldKeys().join(",");
+    },
+
     _setAllExportFieldsSelected: function (bSelected) {
-      var aFields = (this._oViewModel.getProperty("/export/availableFields") || []).map(function (oField) {
-        return Object.assign({}, oField, {
-          selected: bSelected
+      var aSections = (this._oViewModel.getProperty("/export/availableSections") || []).map(function (oSection) {
+        return Object.assign({}, oSection, {
+          selected: bSelected,
+          fields: (oSection.fields || []).map(function (oField) {
+            return Object.assign({}, oField, {
+              selected: bSelected
+            });
+          })
         });
       });
 
+      this._oViewModel.setProperty("/export/availableSections", aSections);
+      this._syncExportSelection();
+    },
+
+    _syncExportSelection: function () {
+      var aSections = this._oViewModel.getProperty("/export/availableSections") || [];
+      var aFields = this._flattenExportSections(aSections);
+
       this._oViewModel.setProperty("/export/availableFields", aFields);
-      this._oViewModel.setProperty("/export/selectedFields", bSelected ? aFields.map(function (oField) {
-        return oField.key;
-      }) : []);
+      this._oViewModel.setProperty("/export/selectedFields", this._getSelectedExportFieldKeys());
+    },
+
+    _flattenExportSections: function (aSections) {
+      return (aSections || []).reduce(function (aResult, oSection) {
+        if (!oSection || oSection.selected === false) {
+          return aResult;
+        }
+        return aResult.concat((oSection.fields || []).map(function (oField) {
+          return Object.assign({}, oField, {
+            section: oSection.key,
+            sectionLabel: oSection.label,
+            selected: oSection.selected !== false && oField.selected === true
+          });
+        }));
+      }, []);
     },
 
     _canPrepareSelectedExport: function () {
       var oControl = this._oViewModel.getProperty("/overview/__OperationControl");
       return oControl && oControl.PrepareSelectedExport === true;
+    },
+
+    _refreshExportAvailability: function () {
+      var mAvailability = {};
+      var bAnyAvailable = false;
+
+      Object.keys(AnalysisTableConfig.configs).forEach(function (sSection) {
+        mAvailability[sSection] = this._isSectionExportAvailable(sSection);
+        bAnyAvailable = bAnyAvailable || mAvailability[sSection];
+      }.bind(this));
+      mAvailability.all = bAnyAvailable;
+
+      this._oViewModel.setProperty("/exportAvailable", mAvailability);
+    },
+
+    _isSectionExportAvailable: function (sSection) {
+      var oConfig = AnalysisTableConfig.getConfig(sSection);
+
+      return !!(oConfig && oConfig.exportSection && this._buildExportFieldSelection(sSection).length);
+    },
+
+    _getExportSectionLabel: function (sSection) {
+      var oConfig = AnalysisTableConfig.getConfig(sSection);
+
+      return oConfig ? this.getText(oConfig.titleKey) : String(sSection || "");
     },
 
     _getDetailColumnSettings: function (sSection) {

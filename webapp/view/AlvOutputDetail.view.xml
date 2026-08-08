@@ -2,10 +2,14 @@
   <uxap:ObjectPageLayout busy="{alvDetail>/busy}" busyIndicatorDelay="0" useIconTabBar="false">
     <uxap:headerTitle>
       <uxap:ObjectPageDynamicHeaderTitle>
-        <uxap:heading><Title text="{path:'alvDetail>/overview/OutputName', formatter:'.formatter.formatText'}" level="H1" /></uxap:heading>
+        <uxap:heading>
+          <HBox class="pageTitleWithBack">
+            <Button icon="sap-icon://nav-back" tooltip="{i18n>back}" type="Transparent" press=".onBackToAnalysis" />
+            <Title text="{path:'alvDetail>/overview/OutputName', formatter:'.formatter.formatText'}" level="H1" />
+          </HBox>
+        </uxap:heading>
         <uxap:expandedHeading><ObjectAttribute title="{i18n>framework}" text="{path:'alvDetail>/overview/Framework', formatter:'.formatter.formatText'}" /></uxap:expandedHeading>
         <uxap:actions>
-          <Button icon="sap-icon://nav-back" tooltip="{i18n>back}" press=".onBackToAnalysis" />
           <Button icon="sap-icon://refresh" tooltip="{i18n>refresh}" press=".onRefresh" />
         </uxap:actions>
       </uxap:ObjectPageDynamicHeaderTitle>

@@ -111,8 +111,8 @@ sap.ui.define([
   DocumentService.prototype.downloadSelectedExport = function (sAnalysisId, mParameters) {
     return this.prepareSelectedExport(sAnalysisId, mParameters).then(function (oResult) {
       if (oResult && oResult.DownloadUrl) {
-        return this.downloadUrl(oResult.DownloadUrl, {
-          fileName: oResult.FileName,
+        return this.downloadUrl(this._normalizeDownloadUrl(oResult.DownloadUrl), {
+          fileName: this.getDownloadFileName(mParameters.fileName, oResult.FileName, mParameters.fileFormat),
           mimeType: oResult.MimeType,
           fileFormat: mParameters.fileFormat
         });
@@ -120,7 +120,10 @@ sap.ui.define([
 
       if (oResult && oResult.ExportId) {
         return this.pollExportJob(oResult.ExportId).then(function (oJob) {
-          return this.downloadExportJobContent(oJob);
+          return this.downloadExportJobContent(oJob, {
+            fileName: mParameters.fileName,
+            fileFormat: mParameters.fileFormat
+          });
         }.bind(this));
       }
 
@@ -129,6 +132,9 @@ sap.ui.define([
   };
 
   DocumentService.prototype.serializeSelectedFields = function (aFieldKeys) {
+    if (typeof aFieldKeys === "string") {
+      return aFieldKeys;
+    }
     return (aFieldKeys || []).join(",");
   };
 
@@ -181,15 +187,16 @@ sap.ui.define([
     }).requestObject();
   };
 
-  DocumentService.prototype.downloadExportJobContent = function (oJob) {
+  DocumentService.prototype.downloadExportJobContent = function (oJob, mOptions) {
     var sExportId = oJob && oJob.ExportId;
+    var sFileFormat = mOptions && mOptions.fileFormat || oJob && oJob.FileFormat;
     if (oJob && oJob.ExpiresAt && new Date(oJob.ExpiresAt).getTime() < Date.now()) {
       return Promise.reject(new Error("The export file has expired."));
     }
     return this.downloadUrl(this._buildAbsoluteServicePath(Constants.entitySet.exportJobs + "(" + encodeURIComponent(sExportId) + ")/Content"), {
-      fileName: oJob && oJob.FileName,
+      fileName: this.getDownloadFileName(mOptions && mOptions.fileName, oJob && oJob.FileName, sFileFormat),
       mimeType: oJob && oJob.MimeType,
-      fileFormat: oJob && oJob.FileFormat
+      fileFormat: sFileFormat
     });
   };
 
@@ -238,6 +245,24 @@ sap.ui.define([
     return sReportType + "_" + sSection + "_" + sTimestamp + "." + sExtension;
   };
 
+  DocumentService.prototype.getDownloadFileName = function (sPreferredFileName, sFallbackFileName, sFileFormat) {
+    var sFileName = String(sPreferredFileName || "").trim() || String(sFallbackFileName || "").trim() || "export";
+
+    return this.ensureFileExtension(sFileName, sFileFormat);
+  };
+
+  DocumentService.prototype.ensureFileExtension = function (sFileName, sFileFormat) {
+    var sSanitized = this.sanitizeFileName(sFileName);
+    var sExtension = EXTENSIONS[sFileFormat];
+
+    if (!sExtension) {
+      return sSanitized;
+    }
+
+    sSanitized = sSanitized.replace(/\.(xlsx|pdf|csv)$/i, "");
+    return sSanitized + "." + sExtension;
+  };
+
   DocumentService.prototype.getFallbackMimeType = function (sFileFormat) {
     return MIME_TYPES[sFileFormat] || "";
   };
@@ -284,8 +309,8 @@ sap.ui.define([
       throw new Error("ExportSection must not exceed 20 characters.");
     }
 
-    if (!Array.isArray(mParameters.selectedFields) || mParameters.selectedFields.length === 0) {
-      throw new Error("Select at least one column to export.");
+    if (mParameters.selectedFields !== undefined && typeof mParameters.selectedFields !== "string" && !Array.isArray(mParameters.selectedFields)) {
+      throw new Error("SelectedFields must be a string or an array.");
     }
   };
 
@@ -294,9 +319,43 @@ sap.ui.define([
     var iQueryIndex = sServiceUrl.indexOf("?");
     var sBase = iQueryIndex === -1 ? sServiceUrl : sServiceUrl.slice(0, iQueryIndex);
     var sQuery = iQueryIndex === -1 ? "" : sServiceUrl.slice(iQueryIndex + 1);
-    var sUrl = sBase.replace(/\/$/, "") + "/" + String(sPath || "").replace(/^\//, "");
+    var sValue = String(sPath || "");
+    var iPathQueryIndex = sValue.indexOf("?");
+    var sPathOnly = iPathQueryIndex === -1 ? sValue : sValue.slice(0, iPathQueryIndex);
+    var sPathQuery = iPathQueryIndex === -1 ? "" : sValue.slice(iPathQueryIndex + 1);
+    var aQueries = [];
+    var sUrl = sBase.replace(/\/$/, "") + "/" + sPathOnly.replace(/^\//, "");
 
-    return sQuery ? sUrl + "?" + sQuery : sUrl;
+    if (sPathQuery) {
+      aQueries.push(sPathQuery);
+    }
+    if (sQuery && sPathQuery.indexOf("sap-client=") === -1) {
+      aQueries.push(sQuery);
+    }
+
+    return aQueries.length ? sUrl + "?" + aQueries.join("&") : sUrl;
+  };
+
+  DocumentService.prototype._normalizeDownloadUrl = function (sUrl) {
+    var sValue = String(sUrl || "").trim();
+
+    if (!sValue) {
+      return sValue;
+    }
+
+    if (/^(https?:|blob:|data:)/i.test(sValue) || sValue.indexOf(Constants.service.root) === 0) {
+      return sValue;
+    }
+
+    if (sValue.charAt(0) === "/" && sValue.indexOf("/sap/") !== 0) {
+      return this._buildAbsoluteServicePath(sValue);
+    }
+
+    if (sValue.charAt(0) !== "/") {
+      return this._buildAbsoluteServicePath(sValue);
+    }
+
+    return sValue;
   };
 
   DocumentService.prototype._buildAbsoluteExportUrl = function (mParameters) {

@@ -9,12 +9,14 @@
     <uxap:headerTitle>
       <uxap:ObjectPageDynamicHeaderTitle>
         <uxap:heading>
-          <VBox>
-            <Title text="{path: 'mail>JobName', formatter: '.mailFormatter.formatText'}" level="H1" />
-          </VBox>
+          <HBox class="pageTitleWithBack">
+            <Button icon="sap-icon://nav-back" tooltip="{i18n>back}" type="Transparent" press=".onBackToMailJobs" />
+            <VBox>
+              <Title text="{path: 'mail>JobName', formatter: '.mailFormatter.formatText'}" level="H1" />
+            </VBox>
+          </HBox>
         </uxap:heading>
         <uxap:actions>
-          <Button icon="sap-icon://nav-back" tooltip="{i18n>back}" press=".onBackToMailJobs" />
           <Button icon="sap-icon://refresh" tooltip="{i18n>refresh}" press=".onRefresh" />
           <Button
             text="{i18n>sendNow}"

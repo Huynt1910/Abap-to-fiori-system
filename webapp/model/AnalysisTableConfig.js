@@ -80,6 +80,7 @@ sap.ui.define([
       titleKey: "uiFilters",
       navigationPath: Constants.navigation.uiFilters,
       exportSection: Constants.exportSection.uiFilter,
+      exportFields: ["FieldName", "FieldKind", "ReferenceTable", "ReferenceField", "DataElement", "Mandatory", "MultipleSelection", "Confidence"],
       fields: [
         guidField("AnalysisId"),
         guidField("ItemId"),
@@ -108,6 +109,7 @@ sap.ui.define([
       titleKey: "databaseObjects",
       navigationPath: Constants.navigation.databaseObjects,
       exportSection: Constants.exportSection.databaseObjects,
+      exportFields: ["ObjectName", "ObjectType", "Operation", "ContainingRoutine", "DynamicAccess", "ReadOnly", "PagingCapability", "Confidence"],
       fields: [
         guidField("AnalysisId"), guidField("ItemId"), guidField("EvidenceId"),
         field("ObjectName", "objectName", "P1", { width: "14rem" }),
@@ -131,6 +133,7 @@ sap.ui.define([
       titleKey: "businessLogic",
       navigationPath: Constants.navigation.businessLogic,
       exportSection: Constants.exportSection.businessLogic,
+      exportFields: ["ObjectName", "ObjectType", "ContainerName", "CallingRoutine", "SideEffect", "GuiDependency", "ReuseFeasibility", "Confidence"],
       fields: [
         guidField("AnalysisId"), guidField("ItemId"), guidField("EvidenceId"),
         field("ObjectName", "objectName", "P1", { width: "14rem" }),
@@ -151,6 +154,7 @@ sap.ui.define([
       titleKey: "alvOutputs",
       navigationPath: Constants.navigation.alvOutputs,
       exportSection: Constants.exportSection.alvOutput,
+      exportFields: ["OutputName", "OutputKind", "Framework", "OutputTable", "RowType", "Editable", "Confidence"],
       fields: [
         guidField("AnalysisId"), guidField("OutputId"), guidField("EvidenceId"), guidField("LayoutEvidenceId"),
         field("OutputName", "outputName", "P1", { width: "14rem" }),
@@ -254,6 +258,7 @@ sap.ui.define([
       titleKey: "recommendationsTabTitle",
       navigationPath: Constants.navigation.recommendations,
       exportSection: Constants.exportSection.recommendations,
+      exportFields: ["Severity", "Title", "TargetLayer", "ReviewStatus", "ManualReview", "Confidence"],
       fields: [
         guidField("AnalysisId"), guidField("RecommendationId"), guidField("SourceItemId"), guidField("EvidenceId"),
         field("RuleId", "ruleId", "P2", { width: "12rem", technical: true, personalizable: false, exportable: false, sortable: false, groupable: false, filterable: false }),
@@ -288,6 +293,7 @@ sap.ui.define([
       titleKey: "evidence",
       navigationPath: Constants.navigation.evidences,
       exportSection: Constants.exportSection.sourceEvidence,
+      exportFields: ["SourceObject", "StartLine", "EndLine", "StatementId", "Confidence"],
       fields: [
         guidField("AnalysisId"), guidField("EvidenceId"),
         field("SourceObject", "sourceObject", "P1", { width: "14rem" }),
@@ -303,6 +309,7 @@ sap.ui.define([
       titleKey: "messages",
       navigationPath: Constants.navigation.messages,
       exportSection: Constants.exportSection.messages,
+      exportFields: ["MessageType", "MessageCode", "SourceObject", "SourceLine", "MessageText"],
       fields: [
         guidField("AnalysisId"),
         numberField("MessageNo", "messageNo", "P3", { exportable: false }),
@@ -341,9 +348,12 @@ sap.ui.define([
   function getExportableFields(sKey, mColumnState) {
     var mState = mColumnState || {};
     var oConfig = getConfig(sKey);
+    var aExportFields = oConfig && oConfig.exportFields;
 
     return TableStateSanitizer.getAllowedFields(oConfig).filter(function (oField) {
-      return oField.exportable === true && mState[oField.stateKey] === true;
+      return oField.exportable === true &&
+        (!aExportFields || aExportFields.indexOf(oField.key) !== -1) &&
+        mState[oField.stateKey] === true;
     });
   }
 

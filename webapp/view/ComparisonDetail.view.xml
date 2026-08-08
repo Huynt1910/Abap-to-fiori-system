@@ -15,13 +15,16 @@
     <uxap:headerTitle>
       <uxap:ObjectPageDynamicHeaderTitle>
         <uxap:heading>
-          <VBox>
-            <Title text="{path: 'comparisonUi>/run/ProgramName', formatter: '.comparisonFormatter.formatText'}" level="H1" />
-            <ObjectStatus
-              text="{path: 'comparisonUi>/run/RunStatus', formatter: '.comparisonFormatter.formatText'}"
-              state="{path: 'comparisonUi>/run/RunStatus', formatter: '.comparisonFormatter.statusToValueState'}"
-              icon="sap-icon://compare" />
-          </VBox>
+          <HBox class="pageTitleWithBack">
+            <Button icon="sap-icon://nav-back" tooltip="{i18n>back}" type="Transparent" press=".onBackToHistory" />
+            <VBox>
+              <Title text="{path: 'comparisonUi>/run/ProgramName', formatter: '.comparisonFormatter.formatText'}" level="H1" />
+              <ObjectStatus
+                text="{path: 'comparisonUi>/run/RunStatus', formatter: '.comparisonFormatter.formatText'}"
+                state="{path: 'comparisonUi>/run/RunStatus', formatter: '.comparisonFormatter.statusToValueState'}"
+                icon="sap-icon://compare" />
+            </VBox>
+          </HBox>
         </uxap:heading>
         <uxap:expandedHeading>
           <HBox wrap="Wrap" class="detailMetaLine">
@@ -31,7 +34,6 @@
           </HBox>
         </uxap:expandedHeading>
         <uxap:actions>
-          <Button icon="sap-icon://nav-back" tooltip="{i18n>back}" press=".onBackToHistory" />
           <Button icon="sap-icon://refresh" tooltip="{i18n>refresh}" press=".onRefresh" />
         </uxap:actions>
       </uxap:ObjectPageDynamicHeaderTitle>

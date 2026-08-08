@@ -127,6 +127,49 @@
   font-size: 0.875rem;
 }
 
+.pageTitleWithBack {
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pageTitleWithBack .sapMBtn {
+  flex: 0 0 auto;
+}
+
+.exportSectionList {
+  gap: 0.75rem;
+}
+
+.exportSectionPanel {
+  border: 1px solid var(--sapGroup_ContentBorderColor);
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.exportFieldRow {
+  border-top: 1px solid var(--sapList_BorderColor);
+  gap: 0.5rem;
+  padding: 0.65rem 0.75rem;
+}
+
+.exportFieldRow:first-child {
+  border-top: 0;
+}
+
+.exportFieldRow .sapMTextSubtle {
+  color: var(--sapContent_LabelColor);
+  font-size: 0.8125rem;
+}
+
+.exportSelectedSectionStatus {
+  background: var(--sapInformationBackground);
+  border: 1px solid var(--sapInformationBorderColor);
+  border-radius: 0.375rem;
+  box-sizing: border-box;
+  padding: 0.45rem 0.65rem;
+  width: 100%;
+}
+
 .migrationAnalyzerKpiGrid {
   gap: 1rem;
   margin: 0 auto;

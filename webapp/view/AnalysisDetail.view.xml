@@ -17,13 +17,16 @@
     <uxap:headerTitle>
       <uxap:ObjectPageDynamicHeaderTitle>
         <uxap:heading>
-          <VBox>
-            <Title text="{path: 'detail>/overview/ProgramName', formatter: '.formatter.formatText'}" level="H1" />
-            <ObjectStatus
-              text="{path: 'detail>/overview/Status', formatter: '.formatter.formatText'}"
-              state="{path: 'detail>/overview/Status', formatter: '.formatter.formatStatusState'}"
-              icon="{path: 'detail>/overview/Status', formatter: '.formatter.formatStatusIcon'}" />
-          </VBox>
+          <HBox class="pageTitleWithBack">
+            <Button icon="sap-icon://nav-back" tooltip="{i18n>back}" type="Transparent" press=".onBackToDashboard" />
+            <VBox>
+              <Title text="{path: 'detail>/overview/ProgramName', formatter: '.formatter.formatText'}" level="H1" />
+              <ObjectStatus
+                text="{path: 'detail>/overview/Status', formatter: '.formatter.formatText'}"
+                state="{path: 'detail>/overview/Status', formatter: '.formatter.formatStatusState'}"
+                icon="{path: 'detail>/overview/Status', formatter: '.formatter.formatStatusIcon'}" />
+            </VBox>
+          </HBox>
         </uxap:heading>
         <uxap:expandedHeading>
           <HBox wrap="Wrap" class="detailMetaLine">
@@ -38,7 +41,6 @@
             state="{path: 'detail>/overview/Status', formatter: '.formatter.formatStatusState'}" />
         </uxap:snappedHeading>
         <uxap:actions>
-          <Button icon="sap-icon://nav-back" tooltip="{i18n>back}" press=".onBackToDashboard" />
           <Button icon="sap-icon://refresh" tooltip="{i18n>refresh}" press=".onRefresh" />
           <Button
             text="{i18n>runComparison}"
@@ -48,12 +50,12 @@
             press=".onRunComparisonForAnalysis" />
           <Button text="{i18n>createMailJob}" icon="sap-icon://email" press=".onCreateMailJobForAnalysis" />
           <Button
-            text="{i18n>exportReport}"
+            text="{i18n>exportAll}"
             icon="sap-icon://download"
             type="Emphasized"
-            enabled="{= ${detail>/overview/__OperationControl/PrepareSelectedExport} === true }"
+            enabled="{= ${detail>/overview/__OperationControl/PrepareSelectedExport} === true &amp;&amp; ${detail>/exportAvailable/all} === true }"
             tooltip="{i18n>exportOperationTooltip}"
-            press=".onOpenExportDialog" />
+            press=".onOpenExportAllDialog" />
         </uxap:actions>
       </uxap:ObjectPageDynamicHeaderTitle>
     </uxap:headerTitle>

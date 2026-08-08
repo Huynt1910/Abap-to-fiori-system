@@ -1,9 +1,14 @@
 <mvc:View controllerName="abap.to.fiori.system.controller.RecommendationDetail" xmlns:mvc="sap.ui.core.mvc" xmlns:uxap="sap.uxap" xmlns="sap.m" displayBlock="true">
   <uxap:ObjectPageLayout busy="{recDetail>/busy}" busyIndicatorDelay="0" useIconTabBar="false">
     <uxap:headerTitle><uxap:ObjectPageDynamicHeaderTitle>
-      <uxap:heading><Title text="{path:'recDetail>/overview/Title', formatter:'.formatter.formatText'}" level="H1" /></uxap:heading>
+      <uxap:heading>
+        <HBox class="pageTitleWithBack">
+          <Button icon="sap-icon://nav-back" tooltip="{i18n>back}" type="Transparent" press=".onBackToAnalysis" />
+          <Title text="{path:'recDetail>/overview/Title', formatter:'.formatter.formatText'}" level="H1" />
+        </HBox>
+      </uxap:heading>
       <uxap:expandedHeading><Text text="{path:'recDetail>/overview/DisplayText', formatter:'.formatter.formatText'}" wrapping="true" /></uxap:expandedHeading>
-      <uxap:actions><Button icon="sap-icon://nav-back" tooltip="{i18n>back}" press=".onBackToAnalysis" /><Button icon="sap-icon://refresh" tooltip="{i18n>refresh}" press=".onRefresh" /></uxap:actions>
+      <uxap:actions><Button icon="sap-icon://refresh" tooltip="{i18n>refresh}" press=".onRefresh" /></uxap:actions>
     </uxap:ObjectPageDynamicHeaderTitle></uxap:headerTitle>
     <uxap:sections>
       <uxap:ObjectPageSection title="{i18n>overview}">

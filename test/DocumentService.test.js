@@ -279,7 +279,19 @@ test("prepare selected export executes bound action with property keys", async (
 });
 
 test("selected export validates selected fields and parameter lengths", async () => {
-  const service = createService();
+  const service = new DocumentService({
+    bindContext() {
+      return {
+        setParameter() {},
+        execute: async () => undefined,
+        getBoundContext() {
+          return {
+            requestObject: async () => ({ DownloadUrl: "/download/1" })
+          };
+        }
+      };
+    }
+  });
 
   assert.throws(() => service.prepareSelectedExport("A", {
     fileFormat: "XX",
@@ -293,11 +305,52 @@ test("selected export validates selected fields and parameter lengths", async ()
     selectedFields: ["FieldName"]
   }), /Unsupported export section|ExportSection/);
 
-  assert.throws(() => service.prepareSelectedExport("A", {
+  assert.doesNotThrow(() => service.prepareSelectedExport("A", {
     fileFormat: "X",
     exportSection: "UI_FILTER",
     selectedFields: []
-  }), /Select at least one column/);
+  }));
+  assert.doesNotThrow(() => service.prepareSelectedExport("A", {
+    fileFormat: "X",
+    exportSection: "UI_FILTER",
+    selectedFields: ""
+  }));
+  assert.throws(() => service.prepareSelectedExport("A", {
+    fileFormat: "X",
+    exportSection: "UI_FILTER",
+    selectedFields: { FieldName: true }
+  }), /SelectedFields must be a string or an array/);
+});
+
+test("prepare selected export accepts pre-serialized ALL section field expression", async () => {
+  const calls = [];
+  const service = new DocumentService({
+    bindContext() {
+      return {
+        setParameter(name, value) {
+          calls.push([name, value]);
+        },
+        execute: async () => undefined,
+        getBoundContext() {
+          return {
+            requestObject: async () => ({ DownloadUrl: "/download/1" })
+          };
+        }
+      };
+    }
+  });
+
+  await service.prepareSelectedExport("11111111-2222-3333-4444-555555555555", {
+    fileFormat: "X",
+    exportSection: "ALL",
+    selectedFields: "UI_FILTER:FieldName,FieldKind;DB_OBJ:ObjectName,Operation"
+  });
+
+  assert.deepEqual(calls, [
+    ["FileFormat", "X"],
+    ["ExportSection", "ALL"],
+    ["SelectedFields", "UI_FILTER:FieldName,FieldKind;DB_OBJ:ObjectName,Operation"]
+  ]);
 });
 
 test("download selected export uses backend DownloadUrl and filename", async () => {
@@ -340,4 +393,107 @@ test("download selected export uses backend DownloadUrl and filename", async () 
   assert.equal(requestedUrl, "/sap/export/url");
   assert.equal(result.fileName, "backend.xlsx");
   assert.equal(stubs.calls.click, 1);
+});
+
+test("download selected export prefers custom filename and normalizes extension", async () => {
+  const stubs = createDownloadStubs();
+  const service = new DocumentService({
+    bindContext() {
+      return {
+        setParameter() {},
+        execute: async () => undefined,
+        getBoundContext() {
+          return {
+            requestObject: async () => ({
+              DownloadUrl: "/sap/export/url",
+              FileName: "backend.xlsx",
+              MimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            })
+          };
+        }
+      };
+    }
+  }, {
+    ...stubs,
+    fetch: async () => ({
+      ok: true,
+      headers: { get: () => "" },
+      blob: async () => new Blob(["xlsx"], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" })
+    })
+  });
+
+  const result = await service.downloadSelectedExport("11111111-2222-3333-4444-555555555555", {
+    fileFormat: "X",
+    exportSection: "UI_FILTER",
+    selectedFields: ["FieldName"],
+    fileName: "custom/report"
+  });
+
+  assert.equal(result.fileName, "custom_report.xlsx");
+  assert.equal(stubs.calls.download, "custom_report.xlsx");
+});
+
+test("download filename helper falls back when custom filename is empty", () => {
+  const service = createService();
+
+  assert.equal(service.getDownloadFileName("", "backend.pdf", "P"), "backend.pdf");
+  assert.equal(service.getDownloadFileName("user.csv", "backend.xlsx", "X"), "user.xlsx");
+});
+
+test("download selected export resolves service-relative DownloadUrl", async () => {
+  const stubs = createDownloadStubs();
+  const requestedUrls = [];
+  const results = [
+    { DownloadUrl: "ExportJobs(11111111-2222-3333-4444-555555555555)/Content", FileName: "relative.xlsx", MimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" },
+    { DownloadUrl: "/ExportJobs(22222222-3333-4444-5555-666666666666)/Content", FileName: "root-relative.xlsx", MimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" },
+    { DownloadUrl: "/ExportJobs(33333333-4444-5555-6666-777777777777)/Content?sap-client=324", FileName: "query.xlsx", MimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }
+  ];
+  const service = new DocumentService({
+    getServiceUrl() {
+      return "/sap/opu/odata4/sap/zui_mig_analysis_o4/srvd/sap/zui_mig_analysis/0001/?sap-client=324";
+    },
+    bindContext() {
+      return {
+        setParameter() {},
+        execute: async () => undefined,
+        getBoundContext() {
+          return {
+            requestObject: async () => results.shift()
+          };
+        }
+      };
+    }
+  }, {
+    ...stubs,
+    fetch: async (url) => {
+      requestedUrls.push(url);
+      return {
+        ok: true,
+        headers: { get: () => "" },
+        blob: async () => new Blob(["xlsx"], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" })
+      };
+    }
+  });
+
+  await service.downloadSelectedExport("11111111-2222-3333-4444-555555555555", {
+    fileFormat: "X",
+    exportSection: "UI_FILTER",
+    selectedFields: ["FieldName"]
+  });
+  await service.downloadSelectedExport("11111111-2222-3333-4444-555555555555", {
+    fileFormat: "X",
+    exportSection: "UI_FILTER",
+    selectedFields: ["FieldName"]
+  });
+  await service.downloadSelectedExport("11111111-2222-3333-4444-555555555555", {
+    fileFormat: "X",
+    exportSection: "UI_FILTER",
+    selectedFields: ["FieldName"]
+  });
+
+  assert.deepEqual(requestedUrls, [
+    "/sap/opu/odata4/sap/zui_mig_analysis_o4/srvd/sap/zui_mig_analysis/0001/ExportJobs(11111111-2222-3333-4444-555555555555)/Content?sap-client=324",
+    "/sap/opu/odata4/sap/zui_mig_analysis_o4/srvd/sap/zui_mig_analysis/0001/ExportJobs(22222222-3333-4444-5555-666666666666)/Content?sap-client=324",
+    "/sap/opu/odata4/sap/zui_mig_analysis_o4/srvd/sap/zui_mig_analysis/0001/ExportJobs(33333333-4444-5555-6666-777777777777)/Content?sap-client=324"
+  ]);
 });

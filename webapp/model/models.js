@@ -91,11 +91,26 @@ sap.ui.define([
         exportSection: "ALL",
         reportType: "",
         dialogOpen: false,
+        isAll: false,
         selectedSection: "",
+        selectedSectionLabel: "",
         selectedFields: [],
+        availableSections: [],
         availableFields: [],
         fileName: "",
+        defaultFileName: "",
         message: ""
+      },
+      exportAvailable: {
+        all: false,
+        sourceObjects: false,
+        uiFilters: false,
+        databaseObjects: false,
+        businessLogic: false,
+        alvOutputs: false,
+        evidences: false,
+        recommendations: false,
+        messages: false
       },
       comparison: {
         busy: false,

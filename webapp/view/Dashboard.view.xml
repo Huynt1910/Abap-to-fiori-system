@@ -47,13 +47,6 @@
                         press=".onRunAnalysis"
                     />
                     <Button
-                        id="refreshAnalysesButton"
-                        text="{i18n>refresh}"
-                        type="Transparent"
-                        icon="sap-icon://refresh"
-                        press=".onRefresh"
-                    />
-                    <Button
                         id="analysisViewSettingsButton"
                         type="Transparent"
                         icon="sap-icon://action-settings"
@@ -70,7 +63,9 @@
                     wrap="Wrap"
                     class="migrationAnalyzerFilterBar"
                 >
-                    <VBox class="migrationAnalyzerFilterField migrationAnalyzerSearchFilterField">
+                    <VBox
+                        class="migrationAnalyzerFilterField migrationAnalyzerSearchFilterField"
+                    >
                         <Label
                             text="{i18n>rootProgram}"
                             labelFor="programSearch"
@@ -82,7 +77,9 @@
                             search=".onSearch"
                         />
                     </VBox>
-                    <VBox class="migrationAnalyzerFilterField migrationAnalyzerSelectFilterField">
+                    <VBox
+                        class="migrationAnalyzerFilterField migrationAnalyzerSelectFilterField"
+                    >
                         <Label
                             text="{i18n>analysisStatus}"
                             labelFor="statusSelect"
@@ -292,6 +289,7 @@
                             <Text text="{i18n>createdBy}" />
                         </Column>
                     </columns>
+
                     <items>
                         <ColumnListItem
                             type="Navigation"

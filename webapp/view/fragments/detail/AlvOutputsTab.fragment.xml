@@ -5,6 +5,11 @@
       <Title text="{i18n>alvOutputs}" level="H3" />
       <ObjectStatus text="{path: 'detail>/counts/alvOutputs', formatter: '.formatter.formatCountText'}" />
       <ToolbarSpacer />
+      <Button icon="sap-icon://download" text="{i18n>exportReport}" tooltip="{i18n>exportSectionTooltip}" visible="{detail>/exportAvailable/alvOutputs}" press=".onOpenSectionExportDialog">
+        <customData>
+          <core:CustomData key="section" value="alvOutputs" />
+        </customData>
+      </Button>
       <Button icon="sap-icon://action-settings" tooltip="{i18n>viewSettings}" press=".onOpenDetailTableSettings">
         <customData>
           <core:CustomData key="section" value="alvOutputs" />

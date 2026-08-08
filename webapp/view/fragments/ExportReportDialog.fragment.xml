@@ -3,6 +3,8 @@
     id="exportReportDialog"
     title="{i18n>exportReport}"
     stretchOnPhone="true"
+    contentWidth="48rem"
+    contentHeight="42rem"
     busy="{detail>/export/busy}"
     busyIndicatorDelay="0">
     <content>
@@ -13,17 +15,20 @@
           value="{detail>/export/reportType}"
           editable="false" />
 
-        <Label text="{i18n>exportSelectedSection}" labelFor="exportSelectedSectionInput" />
-        <Input
+        <Label text="{i18n>exportSelectedSection}" labelFor="exportSelectedSectionInput" visible="{= !${detail>/export/isAll} }" />
+        <ObjectStatus
           id="exportSelectedSectionInput"
-          value="{detail>/export/selectedSection}"
-          editable="false" />
+          text="{detail>/export/selectedSectionLabel}"
+          state="Information"
+          visible="{= !${detail>/export/isAll} }"
+          class="exportSelectedSectionStatus" />
 
         <Label text="{i18n>exportFileFormat}" labelFor="exportFileFormatSelect" />
         <Select
           id="exportFileFormatSelect"
           selectedKey="{detail>/export/fileFormat}"
-          enabled="{= !${detail>/export/busy} }">
+          enabled="{= !${detail>/export/busy} }"
+          change=".onExportFileFormatChange">
           <items>
             <core:Item key="X" text="{i18n>exportFormatExcel}" />
             <core:Item key="P" text="{i18n>exportFormatPdf}" />
@@ -31,23 +36,13 @@
           </items>
         </Select>
 
-        <Label text="{i18n>exportSection}" labelFor="exportSectionSelect" />
-        <Select
-          id="exportSectionSelect"
-          selectedKey="{detail>/export/exportSection}"
-          enabled="false">
-          <items>
-            <core:Item key="ALL" text="{i18n>exportSectionAll}" />
-            <core:Item key="OVERVIEW" text="{i18n>exportSectionOverview}" />
-            <core:Item key="UI_FILTER" text="{i18n>exportSectionUiFilter}" />
-            <core:Item key="DB_OBJ" text="{i18n>exportSectionDatabaseObjects}" />
-            <core:Item key="BUS_LOGIC" text="{i18n>exportSectionBusinessLogic}" />
-            <core:Item key="ALV_OUTPUT" text="{i18n>exportSectionAlvOutput}" />
-            <core:Item key="SRC_EVIDEN" text="{i18n>exportSectionSourceEvidence}" />
-            <core:Item key="RECOMMEN" text="{i18n>exportSectionRecommendations}" />
-            <core:Item key="MESSAGE" text="{i18n>exportSectionMessages}" />
-          </items>
-        </Select>
+        <Label text="{i18n>fileName}" labelFor="exportFileNameInput" />
+        <Input
+          id="exportFileNameInput"
+          value="{detail>/export/fileName}"
+          placeholder="{detail>/export/defaultFileName}"
+          enabled="{= !${detail>/export/busy} }"
+          maxLength="128" />
 
         <Toolbar>
           <Title text="{i18n>selectedColumns}" level="H5" />
@@ -55,17 +50,41 @@
           <Button text="{i18n>selectAll}" type="Transparent" enabled="{= !${detail>/export/busy} }" press=".onSelectAllExportFields" />
           <Button text="{i18n>clearAll}" type="Transparent" enabled="{= !${detail>/export/busy} }" press=".onClearExportFields" />
         </Toolbar>
-        <List
-          id="exportFieldsList"
-          mode="MultiSelect"
-          includeItemInSelection="true"
-          selectionChange=".onExportFieldSelectionChange"
-          items="{detail>/export/availableFields}">
-          <StandardListItem
-            title="{detail>label}"
-            description="{detail>key}"
-            selected="{detail>selected}" />
-        </List>
+        <ScrollContainer height="22rem" vertical="true" focusable="false">
+          <VBox class="exportSectionList" items="{detail>/export/availableSections}">
+            <items>
+              <Panel expandable="true" expanded="true" class="exportSectionPanel">
+                <headerToolbar>
+                  <OverflowToolbar>
+                    <CheckBox
+                      selected="{detail>selected}"
+                      enabled="{= !${detail>/export/busy} }"
+                      select=".onToggleExportSection" />
+                    <Title text="{detail>label}" level="H5" />
+                    <ToolbarSpacer />
+                    <ObjectStatus text="{path: 'detail>fields/length', formatter: '.formatter.formatCountText'}" />
+                  </OverflowToolbar>
+                </headerToolbar>
+                <content>
+                  <VBox items="{detail>fields}">
+                    <items>
+                      <HBox class="exportFieldRow" alignItems="Center">
+                        <CheckBox
+                          selected="{detail>selected}"
+                          enabled="{= !${detail>/export/busy} }"
+                          select=".onToggleExportField" />
+                        <VBox>
+                          <Text text="{detail>label}" />
+                          <Text text="{detail>key}" class="sapUiTinyMarginTop sapMTextSubtle" />
+                        </VBox>
+                      </HBox>
+                    </items>
+                  </VBox>
+                </content>
+              </Panel>
+            </items>
+          </VBox>
+        </ScrollContainer>
       </VBox>
     </content>
     <beginButton>

@@ -15,8 +15,10 @@
       showIcon="true"
       visible="{mailUi>/wizard/busy}"
       class="sapUiSmallMarginBottom" />
-    <Wizard id="mailJobWizard" showNextButton="true">
-      <WizardStep id="mailGeneralStep" title="{i18n>mailStepGeneral}" validated="true">
+    <ScrollContainer height="34rem" vertical="true" focusable="false">
+      <VBox class="sapUiSmallMargin formStack">
+        <Panel headerText="{i18n>mailStepGeneral}" expandable="false">
+          <content>
         <MessageStrip
           text="{mailUi>/wizard/errorMessage}"
           type="Error"
@@ -43,8 +45,10 @@
           <Label text="{i18n>mailBody}" />
           <TextArea value="{mailUi>/wizard/job/MailBody}" rows="6" width="100%" />
         </f:SimpleForm>
-      </WizardStep>
-      <WizardStep id="mailScheduleStep" title="{i18n>mailStepSchedule}" validated="true">
+          </content>
+        </Panel>
+        <Panel headerText="{i18n>mailStepSchedule}" expandable="false">
+          <content>
         <MessageStrip
           text="{i18n>onDemandScheduleHint}"
           type="Information"
@@ -86,8 +90,10 @@
           <Label text="{i18n>dayOfMonth}" visible="{= ${mailUi>/wizard/job/Frequency} === 'M' }" />
           <StepInput value="{mailUi>/wizard/job/DayOfMonth}" min="1" max="31" step="1" visible="{= ${mailUi>/wizard/job/Frequency} === 'M' }" />
         </f:SimpleForm>
-      </WizardStep>
-      <WizardStep id="mailRecipientsStep" title="{i18n>mailStepRecipients}" validated="true">
+          </content>
+        </Panel>
+        <Panel headerText="{i18n>mailStepRecipients}" expandable="false">
+          <content>
         <VBox class="sapUiSmallMarginBottom">
           <MessageStrip text="{i18n>recipientSapUserHint}" type="Information" showIcon="true" class="sapUiSmallMarginBottom" />
           <MessageStrip text="{i18n>recipientOptionalHint}" type="Information" showIcon="true" class="sapUiSmallMarginBottom" />
@@ -119,17 +125,10 @@
             </items>
           </Table>
         </VBox>
-      </WizardStep>
-      <WizardStep id="mailReviewStep" title="{i18n>mailStepReview}" validated="true">
-        <VBox class="sapUiSmallMargin">
-          <ObjectAttribute title="{i18n>mailJobName}" text="{mailUi>/wizard/job/JobName}" />
-          <ObjectAttribute title="{i18n>reportType}" text="{mailUi>/wizard/job/ReportType}" />
-          <ObjectAttribute title="{i18n>exportFileFormat}" text="{path: 'mailUi>/wizard/job/FileFormat', formatter: '.mailFormatter.formatFileFormat'}" />
-          <ObjectAttribute title="{i18n>frequency}" text="{path: 'mailUi>/wizard/job/Frequency', formatter: '.mailFormatter.formatFrequency'}" />
-          <ObjectAttribute title="{i18n>recipientCount}" text="{path: 'mailUi>/wizard/recipients', formatter: '.mailFormatter.formatRecipientCount'}" />
-        </VBox>
-      </WizardStep>
-    </Wizard>
+          </content>
+        </Panel>
+      </VBox>
+    </ScrollContainer>
     <beginButton>
       <Button
         text="{= ${mailUi>/wizard/mode} === 'edit' ? ${i18n>save} : ${i18n>create} }"

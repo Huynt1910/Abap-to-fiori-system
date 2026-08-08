@@ -14,6 +14,11 @@
       <Title text="{i18n>recommendationsTabTitle}" level="H3" />
       <ObjectStatus text="{path: 'detail>/counts/recommendations', formatter: '.formatter.formatCountText'}" />
       <ToolbarSpacer />
+      <Button icon="sap-icon://download" text="{i18n>exportReport}" tooltip="{i18n>exportSectionTooltip}" visible="{detail>/exportAvailable/recommendations}" press=".onOpenSectionExportDialog">
+        <customData>
+          <core:CustomData key="section" value="recommendations" />
+        </customData>
+      </Button>
       <Button icon="sap-icon://action-settings" tooltip="{i18n>viewSettings}" press=".onOpenDetailTableSettings">
         <customData>
           <core:CustomData key="section" value="recommendations" />

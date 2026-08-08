@@ -115,3 +115,25 @@ test("exportable registry excludes technical P3 fields by default", () => {
       .forEach((field) => assert.equal(exportKeys.includes(field.key), false, `${section}.${field.key} should not export by default`));
   });
 });
+
+test("exportable registry follows backend selected export whitelist", () => {
+  const config = AnalysisTableConfig.getConfig("uiFilters");
+  const allUiFilterColumnsVisible = Object.fromEntries(
+    config.fields.map((field) => [field.stateKey, true])
+  );
+  const exportKeys = AnalysisTableConfig.getExportableFields("uiFilters", allUiFilterColumnsVisible).map((field) => field.key);
+
+  assert.equal(exportKeys.join(","), [
+    "FieldName",
+    "FieldKind",
+    "ReferenceTable",
+    "ReferenceField",
+    "DataElement",
+    "Mandatory",
+    "MultipleSelection",
+    "Confidence"
+  ].join(","));
+  assert.equal(exportKeys.includes("DataType"), false);
+  assert.equal(exportKeys.includes("Description"), false);
+  assert.equal(exportKeys.includes("SelectionBlock"), false);
+});
