@@ -7,11 +7,25 @@
     "applicationVersion": {
       "version": "1.0.0"
     },
-    "title": "ABAP to Fiori Modernization Cockpit",
-    "description": "SAPUI5 Freestyle app consuming the ABAP Migration Analyzer OData V4 service.",
+    "title": "{{appTitle}}",
+    "description": "{{appDescription}}",
     "dataSources": {
       "mainService": {
-        "uri": "/sap/opu/odata4/sap/zui_analyzer_odata/srvd/sap/zui_analyzer_service/0001/",
+        "uri": "/sap/opu/odata4/sap/zui_mig_analysis_o4/srvd/sap/zui_mig_analysis/0001/?sap-client=324",
+        "type": "OData",
+        "settings": {
+          "odataVersion": "4.0"
+        }
+      },
+      "mailService": {
+        "uri": "/sap/opu/odata4/sap/zui_mig_mail_ov4/srvd/sap/zui_mig_mail/0001/?sap-client=324",
+        "type": "OData",
+        "settings": {
+          "odataVersion": "4.0"
+        }
+      },
+      "comparisonService": {
+        "uri": "/sap/opu/odata4/sap/zui_mig_cmp_o4/srvd/sap/zui_mig_cmp/0001/?sap-client=324",
         "type": "OData",
         "settings": {
           "odataVersion": "4.0"
@@ -23,7 +37,7 @@
         "display": {
           "semanticObject": "ABAPMigrationAnalyzer",
           "action": "display",
-          "title": "ABAP to Fiori Modernization Cockpit",
+          "title": "{{appTitle}}",
           "signature": {
             "parameters": {},
             "additionalParameters": "allowed"
@@ -57,8 +71,7 @@
         "sap.ui.core": {},
         "sap.f": {},
         "sap.ui.layout": {},
-        "sap.ui.table": {},
-        "sap.ui.comp": {}
+        "sap.uxap": {}
       }
     },
     "contentDensities": {
@@ -66,9 +79,18 @@
       "cozy": true
     },
     "models": {
+      "i18n": {
+        "type": "sap.ui.model.resource.ResourceModel",
+        "settings": {
+          "bundleName": "abap.to.fiori.system.i18n.i18n",
+          "supportedLocales": [""],
+          "fallbackLocale": ""
+        }
+      },
       "": {
         "dataSource": "mainService",
         "type": "sap.ui.model.odata.v4.ODataModel",
+        "preload": true,
         "settings": {
           "operationMode": "Server",
           "synchronizationMode": "None",
@@ -76,6 +98,32 @@
           "earlyRequests": true,
           "groupId": "$auto",
           "updateGroupId": "$auto"
+        }
+      },
+      "mail": {
+        "dataSource": "mailService",
+        "type": "sap.ui.model.odata.v4.ODataModel",
+        "preload": true,
+        "settings": {
+          "operationMode": "Server",
+          "synchronizationMode": "None",
+          "autoExpandSelect": true,
+          "earlyRequests": true,
+          "groupId": "$direct",
+          "updateGroupId": "$direct"
+        }
+      },
+      "comparison": {
+        "dataSource": "comparisonService",
+        "type": "sap.ui.model.odata.v4.ODataModel",
+        "preload": true,
+        "settings": {
+          "operationMode": "Server",
+          "synchronizationMode": "None",
+          "autoExpandSelect": true,
+          "earlyRequests": true,
+          "groupId": "$direct",
+          "updateGroupId": "$direct"
         }
       }
     },
@@ -106,17 +154,80 @@
           "target": "dashboard"
         },
         {
+          "name": "analysisDetail",
+          "pattern": "analysis/{analysisId}",
+          "target": "analysisDetail"
+        },
+        {
+          "name": "alvOutputDetail",
+          "pattern": "analysis/{analysisId}/alv-output/{outputId}",
+          "target": "alvOutputDetail"
+        },
+        {
+          "name": "recommendationDetail",
+          "pattern": "analysis/{analysisId}/recommendation/{recommendationId}",
+          "target": "recommendationDetail"
+        },
+        {
           "name": "detail",
-          "pattern": "detail/{programName*}",
-          "target": "detail"
+          "pattern": "detail/{analysisId}",
+          "target": "analysisDetail"
+        },
+        {
+          "name": "mailJobs",
+          "pattern": "mail",
+          "target": "mailJobs"
+        },
+        {
+          "name": "mailJobsSlash",
+          "pattern": "/mail",
+          "target": "mailJobs"
+        },
+        {
+          "name": "mailJobDetail",
+          "pattern": "mail/{jobId}",
+          "target": "mailJobDetail"
+        },
+        {
+          "name": "mailJobDetailSlash",
+          "pattern": "/mail/{jobId}",
+          "target": "mailJobDetail"
+        },
+        {
+          "name": "comparisonHistory",
+          "pattern": "comparison",
+          "target": "comparisonHistory"
+        },
+        {
+          "name": "comparisonDetail",
+          "pattern": "comparison/{cmpRunId}",
+          "target": "comparisonDetail"
         }
       ],
       "targets": {
         "dashboard": {
           "viewName": "Dashboard"
         },
-        "detail": {
-          "viewName": "Detail"
+        "analysisDetail": {
+          "viewName": "AnalysisDetail"
+        },
+        "alvOutputDetail": {
+          "viewName": "AlvOutputDetail"
+        },
+        "recommendationDetail": {
+          "viewName": "RecommendationDetail"
+        },
+        "mailJobs": {
+          "viewName": "MailJobs"
+        },
+        "mailJobDetail": {
+          "viewName": "MailJobDetail"
+        },
+        "comparisonHistory": {
+          "viewName": "ComparisonList"
+        },
+        "comparisonDetail": {
+          "viewName": "ComparisonDetail"
         }
       }
     }

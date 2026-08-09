@@ -1,0 +1,38 @@
+<mvc:View controllerName="abap.to.fiori.system.controller.RecommendationDetail" xmlns:mvc="sap.ui.core.mvc" xmlns:uxap="sap.uxap" xmlns="sap.m" displayBlock="true">
+  <uxap:ObjectPageLayout busy="{recDetail>/busy}" busyIndicatorDelay="0" useIconTabBar="false">
+    <uxap:headerTitle><uxap:ObjectPageDynamicHeaderTitle>
+      <uxap:heading>
+        <HBox class="pageTitleWithBack">
+          <Button icon="sap-icon://nav-back" tooltip="{i18n>back}" type="Transparent" press=".onBackToAnalysis" />
+          <Title text="{path:'recDetail>/overview/Title', formatter:'.formatter.formatText'}" level="H1" />
+        </HBox>
+      </uxap:heading>
+      <uxap:expandedHeading><Text text="{path:'recDetail>/overview/DisplayText', formatter:'.formatter.formatText'}" wrapping="true" /></uxap:expandedHeading>
+      <uxap:actions><Button icon="sap-icon://refresh" tooltip="{i18n>refresh}" press=".onRefresh" /></uxap:actions>
+    </uxap:ObjectPageDynamicHeaderTitle></uxap:headerTitle>
+    <uxap:sections>
+      <uxap:ObjectPageSection title="{i18n>overview}">
+        <uxap:subSections><uxap:ObjectPageSubSection title="{i18n>overview}"><uxap:blocks>
+          <VBox class="sapUiSmallMargin">
+            <ObjectStatus text="{recDetail>/overview/Severity}" state="{path:'recDetail>/overview/Severity', formatter:'.formatter.formatSeverityState'}" />
+            <ObjectAttribute title="{i18n>targetLayer}" text="{recDetail>/overview/TargetLayer}" />
+            <ObjectAttribute title="{i18n>reviewStatus}" text="{recDetail>/overview/ReviewStatus}" />
+            <ObjectAttribute title="{i18n>manualReview}" text="{path:'recDetail>/overview/ManualReview', formatter:'.formatter.formatBoolean'}" />
+            <Text text="{recDetail>/overview/Explanation}" wrapping="true" />
+          </VBox>
+        </uxap:blocks></uxap:ObjectPageSubSection></uxap:subSections>
+      </uxap:ObjectPageSection>
+      <uxap:ObjectPageSection id="annotationsSection" title="{i18n>annotations}">
+        <uxap:subSections><uxap:ObjectPageSubSection title="{i18n>annotations}"><uxap:blocks>
+          <Table busy="{recDetail>/annotationsBusy}" items="{recDetail>/annotations}" growing="true">
+          <headerToolbar><OverflowToolbar><Title text="{i18n>annotations}" level="H3" /><ToolbarSpacer /><Button icon="sap-icon://action-settings" tooltip="{i18n>viewSettings}" press=".onOpenSimpleColumnSettings" /></OverflowToolbar></headerToolbar>
+          <columns>
+            <Column visible="{recDetail>/columns/annotations/targetEntity}"><Text text="{i18n>targetEntity}" /></Column><Column visible="{recDetail>/columns/annotations/targetElement}"><Text text="{i18n>targetElement}" /></Column><Column visible="{recDetail>/columns/annotations/annotationName}"><Text text="{i18n>annotationName}" /></Column><Column visible="{recDetail>/columns/annotations/annotationValue}"><Text text="{i18n>annotationValue}" /></Column><Column hAlign="End" visible="{recDetail>/columns/annotations/annotationSequence}"><Text text="{i18n>annotationSequence}" /></Column>
+          </columns><items><ColumnListItem><cells>
+            <Text text="{recDetail>TargetEntity}" visible="{recDetail>/columns/annotations/targetEntity}" /><Text text="{recDetail>TargetElement}" visible="{recDetail>/columns/annotations/targetElement}" /><Text text="{recDetail>AnnotationName}" visible="{recDetail>/columns/annotations/annotationName}" /><Text text="{recDetail>AnnotationValue}" wrapping="true" maxLines="3" visible="{recDetail>/columns/annotations/annotationValue}" /><ObjectNumber number="{recDetail>AnnotationSequence}" visible="{recDetail>/columns/annotations/annotationSequence}" />
+          </cells></ColumnListItem></items></Table>
+        </uxap:blocks></uxap:ObjectPageSubSection></uxap:subSections>
+      </uxap:ObjectPageSection>
+    </uxap:sections>
+  </uxap:ObjectPageLayout>
+</mvc:View>

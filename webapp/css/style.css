@@ -1,192 +1,387 @@
-.cockpitEclipseDashboard {
+.migrationAnalyzerPage,
+.migrationAnalyzerObjectPage {
   background: var(--sapBackgroundColor);
 }
 
-.cockpitEclipseFilterShell {
-  min-height: 12.25rem;
-  background: var(--sapShellColor);
-  border-bottom: 1px solid var(--sapGroup_TitleBorderColor);
+.migrationAnalyzerFilterBar {
+  gap: 1rem;
+  justify-content: flex-start;
+  width: 100%;
+}
+
+.migrationAnalyzerFilterField {
+  flex: 0 1 14rem;
+  min-width: 12rem;
+}
+
+.migrationAnalyzerFilterBar .sapMBtn {
+  flex: 0 0 auto;
+}
+
+.migrationAnalyzerSearchFilterField {
+  flex-basis: 26rem;
+  max-width: 26rem;
+}
+
+.migrationAnalyzerSelectFilterField {
+  flex-basis: 13rem;
+  max-width: 13rem;
+}
+
+.migrationAnalyzerContent,
+.tabSurface {
+  background: var(--sapGroup_ContentBackground);
+  border: 1px solid var(--sapGroup_ContentBorderColor);
+  border-radius: 0.5rem;
   box-shadow: var(--sapContent_Shadow0);
+  box-sizing: border-box;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 1rem;
+  scrollbar-color: var(--sapContent_ForegroundBorderColor) transparent;
+  scrollbar-width: thin;
 }
 
-.cockpitEclipseVariantBar {
-  padding: 1rem 3rem 0;
+.tabSurface .sapMListTbl,
+.migrationAnalyzerContent .sapMListTbl,
+.sapUxAPObjectPageSubSection .sapMListTbl {
+  min-width: 64rem;
 }
 
-.cockpitEclipseVariantTitle {
-  color: var(--sapLinkColor);
+.sapUxAPObjectPageSubSection .sapMListTblCnt {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 0.35rem;
+  scrollbar-color: var(--sapContent_ForegroundBorderColor) transparent;
+  scrollbar-width: thin;
 }
 
-.cockpitEclipseVariantDirty {
-  color: var(--sapLinkColor);
-  align-self: flex-start;
-  margin-top: 0.15rem;
+.migrationAnalyzerContent::-webkit-scrollbar,
+.tabSurface::-webkit-scrollbar,
+.sapUxAPObjectPageSubSection .sapMListTblCnt::-webkit-scrollbar {
+  height: 0.55rem;
+  width: 0.55rem;
 }
 
-.cockpitEclipseFilterContent {
-  padding: 2.25rem 3.15rem 0.75rem;
+.migrationAnalyzerContent::-webkit-scrollbar-track,
+.tabSurface::-webkit-scrollbar-track,
+.sapUxAPObjectPageSubSection .sapMListTblCnt::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 999px;
 }
 
-.cockpitEclipseFilterActions {
+.migrationAnalyzerContent::-webkit-scrollbar-thumb,
+.tabSurface::-webkit-scrollbar-thumb,
+.sapUxAPObjectPageSubSection .sapMListTblCnt::-webkit-scrollbar-thumb {
+  background-color: color-mix(in srgb, var(--sapContent_ForegroundBorderColor) 72%, transparent);
+  border: 0.18rem solid transparent;
+  border-radius: 999px;
+  background-clip: content-box;
+}
+
+.migrationAnalyzerContent::-webkit-scrollbar-thumb:hover,
+.tabSurface::-webkit-scrollbar-thumb:hover,
+.sapUxAPObjectPageSubSection .sapMListTblCnt::-webkit-scrollbar-thumb:hover {
+  background-color: color-mix(in srgb, var(--sapSelectedColor) 70%, var(--sapContent_ForegroundBorderColor));
+}
+
+.tabSurface:has(.sapMListTbl),
+.migrationAnalyzerContent:has(.sapMListTbl) {
+  padding-bottom: 0.65rem;
+}
+
+.migrationAnalyzerContent {
+  gap: 1rem;
+  margin: 1rem;
+}
+
+.detailMetaLine {
+  gap: 1rem;
+}
+
+.detailOverviewMetrics {
+  gap: 1rem;
+  justify-content: flex-start;
+  width: 100%;
+}
+
+.analysisOverviewGrid {
+  border-bottom: 1px solid var(--sapGroup_ContentBorderColor);
+  box-sizing: border-box;
+  padding: 0.25rem 0 1.5rem;
+  width: 100%;
+}
+
+.analysisOverviewCell {
+  min-width: 0;
+}
+
+.analysisOverviewCell .sapMLabel {
+  color: var(--sapContent_LabelColor);
+  margin-bottom: 0.25rem;
+}
+
+.analysisOverviewCell .sapMText,
+.analysisOverviewCell .sapMObjStatusText {
+  color: var(--sapTextColor);
+  font-size: 0.875rem;
+}
+
+.pageTitleWithBack {
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pageTitleWithBack .sapMBtn {
+  flex: 0 0 auto;
+}
+
+.exportSectionList {
   gap: 0.75rem;
-  margin-bottom: 0.2rem;
 }
 
-.cockpitEclipseHeaderToggle {
-  margin-bottom: -0.9rem;
+.exportSectionPanel {
+  border: 1px solid var(--sapGroup_ContentBorderColor);
+  border-radius: 0.5rem;
+  overflow: hidden;
 }
 
-.cockpitEclipseHeaderToggle .sapMBtn {
-  background: var(--sapButton_Background);
-}
-
-.cockpitEclipseTableShell {
-  padding: 1.75rem 3.15rem;
-}
-
-.cockpitEclipseAnalysisTable {
+.exportFieldRow {
   border-top: 1px solid var(--sapList_BorderColor);
+  gap: 0.5rem;
+  padding: 0.65rem 0.75rem;
 }
 
-.cockpitEclipseAnalysisTable .sapMListTblHeaderCell {
-  background: var(--sapList_HeaderBackground);
+.exportFieldRow:first-child {
+  border-top: 0;
+}
+
+.exportFieldRow .sapMTextSubtle {
+  color: var(--sapContent_LabelColor);
+  font-size: 0.8125rem;
+}
+
+.exportSelectedSectionStatus {
+  background: var(--sapInformationBackground);
+  border: 1px solid var(--sapInformationBorderColor);
+  border-radius: 0.375rem;
+  box-sizing: border-box;
+  padding: 0.45rem 0.65rem;
+  width: 100%;
+}
+
+.migrationAnalyzerKpiGrid {
+  gap: 1rem;
+  margin: 0 auto;
+  max-width: 72rem;
+  width: 100%;
+}
+
+.migrationAnalyzerKpiPair {
+  gap: 1.5rem;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.migrationAnalyzerMetric {
+  background: var(--sapTile_Background);
+  border: 1px solid var(--sapTile_BorderColor);
+  border-radius: 0.5rem;
+  box-sizing: border-box;
+  min-width: 11rem;
+  padding: 0.75rem 1rem;
+}
+
+.migrationAnalyzerCard {
+  border: 1px solid var(--sapGroup_ContentBorderColor);
+  border-left: 0.35rem solid var(--sapAccentColor6);
+  border-radius: 0.5rem;
+  box-shadow: var(--sapContent_Shadow0);
+  box-sizing: border-box;
+  min-width: 11rem;
+  overflow: hidden;
+}
+
+.migrationAnalyzerCard .sapFCardContent {
+  min-width: 0;
+}
+
+.migrationAnalyzerKpiInline {
+  align-items: center;
+  box-sizing: border-box;
+  gap: 0.85rem;
+  min-height: 4.5rem;
+  padding: 0.85rem 1.1rem;
+  width: 100%;
+}
+
+.migrationAnalyzerKpiIcon {
+  align-items: center;
+  border-radius: 50%;
+  box-sizing: border-box;
+  color: var(--sapContent_ContrastIconColor);
+  display: inline-flex;
+  flex: 0 0 2.75rem;
+  font-size: 1.55rem;
+  height: 2.75rem;
+  justify-content: center;
+  width: 2.75rem;
+}
+
+.migrationAnalyzerKpiTitle {
+  color: var(--sapTextColor);
+  flex: 1 1 auto;
+  font-size: 0.95rem;
+  font-weight: 800;
+  min-width: 0;
+}
+
+.migrationAnalyzerKpiNumber {
+  flex: 0 0 auto;
+  text-align: right;
+}
+
+.migrationAnalyzerKpiNumber .sapMObjectNumberText {
+  font-size: 1.35rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.migrationAnalyzerCard .sapMObjNumber {
+  max-width: 100%;
+}
+
+.migrationAnalyzerCard .sapMObjectNumberText,
+.migrationAnalyzerCard .sapMObjectNumberUnit {
+  white-space: normal;
+}
+
+.migrationAnalyzerCardTotal {
+  background: #eef5ff;
+  border-left-color: var(--sapAccentColor6);
+}
+
+.migrationAnalyzerCardSuccess {
+  background: #edf8f0;
+  border-left-color: var(--sapPositiveColor);
+}
+
+.migrationAnalyzerCardWarning {
+  background: #fff4df;
+  border-left-color: var(--sapCriticalColor);
+}
+
+.migrationAnalyzerCardError {
+  background: #fff0f0;
+  border-left-color: var(--sapNegativeColor);
+}
+
+.migrationAnalyzerCardTotal .migrationAnalyzerKpiIcon {
+  background: var(--sapAccentColor6);
+}
+
+.migrationAnalyzerCardSuccess .migrationAnalyzerKpiIcon {
+  background: var(--sapPositiveColor);
+}
+
+.migrationAnalyzerCardWarning .migrationAnalyzerKpiIcon {
+  background: var(--sapCriticalColor);
+}
+
+.migrationAnalyzerCardError .migrationAnalyzerKpiIcon {
+  background: var(--sapNegativeColor);
+}
+
+.migrationAnalyzerCardTotal .migrationAnalyzerKpiTitle,
+.migrationAnalyzerCardTotal .migrationAnalyzerKpiNumber .sapMObjectNumberText {
+  color: var(--sapAccentColor6);
+}
+
+.migrationAnalyzerCardSuccess .migrationAnalyzerKpiTitle,
+.migrationAnalyzerCardSuccess .migrationAnalyzerKpiNumber .sapMObjectNumberText {
+  color: var(--sapPositiveTextColor);
+}
+
+.migrationAnalyzerCardWarning .migrationAnalyzerKpiTitle,
+.migrationAnalyzerCardWarning .migrationAnalyzerKpiNumber .sapMObjectNumberText {
+  color: var(--sapCriticalTextColor);
+}
+
+.migrationAnalyzerCardError .migrationAnalyzerKpiTitle,
+.migrationAnalyzerCardError .migrationAnalyzerKpiNumber .sapMObjectNumberText {
+  color: var(--sapNegativeTextColor);
+}
+
+.recommendationDetail {
+  box-sizing: border-box;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  width: 100%;
+}
+
+.recommendationDetailDialog .sapMDialogScrollCont {
+  padding: 0;
+}
+
+.recommendationDetailTitle {
+  margin-top: -0.25rem;
+}
+
+.recommendationDetailMeta {
+  gap: 0.35rem;
+}
+
+.recommendationDetailMeta .sapMObjectAttributeDiv {
+  min-width: 0;
+}
+
+.recommendationDetailSection {
+  gap: 0.25rem;
+}
+
+.recommendationDetailSection .sapMText {
+  line-height: 1.45;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.sectionToolbar {
+  padding: 0;
+}
+
+.formStack {
+  gap: 0.75rem;
+  min-width: 20rem;
 }
 
 @media (max-width: 700px) {
-  .cockpitEclipseVariantBar,
-  .cockpitEclipseFilterContent,
-  .cockpitEclipseTableShell {
-    padding-left: 1rem;
-    padding-right: 1rem;
+  .migrationAnalyzerFilterField,
+  .formStack {
+    flex-basis: 100%;
+    min-width: 100%;
+    max-width: 100%;
   }
 
-  #container .sapMMultiInput {
-    width: 100% !important;
+  .migrationAnalyzerFilterBar .sapMBtn {
+    flex: 1 1 auto;
   }
-}
 
-.cockpitDetailPage {
-  background: var(--sapBackgroundColor);
-}
-
-.cockpitDetailHeader {
-  background: var(--sapBaseColor, #fff) !important;
-  border-bottom: 1px solid var(--sapGroup_TitleBorderColor);
-  box-shadow: var(--sapContent_Shadow0);
-  padding-top: 0;
-  position: sticky;
-  top: 0;
-  z-index: 1000;
-  isolation: isolate;
-}
-
-.cockpitDetailHeader::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background: var(--sapBaseColor, #fff);
-}
-
-.cockpitDetailHeader .sapMBar {
-  padding-left: 3rem;
-  padding-right: 3rem;
-  background: var(--sapBaseColor, #fff) !important;
-  box-shadow: none;
-  height: 3.25rem;
-  min-height: 3.25rem;
-}
-
-.cockpitDetailHeader .sapMITH,
-.cockpitDetailHeader .sapMITBHead,
-.cockpitDetailHeader .sapMITBContent,
-.cockpitDetailHeader .sapMITBContainerContent {
-  background: var(--sapBaseColor, #fff) !important;
-}
-
-.cockpitDetailHeader .sapMITB,
-.cockpitDetailHeader .sapMITBScrollContainer,
-.cockpitDetailHeader .sapMITBHead,
-.cockpitDetailHeader .sapMITH {
-  background-color: var(--sapBaseColor, #fff) !important;
-}
-
-.cockpitDetailHeader .sapMBtn,
-.cockpitDetailHeader .sapMTitle,
-.cockpitDetailHeader .sapMITBText {
-  position: relative;
-  z-index: 1;
-}
-
-.cockpitDetailTabs {
-  margin-top: 0;
-  background: var(--sapBaseColor, #fff) !important;
-}
-
-.cockpitDetailTabs .sapMITBHead,
-.cockpitDetailTabs .sapMITBFilter,
-.cockpitDetailTabs .sapMITBText,
-.cockpitDetailTabs .sapMITBTab {
-  background: var(--sapBaseColor, #fff) !important;
-}
-
-.cockpitDetailContent {
-  padding: 2rem 3.15rem;
-  box-sizing: border-box;
-  max-width: 100%;
-  overflow-x: hidden;
-}
-
-.cockpitDetailSection {
-  padding-top: 1rem;
-  padding-bottom: 2.5rem;
-  border-bottom: 1px solid var(--sapList_BorderColor);
-  scroll-margin-top: 7rem;
-}
-
-.cockpitDetailSection:last-child {
-  border-bottom: 0;
-}
-
-.cockpitOverviewGrid {
-  gap: 1.25rem 4rem;
-  padding-bottom: 2rem;
-}
-
-.cockpitOverviewCell {
-  width: 14rem;
-}
-
-.cockpitDetailContent .sapMListTblHeaderCell {
-  background: var(--sapList_HeaderBackground);
-  z-index: 0;
-}
-
-.cockpitDetailContent .sapMTable {
-  width: 100% !important;
-  max-width: 100%;
-  table-layout: auto;
-}
-
-.cockpitDetailContent .sapMListTblCell,
-.cockpitDetailContent .sapMListTblHeaderCell {
-  vertical-align: top;
-}
-
-.cockpitDetailContent .sapMText,
-.cockpitDetailContent .sapMObjStatusText {
-  overflow-wrap: anywhere;
-  word-break: break-word;
-}
-
-.cockpitDetailContent .sapMListTblSubCnt {
-  max-width: 100%;
-}
-
-@media (max-width: 900px) {
-  .cockpitDetailHeader .sapMBar,
-  .cockpitDetailContent {
-    padding-left: 1rem;
-    padding-right: 1rem;
+  .migrationAnalyzerContent {
+    margin: 0;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
   }
+
+  .migrationAnalyzerMetric {
+    min-width: 100%;
+  }
+
+  .migrationAnalyzerCard {
+    min-width: 100%;
+  }
+
+  .recommendationDetail {
+    padding: 0.75rem 1rem;
+  }
+
 }

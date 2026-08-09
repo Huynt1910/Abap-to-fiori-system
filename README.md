@@ -19,6 +19,11 @@ This project analyzes legacy ABAP reports and generates rule-based modernization
 - RAP recommendation
 - UI5 migration suggestion
 - Dashboard reporting
+- Selected-field export from Analysis Detail
+
+## Documentation
+
+- [Export Flow](docs/EXPORT_FLOW.md)
 
 ## Run Project
 

@@ -1,0 +1,50 @@
+<core:FragmentDefinition
+  xmlns:core="sap.ui.core"
+  xmlns="sap.m">
+  <Dialog
+    id="mailTableSettingsDialog"
+    title="{i18n>viewSettings}"
+    contentWidth="28rem"
+    contentHeight="34rem"
+    resizable="true"
+    draggable="true">
+    <customHeader>
+      <Bar>
+        <contentLeft>
+          <Title text="{i18n>viewSettings}" level="H5" />
+        </contentLeft>
+        <contentRight>
+          <Button text="{i18n>reset}" type="Transparent" press=".onResetMailTableSettings" />
+        </contentRight>
+      </Bar>
+    </customHeader>
+    <VBox>
+      <SearchField
+        width="100%"
+        placeholder="{i18n>search}"
+        liveChange=".onSearchMailTableSettings"
+        class="sapUiSmallMarginBottom" />
+      <Toolbar>
+        <Title text="{i18n>columns}" level="H5" />
+        <ToolbarSpacer />
+        <Text text="{= ${mailUi>/tableSettings/selectedCount} + '/' + ${mailUi>/tableSettings/totalCount} }" />
+      </Toolbar>
+      <List
+        id="mailTableSettingsList"
+        mode="MultiSelect"
+        includeItemInSelection="true"
+        selectionChange=".onMailTableSettingSelectionChange"
+        items="{mailUi>/tableSettings/items}">
+        <StandardListItem
+          title="{mailUi>label}"
+          selected="{mailUi>visible}" />
+      </List>
+    </VBox>
+    <beginButton>
+      <Button text="{i18n>ok}" type="Emphasized" press=".onConfirmMailTableSettings" />
+    </beginButton>
+    <endButton>
+      <Button text="{i18n>cancel}" press=".onCancelMailTableSettings" />
+    </endButton>
+  </Dialog>
+</core:FragmentDefinition>

@@ -1,0 +1,105 @@
+<core:FragmentDefinition xmlns:core="sap.ui.core" xmlns="sap.m">
+  <Dialog
+    id="exportReportDialog"
+    title="{i18n>exportReport}"
+    stretchOnPhone="true"
+    contentWidth="48rem"
+    contentHeight="42rem"
+    busy="{detail>/export/busy}"
+    busyIndicatorDelay="0">
+    <content>
+      <VBox class="sapUiMediumMargin formStack">
+        <Label text="{i18n>exportReportProgram}" labelFor="exportReportTypeInput" />
+        <Input
+          id="exportReportTypeInput"
+          value="{detail>/export/reportType}"
+          editable="false" />
+
+        <Label text="{i18n>exportSelectedSection}" labelFor="exportSelectedSectionInput" visible="{= !${detail>/export/isAll} }" />
+        <ObjectStatus
+          id="exportSelectedSectionInput"
+          text="{detail>/export/selectedSectionLabel}"
+          state="Information"
+          visible="{= !${detail>/export/isAll} }"
+          class="exportSelectedSectionStatus" />
+
+        <Label text="{i18n>exportFileFormat}" labelFor="exportFileFormatSelect" />
+        <Select
+          id="exportFileFormatSelect"
+          selectedKey="{detail>/export/fileFormat}"
+          enabled="{= !${detail>/export/busy} }"
+          change=".onExportFileFormatChange">
+          <items>
+            <core:Item key="X" text="{i18n>exportFormatExcel}" />
+            <core:Item key="P" text="{i18n>exportFormatPdf}" />
+            <core:Item key="C" text="{i18n>exportFormatCsv}" />
+          </items>
+        </Select>
+
+        <Label text="{i18n>fileName}" labelFor="exportFileNameInput" />
+        <Input
+          id="exportFileNameInput"
+          value="{detail>/export/fileName}"
+          placeholder="{detail>/export/defaultFileName}"
+          enabled="{= !${detail>/export/busy} }"
+          maxLength="128" />
+
+        <Toolbar>
+          <Title text="{i18n>selectedColumns}" level="H5" />
+          <ToolbarSpacer />
+          <Button text="{i18n>selectAll}" type="Transparent" enabled="{= !${detail>/export/busy} }" press=".onSelectAllExportFields" />
+          <Button text="{i18n>clearAll}" type="Transparent" enabled="{= !${detail>/export/busy} }" press=".onClearExportFields" />
+        </Toolbar>
+        <ScrollContainer height="22rem" vertical="true" focusable="false">
+          <VBox class="exportSectionList" items="{detail>/export/availableSections}">
+            <items>
+              <Panel expandable="true" expanded="true" class="exportSectionPanel">
+                <headerToolbar>
+                  <OverflowToolbar>
+                    <CheckBox
+                      selected="{detail>selected}"
+                      enabled="{= !${detail>/export/busy} }"
+                      select=".onToggleExportSection" />
+                    <Title text="{detail>label}" level="H5" />
+                    <ToolbarSpacer />
+                    <ObjectStatus text="{path: 'detail>fields/length', formatter: '.formatter.formatCountText'}" />
+                  </OverflowToolbar>
+                </headerToolbar>
+                <content>
+                  <VBox items="{detail>fields}">
+                    <items>
+                      <HBox class="exportFieldRow" alignItems="Center">
+                        <CheckBox
+                          selected="{detail>selected}"
+                          enabled="{= !${detail>/export/busy} }"
+                          select=".onToggleExportField" />
+                        <VBox>
+                          <Text text="{detail>label}" />
+                          <Text text="{detail>key}" class="sapUiTinyMarginTop sapMTextSubtle" />
+                        </VBox>
+                      </HBox>
+                    </items>
+                  </VBox>
+                </content>
+              </Panel>
+            </items>
+          </VBox>
+        </ScrollContainer>
+      </VBox>
+    </content>
+    <beginButton>
+      <Button
+        text="{i18n>download}"
+        type="Emphasized"
+        icon="sap-icon://download"
+        enabled="{= !${detail>/export/busy} }"
+        press=".onDownloadExport" />
+    </beginButton>
+    <endButton>
+      <Button
+        text="{i18n>cancel}"
+        enabled="{= !${detail>/export/busy} }"
+        press=".onCancelExport" />
+    </endButton>
+  </Dialog>
+</core:FragmentDefinition>

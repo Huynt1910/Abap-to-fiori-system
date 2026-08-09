@@ -1,0 +1,59 @@
+<mvc:View controllerName="abap.to.fiori.system.controller.AlvOutputDetail" xmlns:mvc="sap.ui.core.mvc" xmlns:core="sap.ui.core" xmlns:uxap="sap.uxap" xmlns="sap.m" displayBlock="true">
+  <uxap:ObjectPageLayout busy="{alvDetail>/busy}" busyIndicatorDelay="0" useIconTabBar="false">
+    <uxap:headerTitle>
+      <uxap:ObjectPageDynamicHeaderTitle>
+        <uxap:heading>
+          <HBox class="pageTitleWithBack">
+            <Button icon="sap-icon://nav-back" tooltip="{i18n>back}" type="Transparent" press=".onBackToAnalysis" />
+            <Title text="{path:'alvDetail>/overview/OutputName', formatter:'.formatter.formatText'}" level="H1" />
+          </HBox>
+        </uxap:heading>
+        <uxap:expandedHeading><ObjectAttribute title="{i18n>framework}" text="{path:'alvDetail>/overview/Framework', formatter:'.formatter.formatText'}" /></uxap:expandedHeading>
+        <uxap:actions>
+          <Button icon="sap-icon://refresh" tooltip="{i18n>refresh}" press=".onRefresh" />
+        </uxap:actions>
+      </uxap:ObjectPageDynamicHeaderTitle>
+    </uxap:headerTitle>
+    <uxap:sections>
+      <uxap:ObjectPageSection id="alvOverviewSection" title="{i18n>overview}">
+        <uxap:subSections><uxap:ObjectPageSubSection title="{i18n>overview}"><uxap:blocks>
+          <VBox class="sapUiSmallMargin">
+            <ObjectAttribute title="{i18n>outputKind}" text="{path:'alvDetail>/overview/OutputKind', formatter:'.formatter.formatText'}" />
+            <ObjectAttribute title="{i18n>controlObject}" text="{path:'alvDetail>/overview/ControlObject', formatter:'.formatter.formatText'}" />
+            <ObjectAttribute title="{i18n>outputTable}" text="{path:'alvDetail>/overview/OutputTable', formatter:'.formatter.formatText'}" />
+            <ObjectAttribute title="{i18n>rowType}" text="{path:'alvDetail>/overview/RowType', formatter:'.formatter.formatText'}" />
+            <ObjectAttribute title="{i18n>selectionMode}" text="{path:'alvDetail>/overview/SelectionMode', formatter:'.formatter.formatText'}" />
+            <ObjectAttribute title="{i18n>editable}" text="{path:'alvDetail>/overview/Editable', formatter:'.formatter.formatBoolean'}" />
+            <ObjectAttribute title="{i18n>confidence}" text="{path:'alvDetail>/overview/Confidence', formatter:'.formatter.formatText'}" />
+          </VBox>
+        </uxap:blocks></uxap:ObjectPageSubSection></uxap:subSections>
+      </uxap:ObjectPageSection>
+      <uxap:ObjectPageSection id="columnsSection" title="{i18n>alvColumns}">
+        <uxap:subSections><uxap:ObjectPageSubSection title="{i18n>alvColumns}"><uxap:blocks>
+          <Table busy="{alvDetail>/loading/alvColumns}" items="{alvDetail>/alvColumns}" growing="true">
+          <headerToolbar><OverflowToolbar><Title text="{i18n>alvColumns}" level="H3" /><ToolbarSpacer /><Button icon="sap-icon://action-settings" tooltip="{i18n>viewSettings}" press=".onOpenSimpleColumnSettings"><customData><core:CustomData key="section" value="alvColumns" /></customData></Button></OverflowToolbar></headerToolbar>
+          <columns>
+            <Column visible="{alvDetail>/columns/alvColumns/fieldName}"><Text text="{i18n>fieldName}" /></Column><Column visible="{alvDetail>/columns/alvColumns/columnLabel}"><Text text="{i18n>columnLabel}" /></Column><Column hAlign="End" visible="{alvDetail>/columns/alvColumns/columnPosition}"><Text text="{i18n>columnPosition}" /></Column><Column visible="{alvDetail>/columns/alvColumns/dataType}"><Text text="{i18n>dataType}" /></Column><Column visible="{alvDetail>/columns/alvColumns/dataElement}"><Text text="{i18n>dataElement}" /></Column><Column visible="{alvDetail>/columns/alvColumns/visible}"><Text text="{i18n>visible}" /></Column><Column visible="{alvDetail>/columns/alvColumns/confidence}"><Text text="{i18n>confidence}" /></Column>
+          </columns><items><ColumnListItem><cells>
+            <Text text="{alvDetail>FieldName}" visible="{alvDetail>/columns/alvColumns/fieldName}" /><Text text="{alvDetail>ColumnLabel}" visible="{alvDetail>/columns/alvColumns/columnLabel}" /><ObjectNumber number="{alvDetail>ColumnPosition}" visible="{alvDetail>/columns/alvColumns/columnPosition}" /><Text text="{alvDetail>DataType}" visible="{alvDetail>/columns/alvColumns/dataType}" /><Text text="{alvDetail>DataElement}" visible="{alvDetail>/columns/alvColumns/dataElement}" /><Text text="{path:'alvDetail>Visible', formatter:'.formatter.formatBoolean'}" visible="{alvDetail>/columns/alvColumns/visible}" /><Text text="{alvDetail>Confidence}" visible="{alvDetail>/columns/alvColumns/confidence}" />
+          </cells></ColumnListItem></items></Table>
+        </uxap:blocks></uxap:ObjectPageSubSection></uxap:subSections>
+      </uxap:ObjectPageSection>
+      <uxap:ObjectPageSection id="sortsSection" title="{i18n>alvSorts}">
+        <uxap:subSections><uxap:ObjectPageSubSection title="{i18n>alvSorts}"><uxap:blocks>
+          <Table busy="{alvDetail>/loading/alvSorts}" items="{alvDetail>/alvSorts}" growing="true"><headerToolbar><OverflowToolbar><Title text="{i18n>alvSorts}" level="H3" /><ToolbarSpacer /><Button icon="sap-icon://action-settings" tooltip="{i18n>viewSettings}" press=".onOpenSimpleColumnSettings"><customData><core:CustomData key="section" value="alvSorts" /></customData></Button></OverflowToolbar></headerToolbar><columns><Column visible="{alvDetail>/columns/alvSorts/fieldName}"><Text text="{i18n>fieldName}" /></Column><Column hAlign="End" visible="{alvDetail>/columns/alvSorts/sortPosition}"><Text text="{i18n>sortPosition}" /></Column><Column visible="{alvDetail>/columns/alvSorts/isAscending}"><Text text="{i18n>isAscending}" /></Column><Column visible="{alvDetail>/columns/alvSorts/isDescending}"><Text text="{i18n>isDescending}" /></Column><Column visible="{alvDetail>/columns/alvSorts/subtotal}"><Text text="{i18n>subtotal}" /></Column><Column visible="{alvDetail>/columns/alvSorts/confidence}"><Text text="{i18n>confidence}" /></Column></columns><items><ColumnListItem><cells><Text text="{alvDetail>FieldName}" visible="{alvDetail>/columns/alvSorts/fieldName}" /><ObjectNumber number="{alvDetail>SortPosition}" visible="{alvDetail>/columns/alvSorts/sortPosition}" /><Text text="{path:'alvDetail>IsAscending', formatter:'.formatter.formatBoolean'}" visible="{alvDetail>/columns/alvSorts/isAscending}" /><Text text="{path:'alvDetail>IsDescending', formatter:'.formatter.formatBoolean'}" visible="{alvDetail>/columns/alvSorts/isDescending}" /><Text text="{path:'alvDetail>Subtotal', formatter:'.formatter.formatBoolean'}" visible="{alvDetail>/columns/alvSorts/subtotal}" /><Text text="{alvDetail>Confidence}" visible="{alvDetail>/columns/alvSorts/confidence}" /></cells></ColumnListItem></items></Table>
+        </uxap:blocks></uxap:ObjectPageSubSection></uxap:subSections>
+      </uxap:ObjectPageSection>
+      <uxap:ObjectPageSection id="filtersSection" title="{i18n>alvFilters}">
+        <uxap:subSections><uxap:ObjectPageSubSection title="{i18n>alvFilters}"><uxap:blocks>
+          <Table busy="{alvDetail>/loading/alvFilters}" items="{alvDetail>/alvFilters}" growing="true"><headerToolbar><OverflowToolbar><Title text="{i18n>alvFilters}" level="H3" /><ToolbarSpacer /><Button icon="sap-icon://action-settings" tooltip="{i18n>viewSettings}" press=".onOpenSimpleColumnSettings"><customData><core:CustomData key="section" value="alvFilters" /></customData></Button></OverflowToolbar></headerToolbar><columns><Column visible="{alvDetail>/columns/alvFilters/fieldName}"><Text text="{i18n>fieldName}" /></Column><Column visible="{alvDetail>/columns/alvFilters/filterSign}"><Text text="{i18n>filterSign}" /></Column><Column visible="{alvDetail>/columns/alvFilters/filterOption}"><Text text="{i18n>filterOption}" /></Column><Column visible="{alvDetail>/columns/alvFilters/lowValue}"><Text text="{i18n>lowValue}" /></Column><Column visible="{alvDetail>/columns/alvFilters/highValue}"><Text text="{i18n>highValue}" /></Column><Column visible="{alvDetail>/columns/alvFilters/confidence}"><Text text="{i18n>confidence}" /></Column></columns><items><ColumnListItem><cells><Text text="{alvDetail>FieldName}" visible="{alvDetail>/columns/alvFilters/fieldName}" /><Text text="{alvDetail>FilterSign}" visible="{alvDetail>/columns/alvFilters/filterSign}" /><Text text="{alvDetail>FilterOption}" visible="{alvDetail>/columns/alvFilters/filterOption}" /><Text text="{alvDetail>LowValue}" visible="{alvDetail>/columns/alvFilters/lowValue}" /><Text text="{alvDetail>HighValue}" visible="{alvDetail>/columns/alvFilters/highValue}" /><Text text="{alvDetail>Confidence}" visible="{alvDetail>/columns/alvFilters/confidence}" /></cells></ColumnListItem></items></Table>
+        </uxap:blocks></uxap:ObjectPageSubSection></uxap:subSections>
+      </uxap:ObjectPageSection>
+      <uxap:ObjectPageSection id="eventsSection" title="{i18n>alvEvents}">
+        <uxap:subSections><uxap:ObjectPageSubSection title="{i18n>alvEvents}"><uxap:blocks>
+          <Table busy="{alvDetail>/loading/alvEvents}" items="{alvDetail>/alvEvents}" growing="true"><headerToolbar><OverflowToolbar><Title text="{i18n>alvEvents}" level="H3" /><ToolbarSpacer /><Button icon="sap-icon://action-settings" tooltip="{i18n>viewSettings}" press=".onOpenSimpleColumnSettings"><customData><core:CustomData key="section" value="alvEvents" /></customData></Button></OverflowToolbar></headerToolbar><columns><Column visible="{alvDetail>/columns/alvEvents/eventName}"><Text text="{i18n>eventName}" /></Column><Column visible="{alvDetail>/columns/alvEvents/handlerName}"><Text text="{i18n>handlerName}" /></Column><Column visible="{alvDetail>/columns/alvEvents/handlerKind}"><Text text="{i18n>handlerKind}" /></Column><Column visible="{alvDetail>/columns/alvEvents/controlObject}"><Text text="{i18n>controlObject}" /></Column><Column visible="{alvDetail>/columns/alvEvents/guiDependency}"><Text text="{i18n>guiDependency}" /></Column><Column visible="{alvDetail>/columns/alvEvents/confidence}"><Text text="{i18n>confidence}" /></Column></columns><items><ColumnListItem><cells><Text text="{alvDetail>EventName}" visible="{alvDetail>/columns/alvEvents/eventName}" /><Text text="{alvDetail>HandlerName}" visible="{alvDetail>/columns/alvEvents/handlerName}" /><Text text="{alvDetail>HandlerKind}" visible="{alvDetail>/columns/alvEvents/handlerKind}" /><Text text="{alvDetail>ControlObject}" visible="{alvDetail>/columns/alvEvents/controlObject}" /><Text text="{path:'alvDetail>GuiDependency', formatter:'.formatter.formatBoolean'}" visible="{alvDetail>/columns/alvEvents/guiDependency}" /><Text text="{alvDetail>Confidence}" visible="{alvDetail>/columns/alvEvents/confidence}" /></cells></ColumnListItem></items></Table>
+        </uxap:blocks></uxap:ObjectPageSubSection></uxap:subSections>
+      </uxap:ObjectPageSection>
+    </uxap:sections>
+  </uxap:ObjectPageLayout>
+</mvc:View>

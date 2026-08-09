@@ -1,0 +1,37 @@
+<core:FragmentDefinition xmlns:core="sap.ui.core" xmlns="sap.m">
+  <Dialog
+    id="recommendationDetailDialog"
+    title="{i18n>recommendationDetails}"
+    contentWidth="34rem"
+    contentHeight="auto"
+    stretchOnPhone="true"
+    class="recommendationDetailDialog">
+    <content>
+      <VBox class="recommendationDetail">
+        <ObjectStatus
+          text="{path: 'detail>/selectedRecommendation/Severity', formatter: '.formatter.formatText'}"
+          state="{path: 'detail>/selectedRecommendation/Severity', formatter: '.formatter.formatSeverityState'}"
+          icon="sap-icon://flag" />
+        <Title text="{path: 'detail>/selectedRecommendation/Title', formatter: '.formatter.formatText'}" level="H3" wrapping="true" class="recommendationDetailTitle" />
+        <VBox class="recommendationDetailMeta">
+          <ObjectAttribute title="{i18n>targetLayer}" text="{path: 'detail>/selectedRecommendation/TargetLayer', formatter: '.formatter.formatText'}" />
+          <ObjectAttribute title="{i18n>ruleId}" text="{path: 'detail>/selectedRecommendation/RuleId', formatter: '.formatter.formatText'}" />
+          <ObjectAttribute title="{i18n>ruleVersion}" text="{path: 'detail>/selectedRecommendation/RuleVersion', formatter: '.formatter.formatText'}" />
+          <ObjectAttribute title="{i18n>reviewStatus}" text="{path: 'detail>/selectedRecommendation/ReviewStatus', formatter: '.formatter.formatText'}" />
+          <ObjectAttribute title="{i18n>manualReview}" text="{path: 'detail>/selectedRecommendation/ManualReview', formatter: '.formatter.formatBoolean'}" />
+        </VBox>
+        <VBox class="recommendationDetailSection">
+          <Label text="{i18n>description}" />
+          <Text text="{path: 'detail>/selectedRecommendation/DisplayText', formatter: '.formatter.formatText'}" wrapping="true" />
+        </VBox>
+        <VBox class="recommendationDetailSection">
+          <Label text="{i18n>explanation}" />
+          <Text text="{path: 'detail>/selectedRecommendation/Explanation', formatter: '.formatter.formatText'}" wrapping="true" />
+        </VBox>
+      </VBox>
+    </content>
+    <endButton>
+      <Button text="{i18n>close}" press=".onCloseRecommendationDetail" />
+    </endButton>
+  </Dialog>
+</core:FragmentDefinition>

@@ -1,0 +1,41 @@
+<core:FragmentDefinition xmlns:core="sap.ui.core" xmlns="sap.m">
+  <VBox class="tabSurface" busy="{detail>/loading/evidences}" busyIndicatorDelay="0">
+    <MessageStrip visible="{path: 'detail>/errors/evidences', formatter: '.formatter.hasValue'}" text="{detail>/errors/evidences}" type="Error" showIcon="true" class="sapUiSmallMarginBottom" />
+    <OverflowToolbar class="sectionToolbar" visible="{path: 'detail>/evidences', formatter: '.formatter.hasItems'}">
+      <Title text="{i18n>evidence}" level="H3" />
+      <ObjectStatus text="{path: 'detail>/counts/evidences', formatter: '.formatter.formatCountText'}" />
+      <ToolbarSpacer />
+      <Button icon="sap-icon://download" text="{i18n>exportReport}" tooltip="{i18n>exportSectionTooltip}" visible="{detail>/exportAvailable/evidences}" press=".onOpenSectionExportDialog">
+        <customData>
+          <core:CustomData key="section" value="evidences" />
+        </customData>
+      </Button>
+      <Button icon="sap-icon://action-settings" tooltip="{i18n>viewSettings}" press=".onOpenDetailTableSettings">
+        <customData>
+          <core:CustomData key="section" value="evidences" />
+        </customData>
+      </Button>
+    </OverflowToolbar>
+    <IllustratedMessage visible="{path: 'detail>/evidences', formatter: '.formatter.hasNoItems'}" illustrationType="sapIllus-NoEntries" title="{i18n>noEvidences}" />
+    <Table id="evidencesTable" visible="{path: 'detail>/evidences', formatter: '.formatter.hasItems'}" growing="true" growingThreshold="20" items="{detail>/evidences}" itemPress=".onEvidencePress">
+      <columns>
+        <Column width="12rem" visible="{detail>/columns/evidences/sourceObject}"><Text text="{i18n>sourceObject}" /></Column>
+        <Column width="6rem" hAlign="End" visible="{detail>/columns/evidences/startLine}"><Text text="{i18n>startLine}" /></Column>
+        <Column width="6rem" hAlign="End" visible="{detail>/columns/evidences/endLine}"><Text text="{i18n>endLine}" /></Column>
+        <Column visible="{detail>/columns/evidences/statementText}"><Text text="{i18n>statementText}" /></Column>
+        <Column width="8rem" visible="{detail>/columns/evidences/confidence}"><Text text="{i18n>confidence}" /></Column>
+      </columns>
+      <items>
+        <ColumnListItem type="Active" press=".onEvidencePress">
+          <cells>
+            <Text text="{path: 'detail>SourceObject', formatter: '.formatter.formatText'}" visible="{detail>/columns/evidences/sourceObject}" />
+            <ObjectNumber number="{path: 'detail>StartLine', formatter: '.formatter.formatNumber'}" visible="{detail>/columns/evidences/startLine}" />
+            <ObjectNumber number="{path: 'detail>EndLine', formatter: '.formatter.formatNumber'}" visible="{detail>/columns/evidences/endLine}" />
+            <Text text="{path: 'detail>StatementText', formatter: '.formatter.formatText'}" maxLines="2" wrapping="true" visible="{detail>/columns/evidences/statementText}" />
+            <Text text="{path: 'detail>Confidence', formatter: '.formatter.formatText'}" visible="{detail>/columns/evidences/confidence}" />
+          </cells>
+        </ColumnListItem>
+      </items>
+    </Table>
+  </VBox>
+</core:FragmentDefinition>

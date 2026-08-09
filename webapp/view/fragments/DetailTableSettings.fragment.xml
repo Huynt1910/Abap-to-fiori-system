@@ -1,0 +1,118 @@
+<core:FragmentDefinition
+  xmlns:core="sap.ui.core"
+  xmlns:dnd="sap.ui.core.dnd"
+  xmlns="sap.m">
+  <Dialog
+    id="detailTableSettingsDialog"
+    title="{i18n>viewSettings}"
+    contentWidth="46rem"
+    contentHeight="40rem"
+    resizable="true"
+    draggable="true">
+    <customHeader>
+      <Bar>
+        <contentLeft>
+          <Title text="{detail>/tableSettings/title}" level="H5" />
+        </contentLeft>
+        <contentRight>
+          <Button text="{i18n>reset}" type="Transparent" press=".onResetDetailTableSettings" />
+        </contentRight>
+      </Bar>
+    </customHeader>
+    <IconTabBar expandable="false" class="sapUiNoContentPadding">
+      <items>
+        <IconTabFilter text="{i18n>columns}" count="{= ${detail>/tableSettings/selectedCount} + '/' + ${detail>/tableSettings/totalCount} }">
+          <VBox>
+            <OverflowToolbar>
+              <SearchField width="16rem" placeholder="{i18n>search}" liveChange=".onSearchDetailTableSettings" />
+              <ToggleButton text="{i18n>showSelected}" pressed="{detail>/tableSettings/showSelected}" press=".onToggleDetailTableShowSelected" />
+              <ToolbarSpacer />
+              <Button text="{i18n>selectAll}" press=".onSelectAllDetailTableColumns" />
+              <Button text="{i18n>clearAll}" press=".onClearAllDetailTableColumns" />
+              <Button icon="sap-icon://collapse-group" tooltip="{i18n>moveToTop}" press=".onMoveDetailColumnToTop" />
+              <Button icon="sap-icon://navigation-up-arrow" tooltip="{i18n>moveUp}" press=".onMoveDetailColumnUp" />
+              <Button icon="sap-icon://navigation-down-arrow" tooltip="{i18n>moveDown}" press=".onMoveDetailColumnDown" />
+              <Button icon="sap-icon://expand-group" tooltip="{i18n>moveToBottom}" press=".onMoveDetailColumnToBottom" />
+            </OverflowToolbar>
+            <List id="detailTableSettingsList" mode="MultiSelect" includeItemInSelection="true" selectionChange=".onDetailTableSettingSelectionChange" items="{detail>/tableSettings/items}">
+              <dragDropConfig>
+                <dnd:DragInfo sourceAggregation="items" />
+                <dnd:DropInfo targetAggregation="items" dropPosition="Between" dropLayout="Vertical" drop=".onDetailColumnDrop" />
+              </dragDropConfig>
+              <StandardListItem title="{detail>label}" description="{detail>fieldKey}" info="{detail>index}" selected="{detail>visible}" />
+            </List>
+          </VBox>
+        </IconTabFilter>
+        <IconTabFilter text="{i18n>sort}">
+          <VBox>
+            <OverflowToolbar><Button text="{i18n>addSort}" icon="sap-icon://add" press=".onAddDetailSorter" /></OverflowToolbar>
+            <List items="{detail>/tableSettings/sorters}">
+              <CustomListItem>
+                <HBox alignItems="Center" renderType="Bare" class="sapUiTinyMargin">
+                  <Select width="18rem" selectedKey="{detail>key}" items="{detail>/tableSettings/sortFields}">
+                    <core:Item key="{detail>key}" text="{detail>label}" />
+                  </Select>
+                  <CheckBox text="{i18n>descending}" selected="{detail>descending}" class="sapUiSmallMarginBeginEnd" />
+                  <Button icon="sap-icon://delete" tooltip="{i18n>delete}" press=".onRemoveDetailSorter" />
+                </HBox>
+              </CustomListItem>
+            </List>
+          </VBox>
+        </IconTabFilter>
+        <IconTabFilter text="{i18n>group}">
+          <VBox>
+            <OverflowToolbar><Button text="{i18n>addGroup}" icon="sap-icon://add" press=".onAddDetailGroup" /></OverflowToolbar>
+            <List items="{detail>/tableSettings/groups}">
+              <CustomListItem>
+                <HBox alignItems="Center" renderType="Bare" class="sapUiTinyMargin">
+                  <Select width="18rem" selectedKey="{detail>key}" items="{detail>/tableSettings/groupFields}">
+                    <core:Item key="{detail>key}" text="{detail>label}" />
+                  </Select>
+                  <CheckBox text="{i18n>descending}" selected="{detail>descending}" class="sapUiSmallMarginBeginEnd" />
+                  <Button icon="sap-icon://delete" tooltip="{i18n>delete}" press=".onRemoveDetailGroup" />
+                </HBox>
+              </CustomListItem>
+            </List>
+          </VBox>
+        </IconTabFilter>
+        <IconTabFilter text="{i18n>filter}">
+          <VBox>
+            <OverflowToolbar><Button text="{i18n>addFilter}" icon="sap-icon://add" press=".onAddDetailFilter" /></OverflowToolbar>
+            <List items="{detail>/tableSettings/filters}">
+              <CustomListItem>
+                <HBox alignItems="Center" renderType="Bare" class="sapUiTinyMargin">
+                  <Select width="14rem" selectedKey="{detail>key}" items="{detail>/tableSettings/filterFields}">
+                    <core:Item key="{detail>key}" text="{detail>label}" />
+                  </Select>
+                  <Select width="10rem" selectedKey="{detail>operator}" class="sapUiSmallMarginBegin">
+                    <core:Item key="Contains" text="{i18n>contains}" />
+                    <core:Item key="EQ" text="{i18n>equals}" />
+                    <core:Item key="NE" text="{i18n>notEquals}" />
+                    <core:Item key="GT" text="{i18n>greaterThan}" />
+                    <core:Item key="GE" text="{i18n>greaterEqual}" />
+                    <core:Item key="LT" text="{i18n>lessThan}" />
+                    <core:Item key="LE" text="{i18n>lessEqual}" />
+                    <core:Item key="BT" text="{i18n>between}" />
+                  </Select>
+                  <Input width="10rem" value="{detail>value}" class="sapUiSmallMarginBegin" />
+                  <Input width="10rem" value="{detail>value2}" visible="{= ${detail>operator} === 'BT' }" class="sapUiSmallMarginBegin" />
+                  <Button icon="sap-icon://delete" tooltip="{i18n>delete}" press=".onRemoveDetailFilter" class="sapUiSmallMarginBegin" />
+                </HBox>
+              </CustomListItem>
+            </List>
+          </VBox>
+        </IconTabFilter>
+        <IconTabFilter text="{i18n>variants}">
+          <MessageStrip text="{i18n>localVariantFallback}" type="Information" showIcon="true" />
+          <Text text="{i18n>standardVariant}" class="sapUiSmallMargin" />
+        </IconTabFilter>
+      </items>
+    </IconTabBar>
+    <beginButton>
+      <Button text="{i18n>ok}" type="Emphasized" press=".onConfirmDetailTableSettings" />
+    </beginButton>
+    <endButton>
+      <Button text="{i18n>cancel}" press=".onCancelDetailTableSettings" />
+    </endButton>
+  </Dialog>
+</core:FragmentDefinition>

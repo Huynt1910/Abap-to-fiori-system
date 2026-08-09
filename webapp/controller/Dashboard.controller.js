@@ -1,242 +1,414 @@
 sap.ui.define([
-  "sap/ui/core/mvc/Controller",
-  "sap/ui/core/UIComponent",
-  "sap/m/MessageBox",
+  "sap/ui/core/Fragment",
+  "sap/ui/core/routing/HashChanger",
+  "sap/ui/model/Filter",
+  "sap/ui/model/FilterOperator",
+  "sap/ui/model/Sorter",
   "sap/m/MessageToast",
-  "abap/to/fiori/system/util/formatter",
-  "abap/to/fiori/system/util/Constants"
-], function (Controller, UIComponent, MessageBox, MessageToast, formatter, Constants) {
+  "abap/to/fiori/system/controller/BaseController",
+  "abap/to/fiori/system/model/models",
+  "abap/to/fiori/system/util/Constants",
+  "abap/to/fiori/system/util/formatter"
+], function (Fragment, HashChanger, Filter, FilterOperator, Sorter, MessageToast, BaseController, models, Constants, formatter) {
   "use strict";
 
-  return Controller.extend("abap.to.fiori.system.controller.Dashboard", {
+  return BaseController.extend("abap.to.fiori.system.controller.Dashboard", {
     formatter: formatter,
 
     onInit: function () {
-      this._oViewModel = this.getOwnerComponent().getModel("view");
-      this._oODataService = this.getOwnerComponent().getODataService();
-
-      this._applyAnalysisRows([], false, false);
-      this._loadSavedReports();
+      this._oViewModel = models.createDashboardModel();
+      this.getView().setModel(this._oViewModel, "dashboard");
+      this._applyAnalysisFilters();
+      this._updateDashboardKpis();
+      this._displayMailTargetFromHash();
     },
 
-    onAnalyze: function () {
-      var sProgramName = String(this._oViewModel.getProperty("/selectedProgram") || "").trim();
-
-      this._setSelectedProgram(sProgramName);
-      this._loadSavedReports(sProgramName);
+    onSearch: function () {
+      this._applyAnalysisFilters();
     },
 
     onRefresh: function () {
-      this._loadSavedReports(this._oViewModel.getProperty("/selectedProgram"));
+      this._refreshAnalyses();
     },
 
-    onAdaptFilters: function () {
-      MessageToast.show("Program Name is the active filter.");
+    onOpenMailJobs: function () {
+      this._displayMailJobs();
     },
 
-    onReportSelectionChange: function () {
-      var oTable = this.byId("analysisTable");
-      var iSelectedCount = oTable ? oTable.getSelectedItems().length : 0;
-
-      this._oViewModel.setProperty("/selectedReportCount", iSelectedCount);
+    onOpenComparisonHistory: function () {
+      this.getRouter().navTo("comparisonHistory");
     },
 
-    onDeleteSelectedReports: function () {
-      var aSelectedReports = this._getSelectedReports();
+    onClearFilters: function () {
+      this._oViewModel.setProperty("/filters/search", "");
+      this._oViewModel.setProperty("/filters/status", "");
+      this._applyAnalysisFilters();
+    },
 
-      if (!aSelectedReports.length) {
-        MessageToast.show("Select at least one report to delete.");
-        return;
+    onExit: function () {
+      if (this._iProgramValueHelpSearchTimer) {
+        clearTimeout(this._iProgramValueHelpSearchTimer);
       }
-
-      MessageBox.warning("Delete " + aSelectedReports.length + " selected report(s)?", {
-        actions: [MessageBox.Action.DELETE, MessageBox.Action.CANCEL],
-        emphasizedAction: MessageBox.Action.DELETE,
-        onClose: function (sAction) {
-          if (sAction === MessageBox.Action.DELETE) {
-            this._deleteSelectedReports(aSelectedReports);
-          }
-        }.bind(this)
-      });
     },
 
-    onOpenNewAnalysis: function () {
-      this._oViewModel.setProperty("/newAnalysis/programName", this._oViewModel.getProperty("/selectedProgram") || "");
-      this.byId("newAnalysisDialog").open();
+    onOpenAnalysisTableSettings: function () {
+      this._mAnalysisColumnSnapshot = Object.assign({}, this._oViewModel.getProperty("/columns") || {});
+      this._prepareAnalysisTableSettings();
+      this._openAnalysisTableSettingsDialog();
     },
 
-    onCancelNewAnalysis: function () {
-      this.byId("newAnalysisDialog").close();
-      this._oViewModel.setProperty("/newAnalysis/busy", false);
+    onSearchAnalysisTableSettings: function (oEvent) {
+      this._filterTableSettingsList("analysisTableSettingsList", oEvent.getParameter("newValue"));
     },
 
-    onCreateNewAnalysis: function () {
+    onAnalysisTableSettingSelectionChange: function () {
+      setTimeout(this._updateAnalysisTableSettingsCount.bind(this), 0);
+    },
+
+    onResetAnalysisTableSettings: function () {
+      this._getAnalysisColumnSettings().forEach(function (oColumn) {
+        this._oViewModel.setProperty("/columns/" + oColumn.key, oColumn.defaultVisible);
+      }.bind(this));
+      this._prepareAnalysisTableSettings();
+    },
+
+    onConfirmAnalysisTableSettings: function () {
+      this._updateAnalysisTableSettingsCount();
+      this._mAnalysisColumnSnapshot = null;
+      this.byId("analysisTableSettingsDialog").close();
+    },
+
+    onCancelAnalysisTableSettings: function () {
+      if (this._mAnalysisColumnSnapshot) {
+        this._oViewModel.setProperty("/columns", this._mAnalysisColumnSnapshot);
+      }
+      this._mAnalysisColumnSnapshot = null;
+      this.byId("analysisTableSettingsDialog").close();
+    },
+
+    onAnalysesUpdateFinished: function (oEvent) {
+      var iTotal = oEvent.getParameter("total") || 0;
+      this._oViewModel.setProperty("/visibleCount", iTotal);
+      this._updateDashboardKpis();
+    },
+
+    onRunAnalysis: function () {
+      this._resetRunAnalysisState();
+      this._openRunAnalysisDialog();
+    },
+
+    onCancelRunAnalysis: function () {
+      this.byId("runAnalysisDialog").close();
+    },
+
+    onExecuteRunAnalysis: function () {
       var sProgramName = String(this._oViewModel.getProperty("/newAnalysis/programName") || "").trim();
 
       if (!sProgramName) {
-        MessageToast.show("Enter a Program Name first.");
+        MessageToast.show(this.getText("validationProgramNameRequired"));
+        return;
+      }
+      if (sProgramName.length > Constants.field.programNameMaxLength) {
+        MessageToast.show(this.getText("validationProgramNameMaxLength"));
         return;
       }
 
       this._oViewModel.setProperty("/newAnalysis/busy", true);
-      this._setBusy(true);
+      this.getAnalysisService().analyzeProgram(sProgramName)
+        .then(function (oAnalysis) {
+          var sAnalysisId = oAnalysis && oAnalysis.AnalysisId;
 
-      this._oODataService.analyzeAndSave(sProgramName)
-        .then(function (oReport) {
-          this._setSelectedProgram(oReport.ProgramName || sProgramName);
-          this._addOrReplaceAnalysisRow(oReport);
-          this.byId("newAnalysisDialog").close();
-          MessageToast.show("New analysis created.");
-        }.bind(this))
-        .catch(function (oError) {
-          console.error("Error creating analysis:", oError);
-          MessageToast.show(oError.message || "Could not create analysis.");
-        })
-        .finally(function () {
-          this._oViewModel.setProperty("/newAnalysis/busy", false);
-          this._setBusy(false);
-        }.bind(this));
-    },
+          this.byId("runAnalysisDialog").close();
+          MessageToast.show(this.getText("runAnalysisSuccess"));
+          this._refreshAnalyses();
 
-    onTableRowPress: function (oEvent) {
-      var oListItem = oEvent.getParameter("listItem") || oEvent.getSource();
-      var oContext = oListItem.getBindingContext("view");
-      var oRow = oContext && oContext.getObject();
-      var sProgramName = oRow && oRow.ProgramName;
-
-      if (!sProgramName) {
-        MessageToast.show("Could not open detail for this row.");
-        return;
-      }
-
-      this._oViewModel.setProperty("/selectedAnalysis", oRow);
-      this._setSelectedProgram(sProgramName);
-
-      console.log("Opening detail page for ProgramName:", sProgramName);
-      UIComponent.getRouterFor(this).navTo("detail", {
-        "programName*": encodeURIComponent(sProgramName)
-      });
-    },
-
-    _applyAnalysisRows: function (aRows, bUseFirstRowAsSelected, bAfterSearch) {
-      var aData = aRows || [];
-
-      this._oViewModel.setProperty("/analysisRows", aData);
-      this._oViewModel.setProperty("/analysisCount", aData.length);
-      this._oViewModel.setProperty("/analysisNoDataText", aData.length || bAfterSearch ? "No saved reports available." : "Loading saved reports...");
-      this._oViewModel.setProperty("/selectedAnalysis", bUseFirstRowAsSelected && aData.length ? aData[0] : {});
-      this._clearReportSelection();
-    },
-
-    _loadSavedReports: function (sProgramName) {
-      var sFilterProgramName = String(sProgramName || "").trim();
-
-      this._setBusy(true);
-      this._oODataService.readSavedReportHeaders(sFilterProgramName)
-        .then(function (aRows) {
-          this._applyAnalysisRows(aRows, true, true);
-
-          if (!aRows.length && sFilterProgramName) {
-            MessageToast.show("No saved reports found for " + sFilterProgramName + ".");
+          if (sAnalysisId) {
+            this.getRouter().navTo("analysisDetail", {
+              analysisId: sAnalysisId
+            });
           }
         }.bind(this))
         .catch(function (oError) {
-          console.error("Error reading saved reports:", oError);
-          this._applyAnalysisRows([], false, true);
-          MessageToast.show(oError.message || "Could not read saved reports.");
+          this.showError(oError, "runAnalysisError");
         }.bind(this))
         .finally(function () {
-          this._setBusy(false);
+          this._oViewModel.setProperty("/newAnalysis/busy", false);
         }.bind(this));
     },
 
-    _addOrReplaceAnalysisRow: function (oReport) {
-      var aRows = (this._oViewModel.getProperty("/analysisRows") || []).slice();
-      var sReportId = oReport && oReport.ReportID;
-      var iExistingIndex = aRows.findIndex(function (oRow) {
-        return sReportId && oRow.ReportID === sReportId;
-      });
+    onProgramNameChange: function (oEvent) {
+      this._oViewModel.setProperty("/newAnalysis/programName", this._normalizeProgramName(oEvent.getParameter("value")));
+    },
 
-      if (!oReport) {
+    onProgramValueHelpRequest: function () {
+      this._oViewModel.setProperty("/newAnalysis/valueHelp/search", this._oViewModel.getProperty("/newAnalysis/programName") || "");
+      this._oViewModel.setProperty("/newAnalysis/valueHelp/errorMessage", "");
+      this._openProgramValueHelpDialog();
+      this._loadProgramValueHelp(0);
+    },
+
+    onProgramValueHelpSearch: function (oEvent) {
+      var sSearch = this._normalizeProgramName(oEvent.getParameter("newValue") || oEvent.getParameter("query"));
+
+      this._oViewModel.setProperty("/newAnalysis/valueHelp/search", sSearch);
+      this._loadProgramValueHelp(250);
+    },
+
+    onProgramValueHelpSelectionChange: function (oEvent) {
+      var oItem = oEvent.getParameter("listItem");
+      var oContext = oItem && oItem.getBindingContext("dashboard");
+      var oProgram = oContext && oContext.getObject();
+
+      if (oProgram && oProgram.ProgramName) {
+        this._oViewModel.setProperty("/newAnalysis/programName", oProgram.ProgramName);
+      }
+    },
+
+    onConfirmProgramValueHelp: function () {
+      this.byId("programValueHelpDialog").close();
+    },
+
+    onCancelProgramValueHelp: function () {
+      this.byId("programValueHelpDialog").close();
+    },
+
+    onAnalysisPress: function (oEvent) {
+      var oListItem = oEvent.getParameter("listItem") || oEvent.getSource();
+      var oContext = oListItem && oListItem.getBindingContext();
+      var sAnalysisId = oContext && oContext.getProperty("AnalysisId");
+
+      if (!sAnalysisId) {
+        MessageToast.show(this.getText("openAnalysisError"));
         return;
       }
 
-      if (iExistingIndex >= 0) {
-        aRows.splice(iExistingIndex, 1, oReport);
-      } else {
-        aRows.unshift(oReport);
-      }
-
-      this._applyAnalysisRows(aRows, true, true);
+      this.getRouter().navTo("analysisDetail", {
+        analysisId: encodeURIComponent(sAnalysisId)
+      });
     },
 
-    _getSelectedReports: function () {
+    _applyAnalysisFilters: function () {
       var oTable = this.byId("analysisTable");
+      var oBinding = oTable && oTable.getBinding("items");
+      var aFilters = this._buildFilters();
 
-      if (!oTable) {
-        return [];
+      if (oBinding) {
+        oBinding.filter(aFilters);
+        oBinding.sort([new Sorter(Constants.field.createdAt, true)]);
+      }
+      this._updateDashboardKpis();
+    },
+
+    _refreshAnalyses: function () {
+      var oBinding = this.byId("analysisTable").getBinding("items");
+
+      this._applyAnalysisFilters();
+
+      if (oBinding) {
+        oBinding.refresh();
+      }
+    },
+
+    _buildFilters: function () {
+      var aFilters = [];
+      var sSearch = String(this._oViewModel.getProperty("/filters/search") || "").trim();
+      var sStatus = String(this._oViewModel.getProperty("/filters/status") || "").trim();
+
+      if (sSearch) {
+        aFilters.push(new Filter(Constants.field.programName, FilterOperator.Contains, sSearch));
       }
 
-      return oTable.getSelectedItems().map(function (oItem) {
-        var oContext = oItem.getBindingContext("view");
-        return oContext && oContext.getObject();
-      }).filter(function (oReport) {
-        return oReport && oReport.ReportID;
+      if (sStatus) {
+        aFilters.push(new Filter(Constants.field.status, FilterOperator.EQ, sStatus));
+      }
+
+      return aFilters;
+    },
+
+    _updateDashboardKpis: function () {
+      this._oViewModel.setProperty("/busy", true);
+      this.getAnalysisService().readAnalysisSummary()
+        .then(function (oKpi) {
+          this._oViewModel.setProperty("/kpi", oKpi);
+        }.bind(this))
+        .catch(function (oError) {
+          this.showError(oError, "loadOverviewError");
+        }.bind(this))
+        .finally(function () {
+          this._oViewModel.setProperty("/busy", false);
+        }.bind(this));
+    },
+
+    _displayMailTargetFromHash: function () {
+      var sHash = HashChanger.getInstance().getHash();
+
+      if (/^\/?mail($|\/)/.test(sHash)) {
+        setTimeout(function () {
+          this._displayMailJobs(true);
+        }.bind(this), 0);
+      }
+    },
+
+    _displayMailJobs: function (bKeepHash) {
+      var vDisplayResult;
+
+      try {
+        vDisplayResult = this.getRouter().getTargets().display("mailJobs");
+
+        if (vDisplayResult && typeof vDisplayResult.catch === "function") {
+          vDisplayResult.catch(function (oError) {
+            this.showError(oError, "openMailJobsError");
+          }.bind(this));
+        }
+
+        if (!bKeepHash) {
+          HashChanger.getInstance().setHash("mail");
+        }
+      } catch (oError) {
+        this.showError(oError, "openMailJobsError");
+      }
+    },
+
+    _getAnalysisColumnSettings: function () {
+      return [
+        { key: "program", label: this.getText("rootProgram"), defaultVisible: true },
+        { key: "status", label: this.getText("analysisStatus"), defaultVisible: true },
+        { key: "sourceObjects", label: this.getText("sourceObjects"), defaultVisible: true },
+        { key: "dbTables", label: this.getText("dbTables"), defaultVisible: true },
+        { key: "alvOutputs", label: this.getText("alvOutputs"), defaultVisible: true },
+        { key: "readinessScore", label: this.getText("readinessScore"), defaultVisible: true },
+        { key: "createdAt", label: this.getText("createdAt"), defaultVisible: true },
+        { key: "createdBy", label: this.getText("createdBy"), defaultVisible: true }
+      ];
+    },
+
+    _prepareAnalysisTableSettings: function () {
+      var mColumns = this._oViewModel.getProperty("/columns") || {};
+      var aItems = this._getAnalysisColumnSettings().map(function (oColumn) {
+        return Object.assign({}, oColumn, {
+          visible: mColumns[oColumn.key] !== false
+        });
+      });
+
+      this._oViewModel.setProperty("/tableSettings", {
+        items: aItems,
+        selectedCount: aItems.filter(function (oColumn) {
+          return oColumn.visible;
+        }).length,
+        totalCount: aItems.length
       });
     },
 
-    _deleteSelectedReports: function (aSelectedReports) {
-      var aReportIds = aSelectedReports.map(function (oReport) {
-        return oReport.ReportID;
-      });
+    _updateAnalysisTableSettingsCount: function () {
+      var aItems = this._oViewModel.getProperty("/tableSettings/items") || [];
 
-      this._setBusy(true);
-      Promise.all(aReportIds.map(function (sReportId) {
-        return this._oODataService.deleteSavedReport(sReportId);
-      }.bind(this))).then(function () {
-        this._removeAnalysisRowsByReportId(aReportIds);
-        MessageToast.show("Selected report(s) deleted.");
-      }.bind(this)).catch(function (oError) {
-        console.error("Error deleting saved reports:", oError);
-        MessageToast.show(oError.message || "Could not delete selected reports.");
-      }).finally(function () {
-        this._setBusy(false);
+      aItems.forEach(function (oColumn) {
+        this._oViewModel.setProperty("/columns/" + oColumn.key, oColumn.visible !== false);
+      }.bind(this));
+      this._oViewModel.setProperty("/tableSettings/selectedCount", aItems.filter(function (oColumn) {
+        return oColumn.visible;
+      }).length);
+    },
+
+    _filterTableSettingsList: function (sListId, sSearch) {
+      var oList = this.byId(sListId);
+      var oBinding = oList && oList.getBinding("items");
+      var sValue = String(sSearch || "").trim();
+
+      if (oBinding) {
+        oBinding.filter(sValue ? [new Filter("label", FilterOperator.Contains, sValue)] : []);
+      }
+    },
+
+    _openAnalysisTableSettingsDialog: function () {
+      if (!this._pAnalysisTableSettingsDialog) {
+        this._pAnalysisTableSettingsDialog = Fragment.load({
+          id: this.getView().getId(),
+          name: "abap.to.fiori.system.view.fragments.AnalysisTableSettings",
+          controller: this
+        }).then(function (oDialog) {
+          this.getView().addDependent(oDialog);
+          return oDialog;
+        }.bind(this));
+      }
+
+      this._pAnalysisTableSettingsDialog.then(function (oDialog) {
+        this._filterTableSettingsList("analysisTableSettingsList", "");
+        oDialog.open();
       }.bind(this));
     },
 
-    _removeAnalysisRowsByReportId: function (aReportIds) {
-      var mReportIds = {};
-      var aRows = this._oViewModel.getProperty("/analysisRows") || [];
-
-      aReportIds.forEach(function (sReportId) {
-        mReportIds[sReportId] = true;
-      });
-
-      this._applyAnalysisRows(aRows.filter(function (oRow) {
-        return !mReportIds[oRow.ReportID];
-      }), false, true);
-    },
-
-    _clearReportSelection: function () {
-      var oTable = this.byId("analysisTable");
-
-      if (oTable) {
-        oTable.removeSelections(true);
+    _openRunAnalysisDialog: function () {
+      if (!this._pRunAnalysisDialog) {
+        this._pRunAnalysisDialog = Fragment.load({
+          id: this.getView().getId(),
+          name: "abap.to.fiori.system.view.fragments.RunAnalysisDialog",
+          controller: this
+        }).then(function (oDialog) {
+          this.getView().addDependent(oDialog);
+          return oDialog;
+        }.bind(this));
       }
 
-      this._oViewModel.setProperty("/selectedReportCount", 0);
+      this._pRunAnalysisDialog.then(function (oDialog) {
+        oDialog.open();
+      });
     },
 
-    _setSelectedProgram: function (sProgramName) {
-      var sValue = sProgramName || "";
+    _openProgramValueHelpDialog: function () {
+      if (!this._pProgramValueHelpDialog) {
+        this._pProgramValueHelpDialog = Fragment.load({
+          id: this.getView().getId(),
+          name: "abap.to.fiori.system.view.fragments.ProgramValueHelpDialog",
+          controller: this
+        }).then(function (oDialog) {
+          this.getView().addDependent(oDialog);
+          return oDialog;
+        }.bind(this));
+      }
 
-      this._oViewModel.setProperty("/selectedProgram", sValue);
-
-      console.log("Selected ProgramName:", sValue);
+      this._pProgramValueHelpDialog.then(function (oDialog) {
+        oDialog.open();
+      });
     },
 
-    _setBusy: function (bBusy) {
-      this._oViewModel.setProperty("/busy", bBusy);
+    _loadProgramValueHelp: function (iDelay) {
+      if (this._iProgramValueHelpSearchTimer) {
+        clearTimeout(this._iProgramValueHelpSearchTimer);
+      }
+
+      this._iProgramValueHelpSearchTimer = setTimeout(function () {
+        var sSearch = this._oViewModel.getProperty("/newAnalysis/valueHelp/search");
+
+        this._oViewModel.setProperty("/newAnalysis/valueHelp/busy", true);
+        this._oViewModel.setProperty("/newAnalysis/valueHelp/errorMessage", "");
+        this.getProgramValueHelpService().searchPrograms(sSearch, 50)
+          .then(function (aPrograms) {
+            this._oViewModel.setProperty("/newAnalysis/valueHelp/items", aPrograms);
+          }.bind(this))
+          .catch(function (oError) {
+            this._oViewModel.setProperty("/newAnalysis/valueHelp/items", []);
+            this._oViewModel.setProperty("/newAnalysis/valueHelp/errorMessage", this.parseError(oError).message || this.getText("programValueHelpLoadError"));
+          }.bind(this))
+          .finally(function () {
+            this._oViewModel.setProperty("/newAnalysis/valueHelp/busy", false);
+          }.bind(this));
+      }.bind(this), iDelay || 0);
+    },
+
+    _normalizeProgramName: function (sValue) {
+      return String(sValue || "").trim().toUpperCase().slice(0, Constants.field.programNameMaxLength);
+    },
+
+    _resetRunAnalysisState: function () {
+      this._oViewModel.setProperty("/newAnalysis/programName", "");
+      this._oViewModel.setProperty("/newAnalysis/busy", false);
+      this._oViewModel.setProperty("/newAnalysis/valueHelp", {
+        busy: false,
+        search: "",
+        errorMessage: "",
+        items: []
+      });
     }
   });
 });

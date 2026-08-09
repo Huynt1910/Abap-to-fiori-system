@@ -1,60 +1,311 @@
 sap.ui.define([], function () {
   "use strict";
 
-  return {
-    EntitySet: {
-      SavedReportHeader: "/SavedReportHeader",
-      BusinessLogic: "/ZCE_BUSINESS_LOGIC",
-      DatabaseTable: "/ZCE_DB_TABLE",
-      UIFilter: "/ZCE_UI_FILTER",
-      ComparisonResult: "/ZCE_COMPARISON_RESULT"
-    },
+  return Object.freeze({
+    service: Object.freeze({
+      root: "/sap/opu/odata4/sap/zui_mig_analysis_o4/srvd/sap/zui_mig_analysis/0001/",
+      namespace: "com.sap.gateway.srvd.zui_mig_analysis.v0001",
+      sapClient: "324"
+    }),
 
-    Action: {
-      AnalyzeAndSave: "/SavedReportHeader/com.sap.gateway.srvd.zui_analyzer_service.v0001.analyzeAndSave"
-    },
+    entitySet: Object.freeze({
+      analyses: "/Analyses",
+      programValueHelp: "/ProgramValueHelp",
+      sourceObjects: "/SourceObjects",
+      uiFilters: "/UiFilters",
+      databaseObjects: "/DatabaseObjects",
+      businessLogic: "/BusinessLogic",
+      alvOutputs: "/AlvOutputs",
+      evidences: "/Evidences",
+      recommendations: "/Recommendations",
+      alvColumns: "/AlvColumns",
+      alvSorts: "/AlvSorts",
+      alvFilters: "/AlvFilters",
+      alvEvents: "/AlvEvents",
+      annotations: "/Annotations",
+      analysisMessages: "/AnalysisMessages",
+      exportResult: "/ExportResult",
+      exportJobs: "/ExportJobs"
+    }),
 
-    Field: {
-      ProgramName: "ProgramName",
-      ProgramDescription: "ProgramDescription",
-      AnalysisStatus: "AnalysisStatus",
-      AnalysisStatusCriticality: "AnalysisStatusCriticality",
-      MigrationScore: "MigrationScore",
-      ComplexityScore: "ComplexityScore",
-      CloudReadinessScore: "CloudReadinessScore",
-      TotalTables: "TotalTables",
-      TotalFilters: "TotalFilters",
-      TotalBusinessObjects: "TotalBusinessObjects",
-      FieldName: "FieldName",
-      Recommendation: "Recommendation",
-      MigrationTarget: "MigrationTarget",
-      DataElement: "DataElement",
-      Description: "Description",
-      TableName: "TableName",
-      Operations: "Operations",
-      CDSCandidate: "CDSCandidate",
-      Priority: "Priority",
-      MigrationApproach: "MigrationApproach",
-      ObjectName: "ObjectName",
-      ObjectType: "ObjectType",
-      Severity: "Severity",
-      RemediationComplexity: "RemediationComplexity",
-      FilterType: "FilterType",
-      MandatoryFlag: "MandatoryFlag",
-      MultiValueFlag: "MultiValueFlag",
-      FioriAdaptation: "FioriAdaptation"
-    },
+    navigation: Object.freeze({
+      uiFilters: "_UiFilters",
+      sourceObjects: "_SourceObjects",
+      databaseObjects: "_DatabaseObjects",
+      businessLogic: "_BusinessLogic",
+      alvOutputs: "_AlvOutputs",
+      evidences: "_Evidences",
+      recommendations: "_Recommendations",
+      alvColumns: "_Columns",
+      alvSorts: "_Sorts",
+      alvFilters: "_Filters",
+      alvEvents: "_Events",
+      annotations: "_Annotations",
+      messages: "_Messages"
+    }),
 
-    DetailTab: {
-      Overview: "overview",
-      UIFilters: "uiFilters",
-      DatabaseTables: "databaseTables",
-      BusinessLogic: "businessLogic",
-      ComparisonResults: "comparisonResults"
-    },
+    action: Object.freeze({
+      analyzeHttpPath: "/Analyses/com.sap.gateway.srvd.zui_mig_analysis.v0001.Analyze",
+      analyzeBindingPath: "/Analyses/com.sap.gateway.srvd.zui_mig_analysis.v0001.Analyze(...)",
+      prepareSelectedExportSuffix: "com.sap.gateway.srvd.zui_mig_analysis.v0001.PrepareSelectedExport(...)"
+    }),
 
-    Table: {
-      Top: 100
-    }
-  };
+    fileFormat: Object.freeze({
+      excel: "X",
+      pdf: "P",
+      csv: "C"
+    }),
+
+    exportSection: Object.freeze({
+      all: "ALL",
+      overview: "OVERVIEW",
+      uiFilter: "UI_FILTER",
+      databaseObjects: "DB_OBJ",
+      businessLogic: "BUS_LOGIC",
+      alvOutput: "ALV_OUTPUT",
+      sourceEvidence: "SRC_EVIDEN",
+      recommendations: "RECOMMEN",
+      messages: "MESSAGE"
+    }),
+
+    field: Object.freeze({
+      analysisId: "AnalysisId",
+      programName: "ProgramName",
+      programNameMaxLength: 40,
+      status: "Status",
+      createdAt: "CreatedAt",
+      analyses: Object.freeze([
+        "AnalysisId",
+        "ProgramName",
+        "ProgramDescription",
+        "Status",
+        "TotalSourceObjects",
+        "TotalUiFilters",
+        "TotalDatabaseObjects",
+        "TotalBusinessLogic",
+        "TotalAlvOutputs",
+        "TotalAlvColumns",
+        "TotalRecommendations",
+        "ComplexityScore",
+        "ReadinessScore",
+        "ParserVersion",
+        "RuleVersion",
+        "SourceHash",
+        "CreatedBy",
+        "CreatedAt",
+        "LastChangedBy",
+        "LocalLastChangedAt",
+        "__OperationControl"
+      ]),
+      sourceObjects: Object.freeze([
+        "AnalysisId",
+        "ItemId",
+        "ObjectName",
+        "ObjectType",
+        "ParentObject",
+        "IncludeDepth",
+        "LineCount",
+        "SourceHash"
+      ]),
+      uiFilters: Object.freeze([
+        "AnalysisId",
+        "ItemId",
+        "EvidenceId",
+        "FieldName",
+        "FieldKind",
+        "ReferenceTable",
+        "ReferenceField",
+        "DataElement",
+        "DataType",
+        "Description",
+        "SelectionBlock",
+        "Mandatory",
+        "Hidden",
+        "Checkbox",
+        "RadioGroup",
+        "MultipleSelection",
+        "RangeSupported",
+        "DefaultValue",
+        "ValidationRoutine",
+        "Confidence"
+      ]),
+      databaseObjects: Object.freeze([
+        "AnalysisId",
+        "ItemId",
+        "EvidenceId",
+        "ObjectName",
+        "ObjectType",
+        "Operation",
+        "SelectedFields",
+        "WhereFields",
+        "JoinedObjects",
+        "JoinCondition",
+        "Aggregation",
+        "ContainingRoutine",
+        "DynamicAccess",
+        "ReadOnly",
+        "PagingCapability",
+        "Description",
+        "Confidence"
+      ]),
+      businessLogic: Object.freeze([
+        "AnalysisId",
+        "ItemId",
+        "EvidenceId",
+        "ObjectName",
+        "ObjectType",
+        "ContainerName",
+        "CallingRoutine",
+        "InterfaceSummary",
+        "Description",
+        "SideEffect",
+        "TransactionDependency",
+        "GuiDependency",
+        "ReuseFeasibility",
+        "Confidence"
+      ]),
+      recommendations: Object.freeze([
+        "AnalysisId",
+        "RecommendationId",
+        "SourceItemId",
+        "EvidenceId",
+        "RuleId",
+        "RuleVersion",
+        "TargetLayer",
+        "Title",
+        "DisplayText",
+        "Explanation",
+        "Severity",
+        "Confidence",
+        "ReviewStatus",
+        "ManualReview"
+      ]),
+      evidences: Object.freeze([
+        "AnalysisId",
+        "EvidenceId",
+        "SourceObject",
+        "StartLine",
+        "EndLine",
+        "StatementId",
+        "StatementText",
+        "Confidence"
+      ]),
+      messages: Object.freeze([
+        "AnalysisId",
+        "MessageNo",
+        "MessageType",
+        "MessageCode",
+        "SourceObject",
+        "SourceLine",
+        "MessageText"
+      ]),
+      alvOutputs: Object.freeze([
+        "AnalysisId",
+        "OutputId",
+        "EvidenceId",
+        "LayoutEvidenceId",
+        "OutputName",
+        "OutputKind",
+        "Framework",
+        "ControlObject",
+        "OutputTable",
+        "RowType",
+        "FieldCatalog",
+        "SortTable",
+        "FilterTable",
+        "LayoutObject",
+        "VariantObject",
+        "Editable",
+        "Hierarchical",
+        "Zebra",
+        "AutoWidth",
+        "SelectionMode",
+        "Confidence"
+      ]),
+      alvColumns: Object.freeze([
+        "AnalysisId",
+        "OutputId",
+        "ItemId",
+        "EvidenceId",
+        "FieldName",
+        "ColumnLabel",
+        "ColumnPosition",
+        "DataType",
+        "DataElement",
+        "ReferenceTable",
+        "ReferenceField",
+        "FieldLength",
+        "Decimals",
+        "Visible",
+        "KeyField",
+        "Technical",
+        "Editable",
+        "Hotspot",
+        "Checkbox",
+        "Icon",
+        "CurrencyField",
+        "UnitField",
+        "Aggregation",
+        "SourceMapping",
+        "Confidence"
+      ]),
+      alvSorts: Object.freeze([
+        "AnalysisId",
+        "OutputId",
+        "ItemId",
+        "EvidenceId",
+        "FieldName",
+        "SortPosition",
+        "IsAscending",
+        "IsDescending",
+        "Subtotal",
+        "Confidence"
+      ]),
+      alvFilters: Object.freeze([
+        "AnalysisId",
+        "OutputId",
+        "ItemId",
+        "EvidenceId",
+        "FieldName",
+        "FilterSign",
+        "FilterOption",
+        "LowValue",
+        "HighValue",
+        "Confidence"
+      ]),
+      alvEvents: Object.freeze([
+        "AnalysisId",
+        "OutputId",
+        "ItemId",
+        "EvidenceId",
+        "EventName",
+        "HandlerName",
+        "HandlerKind",
+        "ControlObject",
+        "GuiDependency",
+        "Confidence"
+      ]),
+      annotations: Object.freeze([
+        "AnalysisId",
+        "RecommendationId",
+        "ItemId",
+        "TargetEntity",
+        "TargetElement",
+        "AnnotationName",
+        "AnnotationValue",
+        "AnnotationSequence"
+      ])
+    }),
+
+    section: Object.freeze({
+      sourceObjects: "sourceObjects",
+      uiFilters: "uiFilters",
+      databaseObjects: "databaseObjects",
+      businessLogic: "businessLogic",
+      alvOutputs: "alvOutputs",
+      evidences: "evidences",
+      recommendations: "recommendations",
+      messages: "messages"
+    })
+  });
 });

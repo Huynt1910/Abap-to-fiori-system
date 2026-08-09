@@ -1,0 +1,143 @@
+<core:FragmentDefinition
+  xmlns:core="sap.ui.core"
+  xmlns="sap.m"
+  xmlns:f="sap.ui.layout.form">
+  <Dialog
+    id="mailJobWizardDialog"
+    title="{= ${mailUi>/wizard/mode} === 'edit' ? ${i18n>editMailJob} : ${i18n>createMailJob} }"
+    contentWidth="48rem"
+    contentHeight="42rem"
+    resizable="true"
+    draggable="true">
+    <MessageStrip
+      text="{i18n>mailCreateInProgress}"
+      type="Information"
+      showIcon="true"
+      visible="{mailUi>/wizard/busy}"
+      class="sapUiSmallMarginBottom" />
+    <ScrollContainer height="34rem" vertical="true" focusable="false">
+      <VBox class="sapUiSmallMargin formStack">
+        <Panel headerText="{i18n>mailStepGeneral}" expandable="false">
+          <content>
+        <MessageStrip
+          text="{mailUi>/wizard/errorMessage}"
+          type="Error"
+          showIcon="true"
+          showCloseButton="true"
+          close=".onCloseWizardError"
+          visible="{path: 'mailUi>/wizard/errorMessage', formatter: '.mailFormatter.hasValue'}"
+          class="sapUiSmallMarginBottom" />
+        <f:SimpleForm editable="true" layout="ColumnLayout" columnsM="1" columnsL="2" columnsXL="2">
+          <Label text="{i18n>mailJobName}" required="true" />
+          <Input value="{mailUi>/wizard/job/JobName}" maxLength="80" />
+          <Label text="{i18n>reportType}" required="true" />
+          <Input value="{mailUi>/wizard/job/ReportType}" maxLength="80" />
+          <Label text="{i18n>exportFileFormat}" required="true" />
+          <Select selectedKey="{mailUi>/wizard/job/FileFormat}">
+            <items>
+              <core:Item key="X" text="{i18n>exportFormatExcel}" />
+              <core:Item key="P" text="{i18n>exportFormatPdf}" />
+              <core:Item key="C" text="{i18n>exportFormatCsv}" />
+            </items>
+          </Select>
+          <Label text="{i18n>mailSubject}" required="true" />
+          <Input value="{mailUi>/wizard/job/MailSubject}" maxLength="120" />
+          <Label text="{i18n>mailBody}" />
+          <TextArea value="{mailUi>/wizard/job/MailBody}" rows="6" width="100%" />
+        </f:SimpleForm>
+          </content>
+        </Panel>
+        <Panel headerText="{i18n>mailStepSchedule}" expandable="false">
+          <content>
+        <MessageStrip
+          text="{i18n>onDemandScheduleHint}"
+          type="Information"
+          showIcon="true"
+          visible="{= ${mailUi>/wizard/job/Frequency} === 'O' }"
+          class="sapUiSmallMarginBottom" />
+        <MessageStrip
+          text="{i18n>scheduledJobScheduleHint}"
+          type="Information"
+          showIcon="true"
+          visible="{= ${mailUi>/wizard/job/Frequency} !== 'O' }"
+          class="sapUiSmallMarginBottom" />
+        <f:SimpleForm editable="true" layout="ColumnLayout" columnsM="1" columnsL="2" columnsXL="2">
+          <Label text="{i18n>frequency}" required="true" />
+          <Select selectedKey="{mailUi>/wizard/job/Frequency}">
+            <items>
+              <core:Item key="O" text="{i18n>frequencyOnDemand}" />
+              <core:Item key="D" text="{i18n>frequencyDaily}" />
+              <core:Item key="W" text="{i18n>frequencyWeekly}" />
+              <core:Item key="M" text="{i18n>frequencyMonthly}" />
+            </items>
+          </Select>
+          <Label text="{i18n>startDate}" visible="{= ${mailUi>/wizard/job/Frequency} !== 'O' }" />
+          <DatePicker value="{mailUi>/wizard/job/StartDate}" valueFormat="yyyy-MM-dd" displayFormat="medium" visible="{= ${mailUi>/wizard/job/Frequency} !== 'O' }" />
+          <Label text="{i18n>startTime}" visible="{= ${mailUi>/wizard/job/Frequency} !== 'O' }" />
+          <TimePicker value="{mailUi>/wizard/job/StartTime}" valueFormat="HH:mm:ss" displayFormat="HH:mm" visible="{= ${mailUi>/wizard/job/Frequency} !== 'O' }" />
+          <Label text="{i18n>dayOfWeek}" visible="{= ${mailUi>/wizard/job/Frequency} === 'W' }" />
+          <Select selectedKey="{mailUi>/wizard/job/DayOfWeek}" visible="{= ${mailUi>/wizard/job/Frequency} === 'W' }">
+            <items>
+              <core:Item key="1" text="{i18n>monday}" />
+              <core:Item key="2" text="{i18n>tuesday}" />
+              <core:Item key="3" text="{i18n>wednesday}" />
+              <core:Item key="4" text="{i18n>thursday}" />
+              <core:Item key="5" text="{i18n>friday}" />
+              <core:Item key="6" text="{i18n>saturday}" />
+              <core:Item key="7" text="{i18n>sunday}" />
+            </items>
+          </Select>
+          <Label text="{i18n>dayOfMonth}" visible="{= ${mailUi>/wizard/job/Frequency} === 'M' }" />
+          <StepInput value="{mailUi>/wizard/job/DayOfMonth}" min="1" max="31" step="1" visible="{= ${mailUi>/wizard/job/Frequency} === 'M' }" />
+        </f:SimpleForm>
+          </content>
+        </Panel>
+        <Panel headerText="{i18n>mailStepRecipients}" expandable="false">
+          <content>
+        <VBox class="sapUiSmallMarginBottom">
+          <MessageStrip text="{i18n>recipientSapUserHint}" type="Information" showIcon="true" class="sapUiSmallMarginBottom" />
+          <MessageStrip text="{i18n>recipientOptionalHint}" type="Information" showIcon="true" class="sapUiSmallMarginBottom" />
+          <Toolbar visible="{= ${mailUi>/wizard/mode} !== 'edit' }">
+            <Select selectedKey="{mailUi>/wizard/newRecipient/RecipientType}" width="8rem">
+              <items>
+                <core:Item key="T" text="{i18n>recipientTypeTo}" />
+                <core:Item key="C" text="{i18n>recipientTypeCc}" />
+                <core:Item key="B" text="{i18n>recipientTypeBcc}" />
+              </items>
+            </Select>
+            <Input value="{mailUi>/wizard/newRecipient/SapUser}" placeholder="{i18n>sapUser}" width="14rem" />
+            <Button text="{i18n>addRecipient}" icon="sap-icon://add" press=".onAddDraftRecipient" />
+          </Toolbar>
+          <Table items="{mailUi>/wizard/recipients}" inset="false">
+            <columns>
+              <Column width="8rem"><Text text="{i18n>recipientType}" /></Column>
+              <Column><Text text="{i18n>sapUser}" /></Column>
+              <Column width="8rem" visible="{= ${mailUi>/wizard/mode} !== 'edit' }"><Text text="{i18n>actions}" /></Column>
+            </columns>
+            <items>
+              <ColumnListItem>
+                <cells>
+                  <Text text="{path: 'mailUi>RecipientType', formatter: '.mailFormatter.formatRecipientType'}" />
+                  <Text text="{mailUi>SapUser}" />
+                  <Button icon="sap-icon://delete" press=".onRemoveDraftRecipient" visible="{= ${mailUi>/wizard/mode} !== 'edit' }" />
+                </cells>
+              </ColumnListItem>
+            </items>
+          </Table>
+        </VBox>
+          </content>
+        </Panel>
+      </VBox>
+    </ScrollContainer>
+    <beginButton>
+      <Button
+        text="{= ${mailUi>/wizard/mode} === 'edit' ? ${i18n>save} : ${i18n>create} }"
+        type="Emphasized"
+        press=".onSaveMailJob"
+        enabled="{= !${mailUi>/wizard/busy} }" />
+    </beginButton>
+    <endButton>
+      <Button text="{i18n>cancel}" press=".onCancelMailJobWizard" />
+    </endButton>
+  </Dialog>
+</core:FragmentDefinition>

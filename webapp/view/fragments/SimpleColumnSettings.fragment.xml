@@ -1,0 +1,42 @@
+<core:FragmentDefinition
+  xmlns:core="sap.ui.core"
+  xmlns="sap.m">
+  <Dialog
+    id="simpleColumnSettingsDialog"
+    title="{i18n>viewSettings}"
+    contentWidth="28rem"
+    contentHeight="34rem"
+    resizable="true"
+    draggable="true">
+    <customHeader>
+      <Bar>
+        <contentLeft>
+          <Title text="{p13n>/title}" level="H5" />
+        </contentLeft>
+        <contentRight>
+          <Button text="{i18n>reset}" type="Transparent" press=".onResetSimpleColumnSettings" />
+        </contentRight>
+      </Bar>
+    </customHeader>
+    <VBox>
+      <Toolbar>
+        <Title text="{i18n>columns}" level="H5" />
+        <ToolbarSpacer />
+        <Text text="{= ${p13n>/selectedCount} + '/' + ${p13n>/totalCount} }" />
+      </Toolbar>
+      <List
+        mode="MultiSelect"
+        includeItemInSelection="true"
+        selectionChange=".onSimpleColumnSettingSelectionChange"
+        items="{p13n>/items}">
+        <StandardListItem title="{p13n>label}" selected="{p13n>visible}" />
+      </List>
+    </VBox>
+    <beginButton>
+      <Button text="{i18n>ok}" type="Emphasized" press=".onConfirmSimpleColumnSettings" />
+    </beginButton>
+    <endButton>
+      <Button text="{i18n>cancel}" press=".onCancelSimpleColumnSettings" />
+    </endButton>
+  </Dialog>
+</core:FragmentDefinition>

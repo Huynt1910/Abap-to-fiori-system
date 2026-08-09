@@ -1,0 +1,149 @@
+<mvc:View
+  controllerName="abap.to.fiori.system.controller.AnalysisDetail"
+  xmlns:mvc="sap.ui.core.mvc"
+  xmlns:core="sap.ui.core"
+  xmlns:uxap="sap.uxap"
+  xmlns:l="sap.ui.layout"
+  xmlns="sap.m"
+  displayBlock="true">
+  <uxap:ObjectPageLayout
+    id="analysisDetailPage"
+    busy="{detail>/busy}"
+    busyIndicatorDelay="0"
+    class="migrationAnalyzerObjectPage"
+    useIconTabBar="true"
+    showFooter="false"
+    navigate=".onSectionNavigate">
+    <uxap:headerTitle>
+      <uxap:ObjectPageDynamicHeaderTitle>
+        <uxap:heading>
+          <HBox class="pageTitleWithBack">
+            <Button icon="sap-icon://nav-back" tooltip="{i18n>back}" type="Transparent" press=".onBackToDashboard" />
+            <VBox>
+              <Title text="{path: 'detail>/overview/ProgramName', formatter: '.formatter.formatText'}" level="H1" />
+              <ObjectStatus
+                text="{path: 'detail>/overview/Status', formatter: '.formatter.formatText'}"
+                state="{path: 'detail>/overview/Status', formatter: '.formatter.formatStatusState'}"
+                icon="{path: 'detail>/overview/Status', formatter: '.formatter.formatStatusIcon'}" />
+            </VBox>
+          </HBox>
+        </uxap:heading>
+        <uxap:expandedHeading>
+          <HBox wrap="Wrap" class="detailMetaLine">
+            <ObjectAttribute title="{i18n>programDescription}" text="{path: 'detail>/overview/ProgramDescription', formatter: '.formatter.formatText'}" />
+            <ObjectAttribute title="{i18n>createdAt}" text="{path: 'detail>/overview/CreatedAt', formatter: '.formatter.formatDateTime'}" />
+            <ObjectAttribute title="{i18n>createdBy}" text="{path: 'detail>/overview/CreatedBy', formatter: '.formatter.formatText'}" />
+          </HBox>
+        </uxap:expandedHeading>
+        <uxap:snappedHeading>
+          <ObjectStatus
+            text="{path: 'detail>/overview/Status', formatter: '.formatter.formatText'}"
+            state="{path: 'detail>/overview/Status', formatter: '.formatter.formatStatusState'}" />
+        </uxap:snappedHeading>
+        <uxap:actions>
+          <Button icon="sap-icon://refresh" tooltip="{i18n>refresh}" press=".onRefresh" />
+          <Button
+            text="{i18n>runComparison}"
+            icon="sap-icon://compare"
+            type="Transparent"
+            busy="{detail>/comparison/busy}"
+            press=".onRunComparisonForAnalysis" />
+          <Button text="{i18n>createMailJob}" icon="sap-icon://email" press=".onCreateMailJobForAnalysis" />
+          <Button
+            text="{i18n>exportAll}"
+            icon="sap-icon://download"
+            type="Emphasized"
+            enabled="{= ${detail>/overview/__OperationControl/PrepareSelectedExport} === true &amp;&amp; ${detail>/exportAvailable/all} === true }"
+            tooltip="{i18n>exportOperationTooltip}"
+            press=".onOpenExportAllDialog" />
+        </uxap:actions>
+      </uxap:ObjectPageDynamicHeaderTitle>
+    </uxap:headerTitle>
+    <uxap:headerContent>
+      <l:Grid defaultSpan="XL2 L2 M4 S12" hSpacing="2" vSpacing="1" class="analysisOverviewGrid">
+        <VBox class="analysisOverviewCell">
+          <Label text="{i18n>program}" />
+          <Text text="{path: 'detail>/overview/ProgramName', formatter: '.formatter.formatText'}" wrapping="true" />
+        </VBox>
+        <VBox class="analysisOverviewCell">
+          <Label text="{i18n>complexityScore}" />
+          <Text text="{path: 'detail>/overview/ComplexityScore', formatter: '.formatter.formatScoreText'}" />
+        </VBox>
+        <VBox class="analysisOverviewCell">
+          <Label text="{i18n>uiFilters}" />
+          <Text text="{path: 'detail>/overview/TotalUiFilters', formatter: '.formatter.formatNumber'}" />
+        </VBox>
+        <VBox class="analysisOverviewCell">
+          <Label text="{i18n>alvOutputs}" />
+          <Text text="{path: 'detail>/overview/TotalAlvOutputs', formatter: '.formatter.formatNumber'}" />
+        </VBox>
+        <VBox class="analysisOverviewCell">
+          <Label text="{i18n>analyzedAt}" />
+          <Text text="{path: 'detail>/overview/CreatedAt', formatter: '.formatter.formatDateTime'}" />
+        </VBox>
+        <VBox class="analysisOverviewCell">
+          <Label text="{i18n>description}" />
+          <Text text="{path: 'detail>/overview/ProgramDescription', formatter: '.formatter.formatText'}" wrapping="true" />
+        </VBox>
+        <VBox class="analysisOverviewCell">
+          <Label text="{i18n>readinessScore}" />
+          <Text text="{path: 'detail>/overview/ReadinessScore', formatter: '.formatter.formatScoreText'}" />
+        </VBox>
+        <VBox class="analysisOverviewCell">
+          <Label text="{i18n>databaseObjects}" />
+          <Text text="{path: 'detail>/overview/TotalDatabaseObjects', formatter: '.formatter.formatNumber'}" />
+        </VBox>
+        <VBox class="analysisOverviewCell">
+          <Label text="{i18n>alvColumns}" />
+          <Text text="{path: 'detail>/overview/TotalAlvColumns', formatter: '.formatter.formatNumber'}" />
+        </VBox>
+        <VBox class="analysisOverviewCell">
+          <Label text="{i18n>analyzedBy}" />
+          <Text text="{path: 'detail>/overview/CreatedBy', formatter: '.formatter.formatText'}" />
+        </VBox>
+        <VBox class="analysisOverviewCell">
+          <Label text="{i18n>status}" />
+          <ObjectStatus text="{path: 'detail>/overview/Status', formatter: '.formatter.formatText'}" state="{path: 'detail>/overview/Status', formatter: '.formatter.formatStatusState'}" />
+        </VBox>
+        <VBox class="analysisOverviewCell">
+          <Label text="{i18n>sourceObjects}" />
+          <Text text="{path: 'detail>/overview/TotalSourceObjects', formatter: '.formatter.formatNumber'}" />
+        </VBox>
+        <VBox class="analysisOverviewCell">
+          <Label text="{i18n>businessLogic}" />
+          <Text text="{path: 'detail>/overview/TotalBusinessLogic', formatter: '.formatter.formatNumber'}" />
+        </VBox>
+        <VBox class="analysisOverviewCell">
+          <Label text="{i18n>recommendationsTabTitle}" />
+          <Text text="{path: 'detail>/overview/TotalRecommendations', formatter: '.formatter.formatNumber'}" />
+        </VBox>
+      </l:Grid>
+    </uxap:headerContent>
+    <uxap:sections>
+      <uxap:ObjectPageSection id="sourceObjectsSection" title="{i18n>sourceObjects}">
+        <uxap:subSections><uxap:ObjectPageSubSection id="sourceObjectsSubSection" title="{i18n>sourceObjects}"><uxap:blocks><core:Fragment fragmentName="abap.to.fiori.system.view.fragments.detail.SourceObjectsTab" type="XML" /></uxap:blocks></uxap:ObjectPageSubSection></uxap:subSections>
+      </uxap:ObjectPageSection>
+      <uxap:ObjectPageSection id="uiFiltersSection" title="{i18n>uiFilters}">
+        <uxap:subSections><uxap:ObjectPageSubSection id="uiFiltersSubSection" title="{i18n>uiFilters}"><uxap:blocks><core:Fragment fragmentName="abap.to.fiori.system.view.fragments.detail.UiFiltersTab" type="XML" /></uxap:blocks></uxap:ObjectPageSubSection></uxap:subSections>
+      </uxap:ObjectPageSection>
+      <uxap:ObjectPageSection id="databaseObjectsSection" title="{i18n>databaseObjects}">
+        <uxap:subSections><uxap:ObjectPageSubSection id="databaseObjectsSubSection" title="{i18n>databaseObjects}"><uxap:blocks><core:Fragment fragmentName="abap.to.fiori.system.view.fragments.detail.DatabaseTab" type="XML" /></uxap:blocks></uxap:ObjectPageSubSection></uxap:subSections>
+      </uxap:ObjectPageSection>
+      <uxap:ObjectPageSection id="businessLogicSection" title="{i18n>businessLogic}">
+        <uxap:subSections><uxap:ObjectPageSubSection id="businessLogicSubSection" title="{i18n>businessLogic}"><uxap:blocks><core:Fragment fragmentName="abap.to.fiori.system.view.fragments.detail.BusinessLogicTab" type="XML" /></uxap:blocks></uxap:ObjectPageSubSection></uxap:subSections>
+      </uxap:ObjectPageSection>
+      <uxap:ObjectPageSection id="alvOutputsSection" title="{i18n>alvOutputs}">
+        <uxap:subSections><uxap:ObjectPageSubSection id="alvOutputsSubSection" title="{i18n>alvOutputs}"><uxap:blocks><core:Fragment fragmentName="abap.to.fiori.system.view.fragments.detail.AlvOutputsTab" type="XML" /></uxap:blocks></uxap:ObjectPageSubSection></uxap:subSections>
+      </uxap:ObjectPageSection>
+      <uxap:ObjectPageSection id="evidencesSection" title="{i18n>evidence}">
+        <uxap:subSections><uxap:ObjectPageSubSection id="evidencesSubSection" title="{i18n>evidence}"><uxap:blocks><core:Fragment fragmentName="abap.to.fiori.system.view.fragments.detail.EvidencesTab" type="XML" /></uxap:blocks></uxap:ObjectPageSubSection></uxap:subSections>
+      </uxap:ObjectPageSection>
+      <uxap:ObjectPageSection id="recommendationsSection" title="{i18n>recommendationsTabTitle}">
+        <uxap:subSections><uxap:ObjectPageSubSection id="recommendationsSubSection" title="{i18n>recommendationsTabTitle}"><uxap:blocks><core:Fragment fragmentName="abap.to.fiori.system.view.fragments.detail.RecommendationsTab" type="XML" /></uxap:blocks></uxap:ObjectPageSubSection></uxap:subSections>
+      </uxap:ObjectPageSection>
+      <uxap:ObjectPageSection id="messagesSection" title="{i18n>messages}">
+        <uxap:subSections><uxap:ObjectPageSubSection id="messagesSubSection" title="{i18n>messages}"><uxap:blocks><core:Fragment fragmentName="abap.to.fiori.system.view.fragments.detail.MessagesTab" type="XML" /></uxap:blocks></uxap:ObjectPageSubSection></uxap:subSections>
+      </uxap:ObjectPageSection>
+    </uxap:sections>
+  </uxap:ObjectPageLayout>
+</mvc:View>

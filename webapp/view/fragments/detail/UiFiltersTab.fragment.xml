@@ -1,0 +1,65 @@
+<core:FragmentDefinition xmlns:core="sap.ui.core" xmlns="sap.m">
+  <VBox class="tabSurface" busy="{detail>/loading/uiFilters}" busyIndicatorDelay="0">
+    <MessageStrip visible="{path: 'detail>/errors/uiFilters', formatter: '.formatter.hasValue'}" text="{detail>/errors/uiFilters}" type="Error" showIcon="true" class="sapUiSmallMarginBottom" />
+    <OverflowToolbar class="sectionToolbar" visible="{path: 'detail>/uiFilters', formatter: '.formatter.hasItems'}">
+      <Title text="{i18n>uiFilters}" level="H3" />
+      <ObjectStatus text="{path: 'detail>/counts/uiFilters', formatter: '.formatter.formatCountText'}" />
+      <ToolbarSpacer />
+      <Button icon="sap-icon://download" text="{i18n>exportReport}" tooltip="{i18n>exportSectionTooltip}" visible="{detail>/exportAvailable/uiFilters}" press=".onOpenSectionExportDialog">
+        <customData>
+          <core:CustomData key="section" value="uiFilters" />
+        </customData>
+      </Button>
+      <Button icon="sap-icon://action-settings" tooltip="{i18n>viewSettings}" press=".onOpenDetailTableSettings">
+        <customData>
+          <core:CustomData key="section" value="uiFilters" />
+        </customData>
+      </Button>
+    </OverflowToolbar>
+    <IllustratedMessage visible="{path: 'detail>/uiFilters', formatter: '.formatter.hasNoItems'}" illustrationType="sapIllus-NoEntries" title="{i18n>noUiFilters}" />
+    <Table id="uiFiltersTable" visible="{path: 'detail>/uiFilters', formatter: '.formatter.hasItems'}" growing="true" growingThreshold="20" items="{detail>/uiFilters}">
+      <columns>
+        <Column width="12rem" visible="{detail>/columns/uiFilters/fieldName}"><Text text="{i18n>fieldName}" /></Column>
+        <Column width="9rem" visible="{detail>/columns/uiFilters/fieldKind}"><Text text="{i18n>fieldKind}" /></Column>
+        <Column width="12rem" demandPopin="true" minScreenWidth="Tablet" visible="{detail>/columns/uiFilters/referenceTable}"><Text text="{i18n>referenceTable}" /></Column>
+        <Column width="12rem" demandPopin="true" minScreenWidth="Tablet" visible="{detail>/columns/uiFilters/referenceField}"><Text text="{i18n>referenceField}" /></Column>
+        <Column width="12rem" demandPopin="true" minScreenWidth="Tablet" visible="{detail>/columns/uiFilters/dataElement}"><Text text="{i18n>dataElement}" /></Column>
+        <Column width="10rem" demandPopin="true" minScreenWidth="Tablet" visible="{detail>/columns/uiFilters/dataType}"><Text text="{i18n>dataType}" /></Column>
+        <Column width="16rem" demandPopin="true" minScreenWidth="Desktop" visible="{detail>/columns/uiFilters/description}"><Text text="{i18n>description}" /></Column>
+        <Column width="12rem" demandPopin="true" minScreenWidth="Tablet" visible="{detail>/columns/uiFilters/selectionBlock}"><Text text="{i18n>selectionBlock}" /></Column>
+        <Column width="8rem" visible="{detail>/columns/uiFilters/mandatory}"><Text text="{i18n>mandatory}" /></Column>
+        <Column width="8rem" demandPopin="true" minScreenWidth="Tablet" visible="{detail>/columns/uiFilters/hidden}"><Text text="{i18n>hidden}" /></Column>
+        <Column width="8rem" demandPopin="true" minScreenWidth="Tablet" visible="{detail>/columns/uiFilters/checkbox}"><Text text="{i18n>checkbox}" /></Column>
+        <Column width="10rem" demandPopin="true" minScreenWidth="Tablet" visible="{detail>/columns/uiFilters/radioGroup}"><Text text="{i18n>radioGroup}" /></Column>
+        <Column width="8rem" visible="{detail>/columns/uiFilters/multipleSelection}"><Text text="{i18n>multipleSelection}" /></Column>
+        <Column width="8rem" demandPopin="true" minScreenWidth="Tablet" visible="{detail>/columns/uiFilters/rangeSupported}"><Text text="{i18n>rangeSupported}" /></Column>
+        <Column width="12rem" demandPopin="true" minScreenWidth="Tablet" visible="{detail>/columns/uiFilters/defaultValue}"><Text text="{i18n>defaultValue}" /></Column>
+        <Column width="14rem" demandPopin="true" minScreenWidth="Desktop" visible="{detail>/columns/uiFilters/validationRoutine}"><Text text="{i18n>validationRoutine}" /></Column>
+        <Column width="8rem" visible="{detail>/columns/uiFilters/confidence}"><Text text="{i18n>confidence}" /></Column>
+      </columns>
+      <items>
+        <ColumnListItem>
+          <cells>
+            <Text text="{path: 'detail>FieldName', formatter: '.formatter.formatText'}" visible="{detail>/columns/uiFilters/fieldName}" />
+            <Text text="{path: 'detail>FieldKind', formatter: '.formatter.formatText'}" visible="{detail>/columns/uiFilters/fieldKind}" />
+            <Text text="{path: 'detail>ReferenceTable', formatter: '.formatter.formatText'}" visible="{detail>/columns/uiFilters/referenceTable}" />
+            <Text text="{path: 'detail>ReferenceField', formatter: '.formatter.formatText'}" visible="{detail>/columns/uiFilters/referenceField}" />
+            <Text text="{path: 'detail>DataElement', formatter: '.formatter.formatText'}" visible="{detail>/columns/uiFilters/dataElement}" />
+            <Text text="{path: 'detail>DataType', formatter: '.formatter.formatText'}" visible="{detail>/columns/uiFilters/dataType}" />
+            <Text text="{path: 'detail>Description', formatter: '.formatter.formatText'}" maxLines="2" wrapping="true" visible="{detail>/columns/uiFilters/description}" />
+            <Text text="{path: 'detail>SelectionBlock', formatter: '.formatter.formatText'}" visible="{detail>/columns/uiFilters/selectionBlock}" />
+            <Text text="{path: 'detail>Mandatory', formatter: '.formatter.formatBoolean'}" visible="{detail>/columns/uiFilters/mandatory}" />
+            <Text text="{path: 'detail>Hidden', formatter: '.formatter.formatBoolean'}" visible="{detail>/columns/uiFilters/hidden}" />
+            <Text text="{path: 'detail>Checkbox', formatter: '.formatter.formatBoolean'}" visible="{detail>/columns/uiFilters/checkbox}" />
+            <Text text="{path: 'detail>RadioGroup', formatter: '.formatter.formatText'}" visible="{detail>/columns/uiFilters/radioGroup}" />
+            <Text text="{path: 'detail>MultipleSelection', formatter: '.formatter.formatBoolean'}" visible="{detail>/columns/uiFilters/multipleSelection}" />
+            <Text text="{path: 'detail>RangeSupported', formatter: '.formatter.formatBoolean'}" visible="{detail>/columns/uiFilters/rangeSupported}" />
+            <Text text="{path: 'detail>DefaultValue', formatter: '.formatter.formatText'}" visible="{detail>/columns/uiFilters/defaultValue}" />
+            <Text text="{path: 'detail>ValidationRoutine', formatter: '.formatter.formatText'}" visible="{detail>/columns/uiFilters/validationRoutine}" />
+            <Text text="{path: 'detail>Confidence', formatter: '.formatter.formatText'}" visible="{detail>/columns/uiFilters/confidence}" />
+          </cells>
+        </ColumnListItem>
+      </items>
+    </Table>
+  </VBox>
+</core:FragmentDefinition>

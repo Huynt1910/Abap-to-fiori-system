@@ -1,0 +1,50 @@
+<core:FragmentDefinition
+  xmlns:core="sap.ui.core"
+  xmlns="sap.m">
+  <Dialog
+    id="analysisTableSettingsDialog"
+    title="{i18n>viewSettings}"
+    contentWidth="28rem"
+    contentHeight="34rem"
+    resizable="true"
+    draggable="true">
+    <customHeader>
+      <Bar>
+        <contentLeft>
+          <Title text="{i18n>viewSettings}" level="H5" />
+        </contentLeft>
+        <contentRight>
+          <Button text="{i18n>reset}" type="Transparent" press=".onResetAnalysisTableSettings" />
+        </contentRight>
+      </Bar>
+    </customHeader>
+    <VBox>
+      <SearchField
+        width="100%"
+        placeholder="{i18n>search}"
+        liveChange=".onSearchAnalysisTableSettings"
+        class="sapUiSmallMarginBottom" />
+      <Toolbar>
+        <Title text="{i18n>columns}" level="H5" />
+        <ToolbarSpacer />
+        <Text text="{= ${dashboard>/tableSettings/selectedCount} + '/' + ${dashboard>/tableSettings/totalCount} }" />
+      </Toolbar>
+      <List
+        id="analysisTableSettingsList"
+        mode="MultiSelect"
+        includeItemInSelection="true"
+        selectionChange=".onAnalysisTableSettingSelectionChange"
+        items="{dashboard>/tableSettings/items}">
+        <StandardListItem
+          title="{dashboard>label}"
+          selected="{dashboard>visible}" />
+      </List>
+    </VBox>
+    <beginButton>
+      <Button text="{i18n>ok}" type="Emphasized" press=".onConfirmAnalysisTableSettings" />
+    </beginButton>
+    <endButton>
+      <Button text="{i18n>cancel}" press=".onCancelAnalysisTableSettings" />
+    </endButton>
+  </Dialog>
+</core:FragmentDefinition>
