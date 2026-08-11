@@ -68,6 +68,7 @@ test("mail formatter maps job, execution, frequency and recipient codes", () => 
   assert.equal(mailFormatter.formatFrequency("W"), "Weekly");
   assert.equal(mailFormatter.formatRecipientType("B"), "Bcc");
   assert.equal(mailFormatter.canSendNow("J1", ""), true);
+  assert.equal(mailFormatter.canSendNow("J1", "", false), false);
   assert.equal(mailFormatter.canSendNow("J1", "J1"), false);
   assert.equal(mailFormatter.canSendNow("", ""), false);
 });
@@ -76,6 +77,10 @@ test("OData error parser handles 412 and missing SU01 email", () => {
   assert.equal(
     ODataErrorHandler.parse({ status: 412, message: "Precondition Failed" }).message,
     "This Mail Job was changed by another user. The latest data has been loaded. Please review and try again."
+  );
+  assert.equal(
+    ODataErrorHandler.parse({ status: 423, message: "Locked" }).message,
+    "This mail job is locked. Refresh the data and try again."
   );
   assert.equal(
     ODataErrorHandler.parse({
@@ -129,9 +134,43 @@ test("schedule validation requires dynamic fields for scheduled jobs", () => {
 
   assert.equal(service.validateSchedule({ Frequency: "O" }, true).length, 0);
   assert.match(service.validateSchedule({ Frequency: "D", StartDate: tomorrow }, true).join("\n"), /Start time/);
-  assert.match(service.validateSchedule({ Frequency: "W", StartDate: tomorrow, StartTime: "08:00:00" }, true).join("\n"), /Day of week/);
-  assert.match(service.validateSchedule({ Frequency: "M", StartDate: tomorrow, StartTime: "08:00:00" }, true).join("\n"), /Day of month/);
-  assert.equal(service.validateSchedule({ Frequency: "W", StartDate: tomorrow, StartTime: "08:00:00", DayOfWeek: "1" }, true).length, 0);
+  assert.match(service.validateSchedule({ Frequency: "D", StartDate: tomorrow, StartTime: "08:00:00" }, true).join("\n"), /Time zone/);
+  assert.match(service.validateSchedule({ Frequency: "D", StartDate: "08/10/2026", StartTime: "08:00:00" }, true).join("\n"), /YYYY-MM-DD/);
+  assert.match(service.validateSchedule({ Frequency: "D", StartDate: tomorrow, StartTime: "8 AM" }, true).join("\n"), /HH:mm:ss/);
+  assert.match(service.validateSchedule({ Frequency: "W", StartDate: tomorrow, StartTime: "08:00:00", JobTimeZone: "UTC+7" }, true).join("\n"), /Day of week/);
+  assert.match(service.validateSchedule({ Frequency: "W", StartDate: tomorrow, StartTime: "08:00:00", JobTimeZone: "UTC+7", DayOfWeek: "9" }, true).join("\n"), /invalid/);
+  assert.match(service.validateSchedule({ Frequency: "M", StartDate: tomorrow, StartTime: "08:00:00", JobTimeZone: "UTC+7" }, true).join("\n"), /Day of month/);
+  assert.match(service.validateSchedule({ Frequency: "M", StartDate: tomorrow, StartTime: "08:00:00", JobTimeZone: "UTC+7", DayOfMonth: "32" }, true).join("\n"), /1 to 31/);
+  assert.equal(service.validateSchedule({ Frequency: "W", StartDate: tomorrow, StartTime: "08:00:00", JobTimeZone: "UTC+7", DayOfWeek: "1" }, true).length, 0);
+});
+
+test("schedule payload resets non-applicable fields and keeps month day unpadded", () => {
+  const service = new MailService({});
+
+  assert.deepEqual(JSON.parse(JSON.stringify(service.buildSchedulePayload({
+    Frequency: "M",
+    StartDate: "2026-08-10",
+    StartTime: "08:30:00",
+    JobTimeZone: "UTC+7",
+    DayOfWeek: "5",
+    DayOfMonth: "3",
+    NextRunAt: "2026-08-10T08:30:00+07:00"
+  }))), {
+    Frequency: "M",
+    StartDate: "2026-08-10",
+    StartTime: "08:30:00",
+    JobTimeZone: "UTC+7",
+    DayOfWeek: MailConstants.scheduleDefaults.dayOfWeek,
+    DayOfMonth: "3"
+  });
+
+  assert.deepEqual(JSON.parse(JSON.stringify(service.getFrequencyUiState("W"))), {
+    showStartDate: true,
+    showStartTime: true,
+    showDayOfWeek: true,
+    showDayOfMonth: false,
+    timezoneText: "UTC+7"
+  });
 });
 
 test("create job runs Inactive to Recipients to Active and omits EmailAddress", async () => {
@@ -153,10 +192,11 @@ test("create job runs Inactive to Recipients to Active and omits EmailAddress", 
           create(payload) {
             calls.push(["createJob", payload.Status]);
             assert.equal(payload.Status, "I");
-            assert.equal(payload.StartDate, MailConstants.scheduleDefaults.startDate);
+            assert.equal(Object.prototype.hasOwnProperty.call(payload, "StartDate"), false);
             assert.equal(payload.StartTime, MailConstants.scheduleDefaults.startTime);
+            assert.equal(payload.JobTimeZone, MailConstants.scheduleDefaults.jobTimeZone);
             assert.equal(payload.DayOfWeek, MailConstants.scheduleDefaults.dayOfWeek);
-            assert.equal(payload.DayOfMonth, MailConstants.scheduleDefaults.dayOfMonth);
+            assert.equal(payload.DayOfMonth, "1");
             return jobContext;
           }
         };
@@ -217,7 +257,7 @@ test("create job allows empty recipients and keeps the job inactive", async () =
   assert.deepEqual(calls, [["createJob", "I"]]);
 });
 
-test("update job does not patch AnalysisId from the edit wizard copy", async () => {
+test("update job does not patch AnalysisId or Status from the edit wizard copy", async () => {
   const calls = [];
   const service = new MailService({});
   const context = {
@@ -237,14 +277,17 @@ test("update job does not patch AnalysisId from the edit wizard copy", async () 
   });
 
   assert.equal(calls.some((call) => call[0] === "AnalysisId"), false);
+  assert.equal(calls.some((call) => call[0] === "Status"), false);
   assert.equal(calls.some((call) => call[0] === "JobName"), true);
 });
 
-test("update context skips unchanged fields and patches changed fields sequentially", async () => {
+test("update context skips unchanged fields and submits one batch", async () => {
   const calls = [];
   let active = 0;
   let maxActive = 0;
-  const service = new MailService({});
+  const service = new MailService({
+    submitBatch: async (groupId) => calls.push(["submitBatch", groupId])
+  });
   const context = {
     getObject: () => ({
       JobName: "Mail ZREP",
@@ -257,11 +300,11 @@ test("update context skips unchanged fields and patches changed fields sequentia
       DayOfWeek: MailConstants.scheduleDefaults.dayOfWeek,
       DayOfMonth: MailConstants.scheduleDefaults.dayOfMonth
     }),
-    setProperty: async (property, value) => {
+    setProperty: async (property, value, groupId) => {
       active += 1;
       maxActive = Math.max(maxActive, active);
       await new Promise((resolve) => setTimeout(resolve, 1));
-      calls.push([property, value]);
+      calls.push([property, value, groupId]);
       active -= 1;
     },
     requestObject: async () => ({ JobId: "J1" })
@@ -277,8 +320,10 @@ test("update context skips unchanged fields and patches changed fields sequentia
   });
 
   assert.deepEqual(calls, [
-    ["FileFormat", "P"],
-    ["MailSubject", "New subject"]
+    ["FileFormat", "P", "$auto"],
+    ["MailSubject", "New subject", "$auto"],
+    ["JobTimeZone", "UTC+7", "$auto"],
+    ["submitBatch", "$auto"]
   ]);
   assert.equal(maxActive, 1);
 });

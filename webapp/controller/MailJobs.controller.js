@@ -83,8 +83,8 @@ sap.ui.define([
       return mailFormatter.formatRecipientCount(this._getRecipientCount(sJobId));
     },
 
-    canSendNowForJob: function (sJobId, sBusyJobId) {
-      return mailFormatter.canSendNow(sJobId, sBusyJobId);
+    canSendNowForJob: function (sJobId, sBusyJobId, bAllowed) {
+      return mailFormatter.canSendNow(sJobId, sBusyJobId, bAllowed);
     },
 
     onEditMailJob: function (oEvent) {
@@ -185,6 +185,14 @@ sap.ui.define([
         .finally(function () {
           this._oViewModel.setProperty("/wizard/busy", false);
         }.bind(this));
+    },
+
+    onFrequencyChange: function () {
+      var oJob = this.getMailService().normalizeSchedule(this._oViewModel.getProperty("/wizard/job") || {});
+
+      this._oViewModel.setProperty("/wizard/job", oJob);
+      this._applyFrequencyUiState(oJob.Frequency);
+      this._oViewModel.setProperty("/wizard/errorMessage", "");
     },
 
     onCloseWizardError: function () {
@@ -317,17 +325,16 @@ sap.ui.define([
 
     _executeSendNow: function (oContext, sJobId) {
       this._oViewModel.setProperty("/sendBusyJobId", sJobId);
-      this.getMailService().updateContext(oContext, {
-        Status: MailConstants.status.active
-      }).then(function () {
-        return this.getMailService().sendNow(oContext);
-      }.bind(this))
+      this.getMailService().sendNow(oContext)
         .then(function (oResult) {
           var aMessages = oResult && oResult.SAP__Messages || [];
           var bWarning = aMessages.some(function (oMessage) {
             return String(oMessage.type || oMessage.severity || "").toUpperCase() === "WARNING";
           });
           MessageToast.show(this.getText(bWarning ? "sendNowAcceptedWithWarning" : "sendNowAccepted"));
+          if (oContext.refresh) {
+            oContext.refresh();
+          }
           this.onRefresh();
         }.bind(this))
         .catch(this._showMailError.bind(this))
@@ -452,24 +459,28 @@ sap.ui.define([
 
     _resetWizard: function (sMode, oJob) {
       var sProgramName = oJob && oJob.ReportType || "";
+      var oWizardJob = this.getMailService().normalizeSchedule(Object.assign({
+        AnalysisId: "",
+        JobName: "",
+        ReportType: "",
+        FileFormat: MailConstants.fileFormat.excel,
+        Frequency: MailConstants.frequency.onDemand,
+        StartDate: MailConstants.scheduleDefaults.startDate,
+        StartTime: MailConstants.scheduleDefaults.startTime,
+        JobTimeZone: MailConstants.scheduleDefaults.jobTimeZone,
+        DayOfWeek: MailConstants.scheduleDefaults.dayOfWeek,
+        DayOfMonth: MailConstants.scheduleDefaults.dayOfMonth,
+        MailSubject: sProgramName ? "Migration report " + sProgramName : "",
+        MailBody: "",
+        Status: MailConstants.status.inactive
+      }, oJob || {}));
+
       this._oViewModel.setProperty("/wizard", {
         busy: false,
         mode: sMode || "create",
         errorMessage: "",
-        job: Object.assign({
-          AnalysisId: "",
-          JobName: "",
-          ReportType: "",
-          FileFormat: MailConstants.fileFormat.excel,
-          Frequency: MailConstants.frequency.onDemand,
-          StartDate: MailConstants.scheduleDefaults.startDate,
-          StartTime: MailConstants.scheduleDefaults.startTime,
-          DayOfWeek: MailConstants.scheduleDefaults.dayOfWeek,
-          DayOfMonth: MailConstants.scheduleDefaults.dayOfMonth,
-          MailSubject: sProgramName ? "Migration report " + sProgramName : "",
-          MailBody: "",
-          Status: MailConstants.status.inactive
-        }, oJob || {}),
+        job: oWizardJob,
+        schedule: this.getMailService().getFrequencyUiState(oWizardJob.Frequency),
         recipients: [],
         newRecipient: {
           RecipientType: MailConstants.recipientType.to,
@@ -525,7 +536,6 @@ sap.ui.define([
         { key: "fileFormat", label: this.getText("exportFileFormat"), defaultVisible: true },
         { key: "frequency", label: this.getText("frequency"), defaultVisible: true },
         { key: "nextRunAt", label: this.getText("nextRunAt"), defaultVisible: true },
-        { key: "recipientCount", label: this.getText("recipientCount"), defaultVisible: true },
         { key: "createdBy", label: this.getText("createdBy"), defaultVisible: true },
         { key: "createdAt", label: this.getText("createdAt"), defaultVisible: true },
         { key: "actions", label: this.getText("actions"), defaultVisible: true }
@@ -629,23 +639,11 @@ sap.ui.define([
     },
 
     _normalizeJob: function (oJob) {
-      var oPayload = Object.assign({}, oJob || {});
-      if (oPayload.Frequency === MailConstants.frequency.onDemand) {
-        oPayload.StartDate = MailConstants.scheduleDefaults.startDate;
-        oPayload.StartTime = MailConstants.scheduleDefaults.startTime;
-        oPayload.DayOfWeek = MailConstants.scheduleDefaults.dayOfWeek;
-        oPayload.DayOfMonth = MailConstants.scheduleDefaults.dayOfMonth;
-        return oPayload;
-      }
-      if (oPayload.Frequency !== MailConstants.frequency.weekly) {
-        oPayload.DayOfWeek = "";
-      }
-      if (oPayload.Frequency !== MailConstants.frequency.monthly) {
-        oPayload.DayOfMonth = "";
-      } else if (oPayload.DayOfMonth) {
-        oPayload.DayOfMonth = String(oPayload.DayOfMonth).padStart(2, "0");
-      }
-      return oPayload;
+      return this.getMailService().normalizeSchedule(oJob);
+    },
+
+    _applyFrequencyUiState: function (sFrequency) {
+      this._oViewModel.setProperty("/wizard/schedule", this.getMailService().getFrequencyUiState(sFrequency));
     },
 
     _getMailContext: function (oEvent) {

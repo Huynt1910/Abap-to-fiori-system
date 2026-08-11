@@ -46,13 +46,6 @@
                         icon="sap-icon://begin"
                         press=".onRunAnalysis"
                     />
-                    <Button
-                        id="analysisViewSettingsButton"
-                        type="Transparent"
-                        icon="sap-icon://action-settings"
-                        tooltip="{i18n>viewSettings}"
-                        press=".onOpenAnalysisTableSettings"
-                    />
                 </f:actions>
             </f:DynamicPageTitle>
         </f:title>
@@ -199,14 +192,18 @@
                     growingThreshold="20"
                     growingScrollToLoad="true"
                     sticky="ColumnHeaders"
-                    mode="None"
+                    mode="MultiSelect"
+                    includeItemInSelection="true"
+                    selectionChange=".onAnalysisSelectionChange"
+                    busy="{dashboard>/deleteBusy}"
+                    busyIndicatorDelay="0"
                     autoPopinMode="true"
                     itemPress=".onAnalysisPress"
                     updateFinished=".onAnalysesUpdateFinished"
                     items="{
             path: '/Analyses',
             parameters: {
-              $select: 'AnalysisId,ProgramName,ProgramDescription,Status,TotalSourceObjects,TotalUiFilters,TotalDatabaseObjects,TotalBusinessLogic,TotalAlvOutputs,TotalAlvColumns,TotalRecommendations,ComplexityScore,ReadinessScore,CreatedAt,CreatedBy'
+              $select: 'AnalysisId,ProgramName,ProgramDescription,Status,TotalSourceObjects,TotalUiFilters,TotalDatabaseObjects,TotalBusinessLogic,TotalAlvOutputs,TotalAlvColumns,TotalRecommendations,ComplexityScore,ReadinessScore,CreatedAt,CreatedBy,__EntityControl'
             },
             sorter: {
               path: 'CreatedAt',
@@ -214,11 +211,37 @@
             }
           }"
                 >
+                    <headerToolbar>
+                        <OverflowToolbar>
+                            <Title
+                                text="{i18n>dashboardTitle}"
+                                level="H3"
+                            />
+                            <ObjectStatus
+                                text="{path: 'dashboard>/selectedAnalysisCount', formatter: '.formatter.formatCountText'}"
+                                visible="{= ${dashboard>/selectedAnalysisCount} > 0 }"
+                            />
+                            <ToolbarSpacer />
+                            <Button
+                                id="analysisViewSettingsButton"
+                                type="Transparent"
+                                icon="sap-icon://action-settings"
+                                tooltip="{i18n>viewSettings}"
+                                press=".onOpenAnalysisTableSettings"
+                            />
+                            <Button
+                                text="{i18n>deleteAnalyses}"
+                                icon="sap-icon://delete"
+                                type="Transparent"
+                                enabled="{= ${dashboard>/deleteEnabled} &amp;&amp; !${dashboard>/deleteBusy} }"
+                                press=".onDeleteSelectedAnalyses"
+                            />
+                        </OverflowToolbar>
+                    </headerToolbar>
                     <noData>
                         <IllustratedMessage
                             illustrationType="sapIllus-NoEntries"
                             title="{i18n>noAnalyses}"
-                            description="{i18n>noAnalysesDescription}"
                         />
                     </noData>
                     <columns>

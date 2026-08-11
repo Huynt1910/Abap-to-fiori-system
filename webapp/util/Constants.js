@@ -95,6 +95,7 @@ sap.ui.define([], function () {
         "CreatedAt",
         "LastChangedBy",
         "LocalLastChangedAt",
+        "__EntityControl",
         "__OperationControl"
       ]),
       sourceObjects: Object.freeze([

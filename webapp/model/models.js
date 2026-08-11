@@ -14,6 +14,9 @@ sap.ui.define([
   function createDashboardModel() {
     return new JSONModel({
       busy: false,
+      deleteBusy: false,
+      deleteEnabled: false,
+      selectedAnalysisCount: 0,
       filters: {
         search: "",
         status: ""
@@ -82,9 +85,14 @@ sap.ui.define([
         alvOutputs: null,
         evidences: null,
         recommendations: null,
-        messages: null
+        messages: null,
+        history: null
       },
       overview: {},
+      history: {
+        busy: false,
+        items: []
+      },
       export: {
         busy: false,
         fileFormat: "X",
@@ -164,7 +172,6 @@ sap.ui.define([
         fileFormat: true,
         frequency: true,
         nextRunAt: true,
-        recipientCount: true,
         createdBy: true,
         createdAt: true,
         actions: true
@@ -174,6 +181,13 @@ sap.ui.define([
         mode: "create",
         errorMessage: "",
         job: {},
+        schedule: {
+          showStartDate: false,
+          showStartTime: false,
+          showDayOfWeek: false,
+          showDayOfMonth: false,
+          timezoneText: "System time zone"
+        },
         recipients: [],
         newRecipient: {
           RecipientType: "T",

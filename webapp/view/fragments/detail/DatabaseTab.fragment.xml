@@ -17,7 +17,7 @@
       </Button>
     </OverflowToolbar>
     <IllustratedMessage visible="{path: 'detail>/databaseObjects', formatter: '.formatter.hasNoItems'}" illustrationType="sapIllus-NoEntries" title="{i18n>noDatabaseAccesses}" />
-    <Table id="databaseObjectsTable" visible="{path: 'detail>/databaseObjects', formatter: '.formatter.hasItems'}" growing="true" growingThreshold="20" items="{detail>/databaseObjects}" itemPress=".onDatabaseObjectPress">
+    <Table id="databaseObjectsTable" visible="{path: 'detail>/databaseObjects', formatter: '.formatter.hasItems'}" growing="true" growingThreshold="20" items="{detail>/databaseObjects}">
       <columns>
         <Column width="12rem" visible="{detail>/columns/databaseObjects/objectName}"><Text text="{i18n>objectName}" /></Column>
         <Column width="8rem" visible="{detail>/columns/databaseObjects/objectType}"><Text text="{i18n>objectType}" /></Column>

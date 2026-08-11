@@ -144,8 +144,9 @@ sap.ui.define([], function () {
       return Number(vRecipients) > 0;
     },
 
-    canSendNow: function (sJobId, sBusyJobId) {
-      return !!normalize(sJobId) && normalize(sJobId) !== normalize(sBusyJobId);
+    canSendNow: function (sJobId, sBusyJobId, vAllowed) {
+      var bAllowed = vAllowed === undefined || vAllowed === null || vAllowed === "" || vAllowed === true;
+      return bAllowed && !!normalize(sJobId) && normalize(sJobId) !== normalize(sBusyJobId);
     },
 
     formatAttachmentText: function (sFileName, vFileSize) {

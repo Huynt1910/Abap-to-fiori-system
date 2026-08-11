@@ -162,6 +162,9 @@ sap.ui.define([], function () {
     if (iStatus === 412) {
       return "This Mail Job was changed by another user. The latest data has been loaded. Please review and try again.";
     }
+    if (iStatus === 423) {
+      return "This mail job is locked. Refresh the data and try again.";
+    }
     if (iStatus === 500) {
       return sPayloadMessage || "Backend processing error.";
     }

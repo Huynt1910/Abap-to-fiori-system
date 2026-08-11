@@ -35,8 +35,9 @@ class Sorter {
   }
 }
 
-function createService() {
+function createService(rows) {
   const calls = [];
+  const listRows = rows || [{ path: null }];
   const service = new AnalysisService({
     bindContext(pathValue, context, parameters) {
       calls.push({ type: "context", path: pathValue, parameters });
@@ -52,7 +53,9 @@ function createService() {
         requestContexts(start, length) {
           calls[calls.length - 1].start = start;
           calls[calls.length - 1].length = length;
-          return Promise.resolve([{ getObject: () => ({ path: pathValue }) }]);
+          return Promise.resolve(listRows.map((row) => ({
+            getObject: () => Object.assign({ path: pathValue }, row)
+          })));
         }
       };
     }
@@ -83,6 +86,58 @@ test("analysis service reads source objects through the analysis navigation", as
   assert.equal(calls[0].path, `/Analyses(${analysisId})/_SourceObjects`);
   assert.equal(calls[0].sorters[0].path, "ObjectName");
   assert.match(calls[0].parameters.$select, /ObjectName/);
+});
+
+test("analysis service reads history by program with newest analyses first", async () => {
+  const { service, calls } = createService();
+
+  await service.readAnalysisHistory("ZRMIG_TEST_FULL", 25);
+
+  assert.equal(calls[0].type, "list");
+  assert.equal(calls[0].path, "/Analyses");
+  assert.equal(calls[0].filters[0].path, "ProgramName");
+  assert.equal(calls[0].filters[0].operator, "EQ");
+  assert.equal(calls[0].filters[0].value, "ZRMIG_TEST_FULL");
+  assert.equal(calls[0].sorters[0].path, "CreatedAt");
+  assert.equal(calls[0].sorters[0].descending, true);
+  assert.equal(calls[0].parameters.$$groupId, "$direct");
+  assert.equal(calls[0].length, 25);
+});
+
+test("analysis service returns empty history without a program name", async () => {
+  const { service, calls } = createService();
+
+  const result = await service.readAnalysisHistory("");
+
+  assert.equal(Array.isArray(result), true);
+  assert.equal(result.length, 0);
+  assert.equal(calls.length, 0);
+});
+
+test("analysis service deletes an analysis by id through an OData context", async () => {
+  const calls = [];
+  const service = new AnalysisService({
+    bindContext(pathValue) {
+      calls.push(["bindContext", pathValue]);
+      return {
+        getBoundContext() {
+          return {
+            delete(groupId) {
+              calls.push(["delete", groupId]);
+              return Promise.resolve();
+            }
+          };
+        }
+      };
+    }
+  });
+
+  await service.deleteAnalysisById(analysisId, "$auto");
+
+  assert.deepEqual(calls, [
+    ["bindContext", `/Analyses(${analysisId})`],
+    ["delete", "$auto"]
+  ]);
 });
 
 test("analysis service reads ALV output parent and children with composite key navigation", async () => {

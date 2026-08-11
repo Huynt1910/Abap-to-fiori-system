@@ -10,7 +10,6 @@
         </uxap:heading>
         <uxap:expandedHeading><ObjectAttribute title="{i18n>framework}" text="{path:'alvDetail>/overview/Framework', formatter:'.formatter.formatText'}" /></uxap:expandedHeading>
         <uxap:actions>
-          <Button icon="sap-icon://refresh" tooltip="{i18n>refresh}" press=".onRefresh" />
         </uxap:actions>
       </uxap:ObjectPageDynamicHeaderTitle>
     </uxap:headerTitle>

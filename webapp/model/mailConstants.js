@@ -50,11 +50,26 @@ sap.ui.define([], function () {
       monthly: "M"
     }),
 
+    dayOfWeek: Object.freeze({
+      monday: "1",
+      tuesday: "2",
+      wednesday: "3",
+      thursday: "4",
+      friday: "5",
+      saturday: "6",
+      sunday: "7"
+    }),
+
     scheduleDefaults: Object.freeze({
       startDate: null,
       startTime: "00:00:00",
       dayOfWeek: "1",
-      dayOfMonth: "01"
+      dayOfMonth: "1",
+      jobTimeZone: "UTC+7"
+    }),
+
+    jobTimeZone: Object.freeze({
+      utcPlus7: "UTC+7"
     }),
 
     fileFormat: Object.freeze({
@@ -79,6 +94,7 @@ sap.ui.define([], function () {
         "Frequency",
         "StartDate",
         "StartTime",
+        "JobTimeZone",
         "DayOfWeek",
         "DayOfMonth",
         "NextRunAt",
@@ -87,7 +103,8 @@ sap.ui.define([], function () {
         "Status",
         "CreatedBy",
         "CreatedAt",
-        "LocalLastChangedAt"
+        "LocalLastChangedAt",
+        "__OperationControl"
       ]),
       recipients: Object.freeze([
         "JobId",

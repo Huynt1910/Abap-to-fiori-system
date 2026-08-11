@@ -34,7 +34,6 @@
           </HBox>
         </uxap:expandedHeading>
         <uxap:actions>
-          <Button icon="sap-icon://refresh" tooltip="{i18n>refresh}" press=".onRefresh" />
         </uxap:actions>
       </uxap:ObjectPageDynamicHeaderTitle>
     </uxap:headerTitle>

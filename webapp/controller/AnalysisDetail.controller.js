@@ -382,6 +382,14 @@ sap.ui.define([
       }.bind(this));
     },
 
+    onFrequencyChange: function () {
+      var oJob = this.getMailService().normalizeSchedule(this._oMailViewModel.getProperty("/wizard/job") || {});
+
+      this._oMailViewModel.setProperty("/wizard/job", oJob);
+      this._applyMailFrequencyUiState(oJob.Frequency);
+      this._oMailViewModel.setProperty("/wizard/errorMessage", "");
+    },
+
     onCloseWizardError: function () {
       this._oMailViewModel.setProperty("/wizard/errorMessage", "");
     },
@@ -472,6 +480,20 @@ sap.ui.define([
       }
     },
 
+    onAnalysisHistoryPress: function (oEvent) {
+      var oContext = (oEvent.getParameter("listItem") || oEvent.getSource()).getBindingContext("detail");
+      var oAnalysis = oContext && oContext.getObject();
+      var sAnalysisId = oAnalysis && oAnalysis.AnalysisId;
+
+      if (!sAnalysisId || sAnalysisId === this._oViewModel.getProperty("/analysisId")) {
+        return;
+      }
+
+      this.getRouter().navTo("analysisDetail", {
+        analysisId: encodeURIComponent(sAnalysisId)
+      });
+    },
+
     onCloseAlvOutputInlineDetail: function () {
       this._oViewModel.setProperty("/selectedAlvOutput", null);
       this._oViewModel.setProperty("/alvOutputDetail", {
@@ -542,12 +564,35 @@ sap.ui.define([
             alvColumns: oAnalysis && oAnalysis.TotalAlvColumns,
             recommendations: oAnalysis && oAnalysis.TotalRecommendations
           });
+          return this._loadAnalysisHistory(oAnalysis && oAnalysis.ProgramName);
         }.bind(this))
         .catch(function (oError) {
           this.showError(oError, "loadOverviewError");
         }.bind(this))
         .finally(function () {
           this._setBusy(false);
+        }.bind(this));
+    },
+
+    _loadAnalysisHistory: function (sProgramName) {
+      var sCurrentAnalysisId = this._oViewModel.getProperty("/analysisId");
+
+      this._oViewModel.setProperty("/history/busy", true);
+      this._oViewModel.setProperty("/errors/history", null);
+
+      return this.getAnalysisService().readAnalysisHistory(sProgramName)
+        .then(function (aRows) {
+          this._oViewModel.setProperty("/history/items", (aRows || []).map(function (oRow) {
+            return Object.assign({}, oRow, {
+              IsCurrent: oRow.AnalysisId === sCurrentAnalysisId
+            });
+          }));
+        }.bind(this))
+        .catch(function (oError) {
+          this._oViewModel.setProperty("/errors/history", oError && oError.message || this.getText("loadAnalysisHistoryError"));
+        }.bind(this))
+        .finally(function () {
+          this._oViewModel.setProperty("/history/busy", false);
         }.bind(this));
     },
 
@@ -622,13 +667,28 @@ sap.ui.define([
     },
 
     _showRowText: function (oEvent, sProperty, sTitleKey) {
-      var oContext = (oEvent.getParameter("listItem") || oEvent.getSource()).getBindingContext("detail");
+      var oContext = this._getDetailRowContext(oEvent);
       var oRow = oContext && oContext.getObject();
       var sText = oRow && oRow[sProperty] || this.getText("notAvailable");
 
       MessageBox.information(sText, {
         title: this.getText(sTitleKey)
       });
+    },
+
+    _getDetailRowContext: function (oEvent) {
+      var oControl = oEvent && (oEvent.getParameter("listItem") || oEvent.getSource());
+      var oContext;
+
+      while (oControl) {
+        oContext = oControl.getBindingContext && oControl.getBindingContext("detail");
+        if (oContext) {
+          return oContext;
+        }
+        oControl = oControl.getParent && oControl.getParent();
+      }
+
+      return null;
     },
 
     _selectAlvOutput: function (oRow) {
@@ -1360,24 +1420,28 @@ sap.ui.define([
     },
 
     _resetMailWizard: function () {
+      var oJob = this.getMailService().normalizeSchedule({
+        AnalysisId: "",
+        JobName: "",
+        ReportType: "",
+        FileFormat: MailConstants.fileFormat.excel,
+        Frequency: MailConstants.frequency.onDemand,
+        StartDate: MailConstants.scheduleDefaults.startDate,
+        StartTime: MailConstants.scheduleDefaults.startTime,
+        JobTimeZone: MailConstants.scheduleDefaults.jobTimeZone,
+        DayOfWeek: MailConstants.scheduleDefaults.dayOfWeek,
+        DayOfMonth: MailConstants.scheduleDefaults.dayOfMonth,
+        MailSubject: "",
+        MailBody: "",
+        Status: MailConstants.status.inactive
+      });
+
       this._oMailViewModel.setProperty("/wizard", {
         busy: false,
         mode: "create",
         errorMessage: "",
-        job: {
-          AnalysisId: "",
-          JobName: "",
-          ReportType: "",
-          FileFormat: MailConstants.fileFormat.excel,
-          Frequency: MailConstants.frequency.onDemand,
-          StartDate: MailConstants.scheduleDefaults.startDate,
-          StartTime: MailConstants.scheduleDefaults.startTime,
-          DayOfWeek: MailConstants.scheduleDefaults.dayOfWeek,
-          DayOfMonth: MailConstants.scheduleDefaults.dayOfMonth,
-          MailSubject: "",
-          MailBody: "",
-          Status: MailConstants.status.inactive
-        },
+        job: oJob,
+        schedule: this.getMailService().getFrequencyUiState(oJob.Frequency),
         recipients: [],
         newRecipient: {
           RecipientType: MailConstants.recipientType.to,
@@ -1441,26 +1505,11 @@ sap.ui.define([
     },
 
     _normalizeMailJob: function (oJob) {
-      var oPayload = Object.assign({}, oJob || {});
+      return this.getMailService().normalizeSchedule(oJob);
+    },
 
-      if (oPayload.Frequency === MailConstants.frequency.onDemand) {
-        oPayload.StartDate = MailConstants.scheduleDefaults.startDate;
-        oPayload.StartTime = MailConstants.scheduleDefaults.startTime;
-        oPayload.DayOfWeek = MailConstants.scheduleDefaults.dayOfWeek;
-        oPayload.DayOfMonth = MailConstants.scheduleDefaults.dayOfMonth;
-        return oPayload;
-      }
-
-      if (oPayload.Frequency !== MailConstants.frequency.weekly) {
-        oPayload.DayOfWeek = "";
-      }
-      if (oPayload.Frequency !== MailConstants.frequency.monthly) {
-        oPayload.DayOfMonth = "";
-      } else if (oPayload.DayOfMonth) {
-        oPayload.DayOfMonth = String(oPayload.DayOfMonth).padStart(2, "0");
-      }
-
-      return oPayload;
+    _applyMailFrequencyUiState: function (sFrequency) {
+      this._oMailViewModel.setProperty("/wizard/schedule", this.getMailService().getFrequencyUiState(sFrequency));
     },
 
     _showMailWizardError: function (oError) {

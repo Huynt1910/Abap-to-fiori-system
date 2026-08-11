@@ -27,14 +27,6 @@
                         />
                     </HBox>
                 </f:heading>
-                <f:actions>
-                    <Button
-                        text="{i18n>refresh}"
-                        type="Transparent"
-                        icon="sap-icon://refresh"
-                        press=".onRefresh"
-                    />
-                </f:actions>
             </f:DynamicPageTitle>
         </f:title>
         <f:header>
@@ -144,7 +136,7 @@
                     sticky="ColumnHeaders"
                     autoPopinMode="true"
                     updateFinished=".onMailJobsUpdateFinished"
-                    items="{path: 'mail>/MailJobs', sorter: { path: 'CreatedAt', descending: true }, parameters: { $$groupId: '$direct', $select: 'JobId,AnalysisId,JobName,ReportType,FileFormat,Frequency,StartDate,StartTime,DayOfWeek,DayOfMonth,NextRunAt,MailSubject,MailBody,Status,CreatedBy,CreatedAt,LocalLastChangedAt' }}"
+                    items="{path: 'mail>/MailJobs', sorter: { path: 'CreatedAt', descending: true }, parameters: { $$groupId: '$direct', $select: 'JobId,AnalysisId,JobName,ReportType,FileFormat,Frequency,StartDate,StartTime,JobTimeZone,DayOfWeek,DayOfMonth,NextRunAt,MailSubject,MailBody,Status,CreatedBy,CreatedAt,LocalLastChangedAt,__OperationControl' }}"
                 >
                     <noData>
                         <IllustratedMessage
@@ -194,15 +186,6 @@
                             <Text text="{i18n>nextRunAt}" />
                         </Column>
                         <Column
-                            width="7rem"
-                            hAlign="End"
-                            demandPopin="true"
-                            minScreenWidth="Desktop"
-                            visible="{mailUi>/columns/recipientCount}"
-                        >
-                            <Text text="{i18n>recipientCount}" />
-                        </Column>
-                        <Column
                             width="9rem"
                             demandPopin="true"
                             minScreenWidth="Desktop"
@@ -249,10 +232,6 @@
                                     text="{path: 'mail>NextRunAt', formatter: '.mailFormatter.formatDateTime'}"
                                     visible="{mailUi>/columns/nextRunAt}"
                                 />
-                                <ObjectNumber
-                                    number="{path: 'mail>JobId', formatter: '.formatRecipientCountForJob'}"
-                                    visible="{mailUi>/columns/recipientCount}"
-                                />
                                 <Text
                                     text="{path: 'mail>CreatedBy', formatter: '.mailFormatter.formatText'}"
                                     visible="{mailUi>/columns/createdBy}"
@@ -284,7 +263,7 @@
                                         icon="sap-icon://email"
                                         tooltip="{i18n>sendNow}"
                                         press=".onSendNow"
-                                        enabled="{parts: [{path: 'mail>JobId', targetType: 'any'}, {path: 'mailUi>/sendBusyJobId', targetType: 'any'}], formatter: '.canSendNowForJob'}"
+                                        enabled="{parts: [{path: 'mail>JobId', targetType: 'any'}, {path: 'mailUi>/sendBusyJobId', targetType: 'any'}, {path: 'mail>__OperationControl/sendNow', targetType: 'any'}], formatter: '.canSendNowForJob'}"
                                     />
                                     <Button
                                         icon="sap-icon://delete"

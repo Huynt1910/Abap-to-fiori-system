@@ -25,7 +25,29 @@ sap.ui.define([
     return this._readList(Constants.entitySet.analyses, {
       filters: aFilters,
       sorters: [new Sorter(Constants.field.createdAt, true)],
+      parameters: {
+        $select: Constants.field.analyses.join(","),
+        $$groupId: "$direct"
+      },
       length: mReadOptions.top || 20
+    });
+  };
+
+  AnalysisService.prototype.readAnalysisHistory = function (sProgramName, iTop) {
+    var sValue = String(sProgramName || "").trim();
+
+    if (!sValue) {
+      return Promise.resolve([]);
+    }
+
+    return this._readList(Constants.entitySet.analyses, {
+      filters: [new Filter(Constants.field.programName, FilterOperator.EQ, sValue)],
+      sorters: [new Sorter(Constants.field.createdAt, true)],
+      parameters: {
+        $select: Constants.field.analyses.join(","),
+        $$groupId: "$direct"
+      },
+      length: iTop || 50
     });
   };
 
@@ -66,6 +88,17 @@ sap.ui.define([
     return this._readContext(this._buildAnalysisPath(sAnalysisId), {
       $select: Constants.field.analyses.join(",")
     });
+  };
+
+  AnalysisService.prototype.deleteAnalysisById = function (sAnalysisId, sGroupId) {
+    var oBinding = this._oModel.bindContext(this._buildAnalysisPath(sAnalysisId));
+    var oContext = oBinding && oBinding.getBoundContext && oBinding.getBoundContext();
+
+    if (!oContext || typeof oContext.delete !== "function") {
+      return Promise.reject(new Error("Analysis delete context is not available."));
+    }
+
+    return oContext.delete(sGroupId || "$auto");
   };
 
   AnalysisService.prototype.getUiFilters = function (sAnalysisId) {

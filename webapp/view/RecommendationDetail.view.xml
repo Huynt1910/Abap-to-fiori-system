@@ -8,7 +8,6 @@
         </HBox>
       </uxap:heading>
       <uxap:expandedHeading><Text text="{path:'recDetail>/overview/DisplayText', formatter:'.formatter.formatText'}" wrapping="true" /></uxap:expandedHeading>
-      <uxap:actions><Button icon="sap-icon://refresh" tooltip="{i18n>refresh}" press=".onRefresh" /></uxap:actions>
     </uxap:ObjectPageDynamicHeaderTitle></uxap:headerTitle>
     <uxap:sections>
       <uxap:ObjectPageSection title="{i18n>overview}">

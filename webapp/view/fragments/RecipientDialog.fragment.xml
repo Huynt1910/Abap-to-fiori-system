@@ -12,7 +12,6 @@
     busyIndicatorDelay="0">
     <content>
       <VBox class="sapUiSmallMargin">
-        <MessageStrip text="{i18n>recipientSapUserHint}" type="Information" showIcon="true" class="sapUiSmallMarginBottom" />
         <f:SimpleForm editable="true" layout="ResponsiveGridLayout">
           <Label text="{i18n>recipientType}" required="true" />
           <Select selectedKey="{mailUi>/recipient/data/RecipientType}">

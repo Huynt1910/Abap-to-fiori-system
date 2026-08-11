@@ -4,12 +4,14 @@ sap.ui.define([
   "sap/ui/model/Filter",
   "sap/ui/model/FilterOperator",
   "sap/ui/model/Sorter",
+  "sap/m/MessageBox",
   "sap/m/MessageToast",
   "abap/to/fiori/system/controller/BaseController",
   "abap/to/fiori/system/model/models",
   "abap/to/fiori/system/util/Constants",
+  "abap/to/fiori/system/util/AnalysisDeleteHelper",
   "abap/to/fiori/system/util/formatter"
-], function (Fragment, HashChanger, Filter, FilterOperator, Sorter, MessageToast, BaseController, models, Constants, formatter) {
+], function (Fragment, HashChanger, Filter, FilterOperator, Sorter, MessageBox, MessageToast, BaseController, models, Constants, AnalysisDeleteHelper, formatter) {
   "use strict";
 
   return BaseController.extend("abap.to.fiori.system.controller.Dashboard", {
@@ -19,7 +21,6 @@ sap.ui.define([
       this._oViewModel = models.createDashboardModel();
       this.getView().setModel(this._oViewModel, "dashboard");
       this._applyAnalysisFilters();
-      this._updateDashboardKpis();
       this._displayMailTargetFromHash();
     },
 
@@ -88,8 +89,9 @@ sap.ui.define([
 
     onAnalysesUpdateFinished: function (oEvent) {
       var iTotal = oEvent.getParameter("total") || 0;
+
       this._oViewModel.setProperty("/visibleCount", iTotal);
-      this._updateDashboardKpis();
+      this._updateAnalysisSelectionState();
     },
 
     onRunAnalysis: function () {
@@ -187,31 +189,219 @@ sap.ui.define([
       });
     },
 
+    onAnalysisSelectionChange: function () {
+      this._updateAnalysisSelectionState();
+    },
+
+    onDeleteSelectedAnalyses: function () {
+      var aSelectedContexts = this._getSelectedAnalysisContexts();
+      var oSplit = AnalysisDeleteHelper.splitByDeletePermission(aSelectedContexts);
+
+      if (!aSelectedContexts.length || this._oViewModel.getProperty("/deleteBusy")) {
+        return;
+      }
+
+      if (!oSplit.deletableContexts.length) {
+        MessageBox.warning(this.getText("deleteAnalysesNoneAllowed"));
+        return;
+      }
+
+      this._confirmDeleteAnalyses(aSelectedContexts, oSplit.deletableContexts, oSplit.blockedContexts)
+        .then(function (bConfirmed) {
+          if (!bConfirmed) {
+            return null;
+          }
+          return this._deleteAnalysisContexts(oSplit.deletableContexts, oSplit.blockedContexts.length);
+        }.bind(this))
+        .catch(function (oError) {
+          this.showError(oError, "errorGeneric");
+        }.bind(this));
+    },
+
     _applyAnalysisFilters: function () {
       var oTable = this.byId("analysisTable");
       var oBinding = oTable && oTable.getBinding("items");
-      var aFilters = this._buildFilters();
 
       if (oBinding) {
-        oBinding.filter(aFilters);
+        oBinding.filter(this._buildFilters());
         oBinding.sort([new Sorter(Constants.field.createdAt, true)]);
       }
+      this._clearAnalysisSelection();
+      this._updateAnalysisSelectionState();
       this._updateDashboardKpis();
     },
 
+    _getSelectedAnalysisContexts: function () {
+      var oTable = this.byId("analysisTable");
+      var aItems;
+      var aIndices;
+
+      if (!oTable) {
+        return [];
+      }
+
+      if (typeof oTable.getSelectedItems === "function") {
+        aItems = oTable.getSelectedItems();
+        return (aItems || []).map(function (oItem) {
+          return oItem.getBindingContext();
+        }).filter(Boolean);
+      }
+
+      if (typeof oTable.getSelectedContexts === "function") {
+        return oTable.getSelectedContexts();
+      }
+
+      if (typeof oTable.getSelectedIndices === "function" && typeof oTable.getContextByIndex === "function") {
+        aIndices = oTable.getSelectedIndices();
+        return (aIndices || []).map(function (iIndex) {
+          return oTable.getContextByIndex(iIndex);
+        }).filter(Boolean);
+      }
+
+      return [];
+    },
+
+    _updateAnalysisSelectionState: function () {
+      var iSelectedCount = this._getSelectedAnalysisContexts().length;
+
+      this._oViewModel.setProperty("/selectedAnalysisCount", iSelectedCount);
+      this._oViewModel.setProperty("/deleteEnabled", iSelectedCount > 0);
+    },
+
+    _confirmDeleteAnalyses: function (aSelectedContexts, aDeletableContexts, aBlockedContexts) {
+      var sMessage;
+
+      if (aBlockedContexts.length) {
+        sMessage = this.getText("deleteAnalysesMixedMessage", [
+          aSelectedContexts.length,
+          aDeletableContexts.length,
+          aBlockedContexts.length
+        ]);
+        return this._confirmMessage(sMessage);
+      }
+
+      sMessage = this._buildDeleteConfirmMessage(aDeletableContexts);
+      return this._confirmMessage(sMessage);
+    },
+
+    _buildDeleteConfirmMessage: function (aContexts) {
+      var oPreview = AnalysisDeleteHelper.buildProgramPreview(aContexts, 5);
+      var sMessage = this.getText("deleteAnalysesConfirmMessage", [aContexts.length]);
+
+      if (oPreview.names.length) {
+        sMessage += "\n\n" + oPreview.names.join("\n");
+      }
+      if (oPreview.remaining > 0) {
+        sMessage += "\n" + this.getText("deleteAnalysesRemaining", [oPreview.remaining]);
+      }
+
+      return sMessage;
+    },
+
+    _confirmMessage: function (sMessage) {
+      return new Promise(function (resolve) {
+        MessageBox.confirm(sMessage, {
+          title: this.getText("deleteAnalysesConfirmTitle"),
+          actions: [MessageBox.Action.OK, MessageBox.Action.CANCEL],
+          emphasizedAction: MessageBox.Action.OK,
+          onClose: function (sAction) {
+            resolve(sAction === MessageBox.Action.OK);
+          }
+        });
+      }.bind(this));
+    },
+
+    _deleteAnalysisContexts: function (aContexts, iBlockedCount) {
+      var sUpdateGroupId = this._getAnalysisUpdateGroupId();
+
+      this._oViewModel.setProperty("/deleteBusy", true);
+
+      return Promise.allSettled((aContexts || []).map(function (oContext) {
+        return this._deleteAnalysisContext(oContext, sUpdateGroupId);
+      }.bind(this))).then(function (aResults) {
+        var oSummary = AnalysisDeleteHelper.summarizeDeleteResults(aResults, aContexts, iBlockedCount);
+
+        this._showDeleteSummary(oSummary);
+        this._clearAnalysisSelection();
+      }.bind(this)).finally(function () {
+        this._oViewModel.setProperty("/deleteBusy", false);
+        this._updateAnalysisSelectionState();
+        this._applyAnalysisFilters();
+      }.bind(this));
+    },
+
+    _showDeleteSummary: function (oSummary) {
+      var sMessage;
+      var sFailureDetails;
+
+      if (oSummary.failedCount === 0 && oSummary.blockedCount === 0) {
+        MessageToast.show(this.getText("deleteAnalysesSuccess", [oSummary.successCount]));
+        return;
+      }
+
+      sMessage = this.getText("deleteAnalysesPartial", [
+        oSummary.successCount,
+        oSummary.failedCount,
+        oSummary.blockedCount
+      ]);
+
+      sFailureDetails = (oSummary.failures || []).map(function (oFailure) {
+        return this.getText("deleteAnalysesFailureLine", [oFailure.programName, oFailure.message]);
+      }.bind(this)).join("\n");
+
+      MessageBox.warning(sFailureDetails ? sMessage + "\n\n" + sFailureDetails : sMessage, {
+        title: this.getText("deleteAnalysesConfirmTitle")
+      });
+    },
+
+    _clearAnalysisSelection: function () {
+      var oTable = this.byId("analysisTable");
+
+      if (!oTable) {
+        return;
+      }
+
+      if (typeof oTable.removeSelections === "function") {
+        oTable.removeSelections(true);
+      } else if (typeof oTable.clearSelection === "function") {
+        oTable.clearSelection();
+      }
+    },
+
+    _deleteAnalysisContext: function (oContext, sUpdateGroupId) {
+      var sAnalysisId = oContext && typeof oContext.getProperty === "function"
+        ? oContext.getProperty("AnalysisId")
+        : "";
+
+      if (oContext && typeof oContext.delete === "function") {
+        return oContext.delete(sUpdateGroupId);
+      }
+
+      return this.getAnalysisService().deleteAnalysisById(sAnalysisId, sUpdateGroupId);
+    },
+
+    _getAnalysisUpdateGroupId: function () {
+      var oModel = this.getODataModel();
+
+      return oModel && typeof oModel.getUpdateGroupId === "function"
+        ? oModel.getUpdateGroupId()
+        : "$auto";
+    },
+
     _refreshAnalyses: function () {
-      var oBinding = this.byId("analysisTable").getBinding("items");
+      var oBinding = this.byId("analysisTable") && this.byId("analysisTable").getBinding("items");
 
       this._applyAnalysisFilters();
-
-      if (oBinding) {
+      if (oBinding && typeof oBinding.refresh === "function") {
         oBinding.refresh();
       }
+      this._clearAnalysisSelection();
+      this._updateAnalysisSelectionState();
     },
 
     _buildFilters: function () {
       var aFilters = [];
-      var sSearch = String(this._oViewModel.getProperty("/filters/search") || "").trim();
+      var sSearch = String(this._oViewModel.getProperty("/filters/search") || "").trim().toUpperCase();
       var sStatus = String(this._oViewModel.getProperty("/filters/status") || "").trim();
 
       if (sSearch) {

@@ -27,14 +27,6 @@
                         />
                     </HBox>
                 </f:heading>
-                <f:actions>
-                    <Button
-                        icon="sap-icon://refresh"
-                        text="{i18n>refresh}"
-                        type="Transparent"
-                        press=".onRefresh"
-                    />
-                </f:actions>
             </f:DynamicPageTitle>
         </f:title>
         <f:header>
