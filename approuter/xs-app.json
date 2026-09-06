@@ -1,6 +1,6 @@
 {
   "welcomeFile": "/index.html",
-  "authenticationMethod": "route",
+  "authenticationMethod": "none",
   "logout": {
     "logoutEndpoint": "/do/logout"
   },
@@ -9,7 +9,7 @@
       "source": "^/sap/(.*)$",
       "target": "/sap/$1",
       "destination": "S40",
-      "authenticationType": "xsuaa",
+      "authenticationType": "none",
       "csrfProtection": false
     },
     {
@@ -28,7 +28,7 @@
       "source": "^(.*)$",
       "target": "/abaptofiorisystem/$1",
       "service": "html5-apps-repo-rt",
-      "authenticationType": "xsuaa"
+      "authenticationType": "none"
     }
   ]
 }
