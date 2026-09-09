@@ -1,0 +1,44 @@
+<mvc:View
+  controllerName="abap.to.fiori.system.controller.Login"
+  xmlns:mvc="sap.ui.core.mvc"
+  xmlns="sap.m"
+  displayBlock="true"
+>
+  <Page showHeader="false" class="sapUiContentPadding loginPage">
+    <VBox alignItems="Center" justifyContent="Center" height="100%">
+      <Panel headerText="{i18n>loginTitle}" width="22rem">
+        <VBox>
+          <Label text="{i18n>loginUsername}" labelFor="loginUsernameInput" />
+          <Input
+            id="loginUsernameInput"
+            value="{login>/username}"
+            placeholder="{i18n>loginUsernamePlaceholder}"
+          />
+          <Label text="{i18n>loginPassword}" labelFor="loginPasswordInput" class="sapUiTinyMarginTop" />
+          <Input
+            id="loginPasswordInput"
+            type="Password"
+            value="{login>/password}"
+            placeholder="{i18n>loginPasswordPlaceholder}"
+            submit=".onLoginPress"
+          />
+          <MessageStrip
+            text="{login>/errorMessage}"
+            type="Error"
+            visible="{login>/errorVisible}"
+            showIcon="true"
+            class="sapUiTinyMarginTop"
+          />
+          <Button
+            text="{i18n>loginButton}"
+            type="Emphasized"
+            press=".onLoginPress"
+            busy="{login>/busy}"
+            width="100%"
+            class="sapUiMediumMarginTop"
+          />
+        </VBox>
+      </Panel>
+    </VBox>
+  </Page>
+</mvc:View>

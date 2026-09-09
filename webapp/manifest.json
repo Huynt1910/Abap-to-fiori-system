@@ -90,12 +90,12 @@
       "": {
         "dataSource": "mainService",
         "type": "sap.ui.model.odata.v4.ODataModel",
-        "preload": true,
+        "preload": false,
         "settings": {
           "operationMode": "Server",
           "synchronizationMode": "None",
           "autoExpandSelect": true,
-          "earlyRequests": true,
+          "earlyRequests": false,
           "groupId": "$auto",
           "updateGroupId": "$auto"
         }
@@ -103,12 +103,12 @@
       "mail": {
         "dataSource": "mailService",
         "type": "sap.ui.model.odata.v4.ODataModel",
-        "preload": true,
+        "preload": false,
         "settings": {
           "operationMode": "Server",
           "synchronizationMode": "None",
           "autoExpandSelect": true,
-          "earlyRequests": true,
+          "earlyRequests": false,
           "groupId": "$direct",
           "updateGroupId": "$direct"
         }
@@ -116,12 +116,12 @@
       "comparison": {
         "dataSource": "comparisonService",
         "type": "sap.ui.model.odata.v4.ODataModel",
-        "preload": true,
+        "preload": false,
         "settings": {
           "operationMode": "Server",
           "synchronizationMode": "None",
           "autoExpandSelect": true,
-          "earlyRequests": true,
+          "earlyRequests": false,
           "groupId": "$direct",
           "updateGroupId": "$direct"
         }
@@ -205,6 +205,7 @@
         }
       ],
       "targets": {
+        "login": { "viewName": "Login" },
         "dashboard": {
           "viewName": "Dashboard"
         },
