@@ -24,6 +24,7 @@ builder:
     - name: deploy-to-abap
       afterTask: generateCachebusterInfo
       configuration:
+        verbose: true
         target:
           url: https://s40lp1.ucc.cit.tum.de
           client: "324"

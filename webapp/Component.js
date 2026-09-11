@@ -7,7 +7,6 @@ sap.ui.define(
     "abap/to/fiori/system/service/ComparisonService",
     "abap/to/fiori/system/service/DocumentService",
     "abap/to/fiori/system/service/MailService",
-    "abap/to/fiori/system/service/AuthService",
     "sap/ui/model/odata/v4/ODataModel",
   ],
   function (
@@ -18,7 +17,6 @@ sap.ui.define(
     ComparisonService,
     DocumentService,
     MailService,
-    AuthService,
   ) {
     "use strict";
 
