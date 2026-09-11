@@ -40,43 +40,7 @@ sap.ui.define(
         );
         this._oDocumentService = new DocumentService(this.getModel());
         this._oMailService = new MailService(this.getModel("mail"));
-
-        this.getRouter().getTargets().display("login");
-      },
-
-      _onRouteMatched: function () {
-        if (!AuthService.isLoggedIn()) {
-          this.getRouter().getTargets().display("login");
-        }
-      },
-
-      onLoginSuccess: function () {
-        var sAuthHeader = AuthService.getAuthHeader();
-        var oHeaders = { Authorization: sAuthHeader };
-
-        this.getModel().changeHttpHeaders(oHeaders);
-        this.getModel("mail").changeHttpHeaders(oHeaders);
-        this.getModel("comparison").changeHttpHeaders(oHeaders);
-
-        if (this._bRouterStarted) {
-          this.getRouter().navTo("dashboard");
-          return;
-        }
-
-        this._bRouterStarted = true;
-        this.getRouter().attachRouteMatched(this._onRouteMatched, this);
-        window.location.hash = ""; // đảm bảo luôn vào Dashboard, không dính hash cũ còn sót (vd #/mail)
         this.getRouter().initialize();
-      },
-
-      onLogout: function () {
-        AuthService.logout();
-
-        this.getModel().changeHttpHeaders({});
-        this.getModel("mail").changeHttpHeaders({});
-        this.getModel("comparison").changeHttpHeaders({});
-
-        this.getRouter().getTargets().display("login");
       },
 
       getAnalysisService: function () {

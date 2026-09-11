@@ -65,7 +65,7 @@
       "async": true
     },
     "dependencies": {
-      "minUI5Version": "1.120.0",
+      "minUI5Version": "1.108.33",
       "libs": {
         "sap.m": {},
         "sap.ui.core": {},
@@ -205,7 +205,6 @@
         }
       ],
       "targets": {
-        "login": { "viewName": "Login" },
         "dashboard": {
           "viewName": "Dashboard"
         },

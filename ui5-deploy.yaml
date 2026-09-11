@@ -1,17 +1,38 @@
+# yaml-language-server: $schema=https://sap.github.io/ui5-tooling/schema/ui5.yaml.json
+
 specVersion: "4.0"
 metadata:
   name: abap-to-fiori-system
 type: application
-
+framework:
+  name: SAPUI5
+  version: "1.120.0"
+  libraries:
+    - name: sap.m
+    - name: sap.ui.core
+    - name: sap.ui.layout
+    - name: sap.f
+    - name: sap.uxap
+    - name: themelib_sap_horizon
 builder:
   resources:
     excludes:
-      - "/test/**"
-      - "/localService/**"
+      - /test/**
+      - /localService/**
+      - "/test-resources/**"
   customTasks:
-    - name: ui5-task-zipper
+    - name: deploy-to-abap
       afterTask: generateCachebusterInfo
       configuration:
-        archiveName: abap-to-fiori-system
-        additionalFiles:
-          xs-app.json: xs-app.json
+        target:
+          url: https://s40lp1.ucc.cit.tum.de
+          client: "324"
+        app:
+          name: Z_ABAP_FIORI
+          description: Deploy FLP On-Premise
+          package: ZPROJECT_GSU26SAP08
+          # transport: S40K918253
+          transport: S40K918252
+        exclude:
+          - /test/
+          - /localService/
