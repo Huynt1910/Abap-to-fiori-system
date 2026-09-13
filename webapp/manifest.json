@@ -95,7 +95,7 @@
           "operationMode": "Server",
           "synchronizationMode": "None",
           "autoExpandSelect": true,
-          "earlyRequests": false,
+          "earlyRequests": true,
           "groupId": "$auto",
           "updateGroupId": "$auto"
         }
@@ -108,7 +108,7 @@
           "operationMode": "Server",
           "synchronizationMode": "None",
           "autoExpandSelect": true,
-          "earlyRequests": false,
+          "earlyRequests": true,
           "groupId": "$direct",
           "updateGroupId": "$direct"
         }
@@ -121,7 +121,7 @@
           "operationMode": "Server",
           "synchronizationMode": "None",
           "autoExpandSelect": true,
-          "earlyRequests": false,
+          "earlyRequests": true,
           "groupId": "$direct",
           "updateGroupId": "$direct"
         }

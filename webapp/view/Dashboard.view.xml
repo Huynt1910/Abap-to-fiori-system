@@ -203,16 +203,7 @@
                     autoPopinMode="true"
                     itemPress=".onAnalysisPress"
                     updateFinished=".onAnalysesUpdateFinished"
-                    items="{
-            path: '/Analyses',
-            parameters: {
-              $select: 'AnalysisId,ProgramName,ProgramDescription,Status,TotalSourceObjects,TotalUiFilters,TotalDatabaseObjects,TotalBusinessLogic,TotalAlvOutputs,TotalAlvColumns,TotalRecommendations,ComplexityScore,ReadinessScore,CreatedAt,CreatedBy'
-            },
-            sorter: {
-              path: 'CreatedAt',
-              descending: true
-            }
-          }"
+                    items="{path: '/Analyses', parameters: {$select: 'AnalysisId,ProgramName,ProgramDescription,Status,TotalSourceObjects,TotalUiFilters,TotalDatabaseObjects,TotalBusinessLogic,TotalAlvOutputs,TotalAlvColumns,TotalRecommendations,ComplexityScore,ReadinessScore,CreatedAt,CreatedBy'}, sorter: {path: 'CreatedAt', descending: true}}"
                 >
                     <noData>
                         <IllustratedMessage
