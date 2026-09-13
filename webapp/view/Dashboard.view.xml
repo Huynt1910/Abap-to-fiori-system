@@ -203,7 +203,7 @@
                     autoPopinMode="true"
                     itemPress=".onAnalysisPress"
                     updateFinished=".onAnalysesUpdateFinished"
-                    items="{path: '/Analyses', parameters: {$select: 'AnalysisId,ProgramName,ProgramDescription,Status,TotalSourceObjects,TotalUiFilters,TotalDatabaseObjects,TotalBusinessLogic,TotalAlvOutputs,TotalAlvColumns,TotalRecommendations,ComplexityScore,ReadinessScore,CreatedAt,CreatedBy'}, sorter: {path: 'CreatedAt', descending: true}}"
+                    items="{odata>/Analyses}"
                 >
                     <noData>
                         <IllustratedMessage
@@ -288,38 +288,38 @@
                         >
                             <cells>
                                 <ObjectIdentifier
-                                    title="{path: 'ProgramName', formatter: '.formatter.formatText'}"
-                                    text="{path: 'ProgramDescription', formatter: '.formatter.formatText'}"
+                                    title="{path: 'odata>ProgramName', formatter: '.formatter.formatText'}"
+                                    text="{path: 'odata>ProgramDescription', formatter: '.formatter.formatText'}"
                                     visible="{dashboard>/columns/program}"
                                 />
                                 <ObjectStatus
-                                    text="{path: 'Status', formatter: '.formatter.formatText'}"
-                                    state="{path: 'Status', formatter: '.formatter.formatStatusState'}"
-                                    icon="{path: 'Status', formatter: '.formatter.formatStatusIcon'}"
+                                    text="{path: 'odata>Status', formatter: '.formatter.formatText'}"
+                                    state="{path: 'odata>Status', formatter: '.formatter.formatStatusState'}"
+                                    icon="{path: 'odata>Status', formatter: '.formatter.formatStatusIcon'}"
                                     visible="{dashboard>/columns/status}"
                                 />
                                 <ObjectNumber
-                                    number="{path: 'TotalSourceObjects', formatter: '.formatter.formatNumber'}"
+                                    number="{path: 'odata>TotalSourceObjects', formatter: '.formatter.formatNumber'}"
                                     visible="{dashboard>/columns/sourceObjects}"
                                 />
                                 <ObjectNumber
-                                    number="{path: 'TotalDatabaseObjects', formatter: '.formatter.formatNumber'}"
+                                    number="{path: 'odata>TotalDatabaseObjects', formatter: '.formatter.formatNumber'}"
                                     visible="{dashboard>/columns/dbTables}"
                                 />
                                 <ObjectNumber
-                                    number="{path: 'TotalAlvOutputs', formatter: '.formatter.formatNumber'}"
+                                    number="{path: 'odata>TotalAlvOutputs', formatter: '.formatter.formatNumber'}"
                                     visible="{dashboard>/columns/alvOutputs}"
                                 />
                                 <ObjectNumber
-                                    number="{path: 'ReadinessScore', formatter: '.formatter.formatScoreText'}"
+                                    number="{path: 'odata>ReadinessScore', targetType: 'any', formatter: '.formatter.formatScoreText'}"
                                     visible="{dashboard>/columns/readinessScore}"
                                 />
                                 <Text
-                                    text="{path: 'CreatedAt', formatter: '.formatter.formatDateTime'}"
+                                    text="{path: 'odata>CreatedAt', targetType: 'any', formatter: '.formatter.formatDateTime'}"
                                     visible="{dashboard>/columns/createdAt}"
                                 />
                                 <Text
-                                    text="{path: 'CreatedBy', formatter: '.formatter.formatText'}"
+                                    text="{path: 'odata>CreatedBy', formatter: '.formatter.formatText'}"
                                     visible="{dashboard>/columns/createdBy}"
                                 />
                             </cells>

@@ -28,6 +28,7 @@ sap.ui.define(
       init: function () {
         UIComponent.prototype.init.apply(this, arguments);
 
+        this.setModel(this.getModel(), "odata");
         this.setModel(models.createDeviceModel(), "device");
         this._oAnalysisService = new AnalysisService(this.getModel());
         this._oProgramValueHelpService = new ProgramValueHelpService(
