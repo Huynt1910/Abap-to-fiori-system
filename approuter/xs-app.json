@@ -6,10 +6,18 @@
   },
   "routes": [
     {
+      "source": "^/user-api/currentUser$",
+      "target": "/currentUser",
+      "service": "sap-approuter-userapi",
+      "authenticationType": "xsuaa",
+      "scope": "$XSAPPNAME.AnalysisRead"
+    },
+    {
       "source": "^/sap/(.*)$",
       "target": "/sap/$1",
       "destination": "S40",
       "authenticationType": "xsuaa",
+      "scope": "$XSAPPNAME.AnalysisRead",
       "csrfProtection": false
     },
     {
@@ -28,7 +36,8 @@
       "source": "^(.*)$",
       "target": "/abaptofiorisystem/$1",
       "service": "html5-apps-repo-rt",
-      "authenticationType": "xsuaa"
+      "authenticationType": "xsuaa",
+      "scope": "$XSAPPNAME.AnalysisRead"
     }
   ]
 }

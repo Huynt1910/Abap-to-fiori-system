@@ -16,6 +16,7 @@ modules:
       - name: abap-to-fiori-html5-runtime
       - name: abap-to-fiori-destination
       - name: abap-to-fiori-xsuaa
+      - name: abap-to-fiori-connectivity
 
   - name: abap-to-fiori-content
     type: com.sap.application.content
@@ -79,3 +80,9 @@ resources:
       service: xsuaa
       service-plan: application
       path: ./xs-security.json
+
+  - name: abap-to-fiori-connectivity
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: connectivity
+      service-plan: lite

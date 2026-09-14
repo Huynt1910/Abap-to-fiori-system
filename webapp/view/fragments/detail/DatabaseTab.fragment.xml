@@ -27,7 +27,10 @@
         <Column width="16rem" demandPopin="true" minScreenWidth="Desktop" visible="{detail>/columns/databaseObjects/joinedObjects}"><Text text="{i18n>joinedObjects}" /></Column>
         <Column width="16rem" demandPopin="true" minScreenWidth="Desktop" visible="{detail>/columns/databaseObjects/joinCondition}"><Text text="{i18n>joinCondition}" /></Column>
         <Column width="14rem" demandPopin="true" minScreenWidth="Desktop" visible="{detail>/columns/databaseObjects/aggregation}"><Text text="{i18n>aggregation}" /></Column>
+        <Column width="12rem" demandPopin="true" minScreenWidth="Tablet" visible="{detail>/columns/databaseObjects/resultTarget}"><Text text="{i18n>resultTarget}" /></Column>
         <Column width="14rem" demandPopin="true" minScreenWidth="Tablet" visible="{detail>/columns/databaseObjects/containingRoutine}"><Text text="{i18n>containingRoutine}" /></Column>
+        <Column width="11rem" demandPopin="true" minScreenWidth="Tablet" visible="{detail>/columns/databaseObjects/executionKind}"><Text text="{i18n>executionKind}" /></Column>
+        <Column width="18rem" demandPopin="true" minScreenWidth="Desktop" visible="{detail>/columns/databaseObjects/executionContext}"><Text text="{i18n>executionContext}" /></Column>
         <Column width="8rem" demandPopin="true" minScreenWidth="Tablet" visible="{detail>/columns/databaseObjects/dynamicAccess}"><Text text="{i18n>dynamicAccess}" /></Column>
         <Column width="8rem" demandPopin="true" minScreenWidth="Tablet" visible="{detail>/columns/databaseObjects/readOnly}"><Text text="{i18n>readOnly}" /></Column>
         <Column width="10rem" visible="{detail>/columns/databaseObjects/pagingCapability}"><Text text="{i18n>pagingCapability}" /></Column>
@@ -45,7 +48,10 @@
             <Text text="{path: 'detail>JoinedObjects', formatter: '.formatter.formatText'}" maxLines="2" wrapping="true" visible="{detail>/columns/databaseObjects/joinedObjects}" />
             <Text text="{path: 'detail>JoinCondition', formatter: '.formatter.formatText'}" maxLines="2" wrapping="true" visible="{detail>/columns/databaseObjects/joinCondition}" />
             <Text text="{path: 'detail>Aggregation', formatter: '.formatter.formatText'}" maxLines="2" wrapping="true" visible="{detail>/columns/databaseObjects/aggregation}" />
+            <Text text="{path: 'detail>ResultTarget', formatter: '.formatter.formatText'}" visible="{detail>/columns/databaseObjects/resultTarget}" />
             <Text text="{path: 'detail>ContainingRoutine', formatter: '.formatter.formatText'}" visible="{detail>/columns/databaseObjects/containingRoutine}" />
+            <Text text="{path: 'detail>ExecutionKind', formatter: '.formatter.formatText'}" visible="{detail>/columns/databaseObjects/executionKind}" />
+            <Text text="{path: 'detail>ExecutionContext', formatter: '.formatter.formatText'}" maxLines="2" wrapping="true" visible="{detail>/columns/databaseObjects/executionContext}" />
             <Text text="{path: 'detail>DynamicAccess', formatter: '.formatter.formatBoolean'}" visible="{detail>/columns/databaseObjects/dynamicAccess}" />
             <Text text="{path: 'detail>ReadOnly', formatter: '.formatter.formatBoolean'}" visible="{detail>/columns/databaseObjects/readOnly}" />
             <Text text="{path: 'detail>PagingCapability', formatter: '.formatter.formatText'}" visible="{detail>/columns/databaseObjects/pagingCapability}" />

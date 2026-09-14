@@ -4,5 +4,5 @@
   xmlns="sap.m"
   displayBlock="true"
 >
-  <App id="app" />
+  <App id="app" busy="{auth>/busy}" busyIndicatorDelay="0" />
 </mvc:View>

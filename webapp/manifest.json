@@ -65,7 +65,7 @@
       "async": true
     },
     "dependencies": {
-      "minUI5Version": "1.120.0",
+      "minUI5Version": "1.108.0",
       "libs": {
         "sap.m": {},
         "sap.ui.core": {},
@@ -83,7 +83,9 @@
         "type": "sap.ui.model.resource.ResourceModel",
         "settings": {
           "bundleName": "abap.to.fiori.system.i18n.i18n",
-          "supportedLocales": [""],
+          "supportedLocales": [
+            ""
+          ],
           "fallbackLocale": ""
         }
       },
@@ -202,6 +204,11 @@
           "name": "comparisonDetail",
           "pattern": "comparison/{cmpRunId}",
           "target": "comparisonDetail"
+        },
+        {
+          "name": "modernization",
+          "pattern": "analysis/{analysisId}/modernization",
+          "target": "modernization"
         }
       ],
       "targets": {
@@ -228,6 +235,9 @@
         },
         "comparisonDetail": {
           "viewName": "ComparisonDetail"
+        },
+        "modernization": {
+          "viewName": "Modernization"
         }
       }
     }

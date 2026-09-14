@@ -23,6 +23,8 @@
         <Column width="9rem" visible="{detail>/columns/businessLogic/objectType}"><Text text="{i18n>objectType}" /></Column>
         <Column width="12rem" demandPopin="true" minScreenWidth="Tablet" visible="{detail>/columns/businessLogic/containerName}"><Text text="{i18n>containerName}" /></Column>
         <Column width="12rem" demandPopin="true" minScreenWidth="Tablet" visible="{detail>/columns/businessLogic/callingRoutine}"><Text text="{i18n>callingRoutine}" /></Column>
+        <Column width="11rem" demandPopin="true" minScreenWidth="Tablet" visible="{detail>/columns/businessLogic/executionKind}"><Text text="{i18n>executionKind}" /></Column>
+        <Column width="18rem" demandPopin="true" minScreenWidth="Desktop" visible="{detail>/columns/businessLogic/executionContext}"><Text text="{i18n>executionContext}" /></Column>
         <Column width="18rem" demandPopin="true" minScreenWidth="Desktop" visible="{detail>/columns/businessLogic/interfaceSummary}"><Text text="{i18n>interfaceSummary}" /></Column>
         <Column width="16rem" demandPopin="true" minScreenWidth="Desktop" visible="{detail>/columns/businessLogic/description}"><Text text="{i18n>description}" /></Column>
         <Column width="8rem" demandPopin="true" minScreenWidth="Tablet" visible="{detail>/columns/businessLogic/sideEffect}"><Text text="{i18n>sideEffect}" /></Column>
@@ -38,9 +40,11 @@
             <Text text="{path: 'detail>ObjectType', formatter: '.formatter.formatText'}" visible="{detail>/columns/businessLogic/objectType}" />
             <Text text="{path: 'detail>ContainerName', formatter: '.formatter.formatText'}" visible="{detail>/columns/businessLogic/containerName}" />
             <Text text="{path: 'detail>CallingRoutine', formatter: '.formatter.formatText'}" visible="{detail>/columns/businessLogic/callingRoutine}" />
+            <Text text="{path: 'detail>ExecutionKind', formatter: '.formatter.formatText'}" visible="{detail>/columns/businessLogic/executionKind}" />
+            <Text text="{path: 'detail>ExecutionContext', formatter: '.formatter.formatText'}" maxLines="2" wrapping="true" visible="{detail>/columns/businessLogic/executionContext}" />
             <Text text="{path: 'detail>InterfaceSummary', formatter: '.formatter.formatText'}" maxLines="2" wrapping="true" visible="{detail>/columns/businessLogic/interfaceSummary}" />
             <Text text="{path: 'detail>Description', formatter: '.formatter.formatText'}" maxLines="2" wrapping="true" visible="{detail>/columns/businessLogic/description}" />
-            <Text text="{path: 'detail>SideEffect', formatter: '.formatter.formatBoolean'}" visible="{detail>/columns/businessLogic/sideEffect}" />
+            <Text text="{path: 'detail>SideEffect', formatter: '.formatter.formatText'}" visible="{detail>/columns/businessLogic/sideEffect}" />
             <Text text="{path: 'detail>TransactionDependency', formatter: '.formatter.formatBoolean'}" visible="{detail>/columns/businessLogic/transactionDependency}" />
             <Text text="{path: 'detail>GuiDependency', formatter: '.formatter.formatBoolean'}" visible="{detail>/columns/businessLogic/guiDependency}" />
             <Text text="{path: 'detail>ReuseFeasibility', formatter: '.formatter.formatText'}" visible="{detail>/columns/businessLogic/reuseFeasibility}" />
@@ -49,5 +53,44 @@
         </ColumnListItem>
       </items>
     </Table>
+    <VBox visible="{path: 'detail>/selectedBusinessLogic', formatter: '.formatter.hasValue'}" busy="{detail>/businessLogicDetail/loading}" busyIndicatorDelay="0" class="inlineDetailPanel sapUiMediumMarginTop">
+      <OverflowToolbar class="sectionToolbar">
+        <Title text="{path: 'detail>/selectedBusinessLogic/ObjectName', formatter: '.formatter.formatText'}" level="H4" />
+        <ObjectStatus text="{path: 'detail>/selectedBusinessLogic/ObjectType', formatter: '.formatter.formatText'}" />
+        <ToolbarSpacer />
+        <Button icon="sap-icon://decline" tooltip="{i18n>close}" press=".onCloseBusinessLogicInlineDetail" />
+      </OverflowToolbar>
+      <MessageStrip visible="{path: 'detail>/businessLogicDetail/error', formatter: '.formatter.hasValue'}" text="{detail>/businessLogicDetail/error}" type="Error" showIcon="true" class="sapUiSmallMarginBottom" />
+      <Text text="{path: 'detail>/selectedBusinessLogic/Description', formatter: '.formatter.formatText'}" class="sapUiSmallMarginBottom" />
+      <Table growing="true" growingThreshold="20" items="{detail>/businessLogicDetail/callBindings}">
+        <headerToolbar>
+          <OverflowToolbar>
+            <Title text="{i18n>callBindings}" level="H5" />
+            <ObjectStatus text="{path: 'detail>/businessLogicDetail/callBindings/length', formatter: '.formatter.formatCountText'}" />
+          </OverflowToolbar>
+        </headerToolbar>
+        <noData>
+          <IllustratedMessage illustrationType="sapIllus-NoEntries" title="{i18n>noCallBindings}" />
+        </noData>
+        <columns>
+          <Column width="14rem"><Text text="{i18n>parameterName}" /></Column>
+          <Column width="9rem"><Text text="{i18n>direction}" /></Column>
+          <Column width="22rem" demandPopin="true" minScreenWidth="Tablet"><Text text="{i18n>actualExpression}" /></Column>
+          <Column width="8rem" hAlign="End"><Text text="{i18n>bindingPosition}" /></Column>
+          <Column width="8rem"><Text text="{i18n>confidence}" /></Column>
+        </columns>
+        <items>
+          <ColumnListItem>
+            <cells>
+              <Text text="{path: 'detail>ParameterName', formatter: '.formatter.formatText'}" />
+              <Text text="{path: 'detail>Direction', formatter: '.formatter.formatText'}" />
+              <Text text="{path: 'detail>ActualExpression', formatter: '.formatter.formatText'}" maxLines="2" wrapping="true" />
+              <ObjectNumber number="{path: 'detail>BindingPosition', formatter: '.formatter.formatNumber'}" />
+              <Text text="{path: 'detail>Confidence', formatter: '.formatter.formatText'}" />
+            </cells>
+          </ColumnListItem>
+        </items>
+      </Table>
+    </VBox>
   </VBox>
 </core:FragmentDefinition>

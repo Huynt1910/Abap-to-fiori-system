@@ -74,6 +74,7 @@ const AnalysisService = loadUi5Module(path.join(root, "webapp", "service", "Anal
 });
 
 const analysisId = "8b95f36a-4f27-1fe1-a4a6-40de08121663";
+const sourceItemId = "22222222-3333-4444-5555-666666666666";
 const outputId = "11111111-2222-3333-4444-555555555555";
 const recommendationId = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
 
@@ -86,6 +87,19 @@ test("analysis service reads source objects through the analysis navigation", as
   assert.equal(calls[0].path, `/Analyses(${analysisId})/_SourceObjects`);
   assert.equal(calls[0].sorters[0].path, "ObjectName");
   assert.match(calls[0].parameters.$select, /ObjectName/);
+});
+
+test("analysis service reads source lines through source object navigation", async () => {
+  const { service, calls } = createService();
+
+  await service.getSourceLines(analysisId, sourceItemId, 250);
+
+  assert.equal(calls[0].type, "list");
+  assert.equal(calls[0].path, `/SourceObjects(AnalysisId=${analysisId},ItemId=${sourceItemId})/_SourceLines`);
+  assert.equal(calls[0].sorters[0].path, "LineNumber");
+  assert.equal(calls[0].parameters.$$groupId, "$direct");
+  assert.match(calls[0].parameters.$select, /SourceText/);
+  assert.equal(calls[0].length, 250);
 });
 
 test("analysis service reads history by program with newest analyses first", async () => {
@@ -173,10 +187,25 @@ test("analysis service reads recommendation parent and annotations with composit
   assert.match(calls[1].parameters.$select, /AnnotationName/);
 });
 
+test("analysis service reads business logic call bindings through composite key navigation", async () => {
+  const { service, calls } = createService();
+
+  await service.getBusinessLogicCallBindings(analysisId, sourceItemId);
+
+  assert.equal(calls[0].type, "list");
+  assert.equal(calls[0].path, `/BusinessLogic(AnalysisId=${analysisId},ItemId=${sourceItemId})/_CallBindings`);
+  assert.equal(calls[0].sorters[0].path, "BindingPosition");
+  assert.equal(calls[0].parameters.$$groupId, "$direct");
+  assert.match(calls[0].parameters.$select, /ParameterName/);
+  assert.equal(calls[0].length, 1000);
+});
+
 test("analysis service rejects unsupported or incomplete parent-child keys", async () => {
   const { service } = createService();
 
   await assert.rejects(() => service.getAlvOutputChildren(analysisId, outputId, "unknown"), /Unsupported ALV child table/);
+  assert.throws(() => service.getSourceLines(analysisId, ""), /AnalysisId and SourceItemId are required/);
+  assert.throws(() => service.getBusinessLogicCallBindings(analysisId, ""), /AnalysisId and ItemId are required/);
   assert.throws(() => service.getAlvOutputById("", outputId), /AnalysisId and OutputId are required/);
   assert.throws(() => service.getRecommendationById(analysisId, ""), /AnalysisId and RecommendationId are required/);
 });

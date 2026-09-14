@@ -1,11 +1,11 @@
 sap.ui.define([
-  "sap/ui/core/Messaging",
+  "sap/ui/core/Core",
   "sap/ui/model/Filter",
   "sap/ui/model/FilterOperator",
   "sap/ui/model/Sorter",
   "abap/to/fiori/system/model/mailConstants",
   "abap/to/fiori/system/util/ODataErrorHandler"
-], function (Messaging, Filter, FilterOperator, Sorter, MailConstants, ODataErrorHandler) {
+], function (Core, Filter, FilterOperator, Sorter, MailConstants, ODataErrorHandler) {
   "use strict";
 
   function MailService(oMailModel) {
@@ -366,8 +366,11 @@ sap.ui.define([
   };
 
   MailService.prototype._getLatestTechnicalError = function () {
-    var oMessageModel = Messaging && typeof Messaging.getMessageModel === "function"
-      ? Messaging.getMessageModel()
+    var oMessageManager = Core && typeof Core.getMessageManager === "function"
+      ? Core.getMessageManager()
+      : null;
+    var oMessageModel = oMessageManager && typeof oMessageManager.getMessageModel === "function"
+      ? oMessageManager.getMessageModel()
       : null;
     var aMessages = oMessageModel && typeof oMessageModel.getData === "function"
       ? oMessageModel.getData()

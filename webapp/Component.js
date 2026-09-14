@@ -6,8 +6,9 @@ sap.ui.define([
   "abap/to/fiori/system/service/ComparisonService",
   "abap/to/fiori/system/service/DocumentService",
   "abap/to/fiori/system/service/MailService",
+  "abap/to/fiori/system/service/AuthenticationService",
   "sap/ui/model/odata/v4/ODataModel"
-], function (UIComponent, models, AnalysisService, ProgramValueHelpService, ComparisonService, DocumentService, MailService) {
+], function (UIComponent, models, AnalysisService, ProgramValueHelpService, ComparisonService, DocumentService, MailService, AuthenticationService) {
   "use strict";
 
   return UIComponent.extend("abap.to.fiori.system.Component", {
@@ -19,11 +20,14 @@ sap.ui.define([
       UIComponent.prototype.init.apply(this, arguments);
 
       this.setModel(models.createDeviceModel(), "device");
+      this._oAuthenticationService = new AuthenticationService();
+      this.setModel(this._oAuthenticationService.getModel(), "auth");
       this._oAnalysisService = new AnalysisService(this.getModel());
       this._oProgramValueHelpService = new ProgramValueHelpService(this.getModel());
       this._oComparisonService = new ComparisonService(this.getModel("comparison"));
       this._oDocumentService = new DocumentService(this.getModel());
       this._oMailService = new MailService(this.getModel("mail"));
+      this._oAuthenticationService.restoreSession().catch(function () {});
 
       this.getRouter().initialize();
     },
@@ -46,6 +50,10 @@ sap.ui.define([
 
     getMailService: function () {
       return this._oMailService;
+    },
+
+    getAuthenticationService: function () {
+      return this._oAuthenticationService;
     },
 
     setPendingCreatedMailJobId: function (sJobId) {

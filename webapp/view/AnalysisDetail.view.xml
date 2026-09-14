@@ -65,23 +65,26 @@
                     />
                 </uxap:snappedHeading>
                 <uxap:actions>
+                    <Button text="AI, Fiori &amp; Chat" icon="sap-icon://lightbulb" press=".onOpenModernization" visible="{auth>/canRead}" />
                     <Button
                         text="{i18n>runComparison}"
                         icon="sap-icon://compare"
                         type="Transparent"
                         busy="{detail>/comparison/busy}"
                         press=".onRunComparisonForAnalysis"
+                        visible="{auth>/canCompare}"
                     />
                     <Button
                         text="{i18n>createMailJob}"
                         icon="sap-icon://email"
                         press=".onCreateMailJobForAnalysis"
+                        visible="{auth>/canMail}"
                     />
                     <Button
                         text="{i18n>exportAll}"
                         icon="sap-icon://download"
                         type="Emphasized"
-                        enabled="{= ${detail>/overview/__OperationControl/PrepareSelectedExport} === true &amp;&amp; ${detail>/exportAvailable/all} === true }"
+                        enabled="{= ${auth>/canExport} &amp;&amp; ${detail>/overview/__OperationControl/PrepareSelectedExport} === true &amp;&amp; ${detail>/exportAvailable/all} === true }"
                         tooltip="{i18n>exportOperationTooltip}"
                         press=".onOpenExportAllDialog"
                     />
@@ -176,6 +179,24 @@
                         <uxap:blocks>
                             <core:Fragment
                                 fragmentName="abap.to.fiori.system.view.fragments.detail.SourceObjectsTab"
+                                type="XML"
+                            />
+                        </uxap:blocks>
+                    </uxap:ObjectPageSubSection>
+                </uxap:subSections>
+            </uxap:ObjectPageSection>
+            <uxap:ObjectPageSection
+                id="sourceCodeSection"
+                title="{i18n>sourceCode}"
+            >
+                <uxap:subSections>
+                    <uxap:ObjectPageSubSection
+                        id="sourceCodeSubSection"
+                        title="{i18n>sourceCode}"
+                    >
+                        <uxap:blocks>
+                            <core:Fragment
+                                fragmentName="abap.to.fiori.system.view.fragments.detail.SourceCodeTab"
                                 type="XML"
                             />
                         </uxap:blocks>

@@ -3,12 +3,6 @@
   "tenant-mode": "dedicated",
   "description": "Security profile for ABAP to Fiori application",
 
-  "oauth2-configuration": {
-    "redirect-uris": [
-      "https://1b4f03e3trial-dev-abap-to-fiori.cfapps.ap21.hana.ondemand.com/**"
-    ]
-  },
-
   "scopes": [
     {
       "name": "uaa.user",

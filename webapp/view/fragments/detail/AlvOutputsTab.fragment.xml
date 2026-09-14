@@ -22,6 +22,7 @@
         <Column width="14rem" visible="{detail>/columns/alvOutputs/outputName}"><Text text="{i18n>outputName}" /></Column>
         <Column width="10rem" visible="{detail>/columns/alvOutputs/outputKind}"><Text text="{i18n>outputKind}" /></Column>
         <Column width="10rem" visible="{detail>/columns/alvOutputs/framework}"><Text text="{i18n>framework}" /></Column>
+        <Column width="14rem" demandPopin="true" minScreenWidth="Tablet" visible="{detail>/columns/alvOutputs/containingRoutine}"><Text text="{i18n>containingRoutine}" /></Column>
         <Column width="12rem" demandPopin="true" minScreenWidth="Tablet" visible="{detail>/columns/alvOutputs/controlObject}"><Text text="{i18n>controlObject}" /></Column>
         <Column width="12rem" demandPopin="true" minScreenWidth="Tablet" visible="{detail>/columns/alvOutputs/outputTable}"><Text text="{i18n>outputTable}" /></Column>
         <Column width="12rem" demandPopin="true" minScreenWidth="Tablet" visible="{detail>/columns/alvOutputs/rowType}"><Text text="{i18n>rowType}" /></Column>
@@ -43,6 +44,7 @@
             <Text text="{path: 'detail>OutputName', formatter: '.formatter.formatText'}" visible="{detail>/columns/alvOutputs/outputName}" />
             <Text text="{path: 'detail>OutputKind', formatter: '.formatter.formatText'}" visible="{detail>/columns/alvOutputs/outputKind}" />
             <Text text="{path: 'detail>Framework', formatter: '.formatter.formatText'}" visible="{detail>/columns/alvOutputs/framework}" />
+            <Text text="{path: 'detail>ContainingRoutine', formatter: '.formatter.formatText'}" visible="{detail>/columns/alvOutputs/containingRoutine}" />
             <Text text="{path: 'detail>ControlObject', formatter: '.formatter.formatText'}" visible="{detail>/columns/alvOutputs/controlObject}" />
             <Text text="{path: 'detail>OutputTable', formatter: '.formatter.formatText'}" visible="{detail>/columns/alvOutputs/outputTable}" />
             <Text text="{path: 'detail>RowType', formatter: '.formatter.formatText'}" visible="{detail>/columns/alvOutputs/rowType}" />

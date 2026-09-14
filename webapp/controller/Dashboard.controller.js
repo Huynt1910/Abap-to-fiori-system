@@ -3,7 +3,6 @@ sap.ui.define([
   "sap/ui/core/routing/HashChanger",
   "sap/ui/model/Filter",
   "sap/ui/model/FilterOperator",
-  "sap/ui/model/Sorter",
   "sap/m/MessageBox",
   "sap/m/MessageToast",
   "abap/to/fiori/system/controller/BaseController",
@@ -11,7 +10,7 @@ sap.ui.define([
   "abap/to/fiori/system/util/Constants",
   "abap/to/fiori/system/util/AnalysisDeleteHelper",
   "abap/to/fiori/system/util/formatter"
-], function (Fragment, HashChanger, Filter, FilterOperator, Sorter, MessageBox, MessageToast, BaseController, models, Constants, AnalysisDeleteHelper, formatter) {
+], function (Fragment, HashChanger, Filter, FilterOperator, MessageBox, MessageToast, BaseController, models, Constants, AnalysisDeleteHelper, formatter) {
   "use strict";
 
   return BaseController.extend("abap.to.fiori.system.controller.Dashboard", {
@@ -176,7 +175,7 @@ sap.ui.define([
 
     onAnalysisPress: function (oEvent) {
       var oListItem = oEvent.getParameter("listItem") || oEvent.getSource();
-      var oContext = oListItem && oListItem.getBindingContext();
+      var oContext = oListItem && oListItem.getBindingContext("dashboard");
       var sAnalysisId = oContext && oContext.getProperty("AnalysisId");
 
       if (!sAnalysisId) {
@@ -219,16 +218,10 @@ sap.ui.define([
     },
 
     _applyAnalysisFilters: function () {
-      var oTable = this.byId("analysisTable");
-      var oBinding = oTable && oTable.getBinding("items");
-
-      if (oBinding) {
-        oBinding.filter(this._buildFilters());
-        oBinding.sort([new Sorter(Constants.field.createdAt, true)]);
-      }
       this._clearAnalysisSelection();
       this._updateAnalysisSelectionState();
       this._updateDashboardKpis();
+      this._loadAnalyses();
     },
 
     _getSelectedAnalysisContexts: function () {
@@ -243,7 +236,7 @@ sap.ui.define([
       if (typeof oTable.getSelectedItems === "function") {
         aItems = oTable.getSelectedItems();
         return (aItems || []).map(function (oItem) {
-          return oItem.getBindingContext();
+          return oItem.getBindingContext("dashboard");
         }).filter(Boolean);
       }
 
@@ -389,14 +382,32 @@ sap.ui.define([
     },
 
     _refreshAnalyses: function () {
-      var oBinding = this.byId("analysisTable") && this.byId("analysisTable").getBinding("items");
-
       this._applyAnalysisFilters();
-      if (oBinding && typeof oBinding.refresh === "function") {
-        oBinding.refresh();
-      }
       this._clearAnalysisSelection();
       this._updateAnalysisSelectionState();
+    },
+
+    _loadAnalyses: function () {
+      var sSearch = String(this._oViewModel.getProperty("/filters/search") || "").trim();
+      var sStatus = String(this._oViewModel.getProperty("/filters/status") || "").trim();
+
+      this._oViewModel.setProperty("/busy", true);
+      this._oViewModel.setProperty("/errorMessage", "");
+
+      return this.getAnalysisService().readAnalyses({
+        search: sSearch,
+        status: sStatus,
+        top: 100
+      }).then(function (aAnalyses) {
+        this._oViewModel.setProperty("/analyses", aAnalyses || []);
+        this._oViewModel.setProperty("/visibleCount", (aAnalyses || []).length);
+      }.bind(this)).catch(function (oError) {
+        this._oViewModel.setProperty("/analyses", []);
+        this._oViewModel.setProperty("/visibleCount", 0);
+        this._oViewModel.setProperty("/errorMessage", this.parseError(oError).message || this.getText("loadOverviewError"));
+      }.bind(this)).finally(function () {
+        this._oViewModel.setProperty("/busy", false);
+      }.bind(this));
     },
 
     _buildFilters: function () {
@@ -422,7 +433,13 @@ sap.ui.define([
           this._oViewModel.setProperty("/kpi", oKpi);
         }.bind(this))
         .catch(function (oError) {
-          this.showError(oError, "loadOverviewError");
+          this._oViewModel.setProperty("/kpi", {
+            total: 0,
+            completed: 0,
+            warning: 0,
+            error: 0
+          });
+          this._oViewModel.setProperty("/errorMessage", this.parseError(oError).message || this.getText("loadOverviewError"));
         }.bind(this))
         .finally(function () {
           this._oViewModel.setProperty("/busy", false);

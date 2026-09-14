@@ -44,6 +44,61 @@
           enabled="{= !${detail>/export/busy} }"
           maxLength="128" />
 
+        <VBox visible="{= ${detail>/export/fileFormat} === 'P' }" class="sapUiTinyMarginTop">
+          <Toolbar>
+            <Title text="{i18n>pdfOptions}" level="H5" />
+          </Toolbar>
+          <Label text="{i18n>pdfHeaderText}" labelFor="exportPdfHeaderInput" />
+          <Input
+            id="exportPdfHeaderInput"
+            value="{detail>/export/pdfHeaderText}"
+            enabled="{= !${detail>/export/busy} }" />
+
+          <Label text="{i18n>pdfFooterText}" labelFor="exportPdfFooterInput" />
+          <Input
+            id="exportPdfFooterInput"
+            value="{detail>/export/pdfFooterText}"
+            enabled="{= !${detail>/export/busy} }" />
+
+          <Label text="{i18n>paperSize}" labelFor="exportPaperSizeSelect" />
+          <Select
+            id="exportPaperSizeSelect"
+            selectedKey="{detail>/export/paperSize}"
+            enabled="{= !${detail>/export/busy} }">
+            <items>
+              <core:Item key="A4" text="A4" />
+              <core:Item key="LETTER" text="Letter" />
+            </items>
+          </Select>
+
+          <Label text="{i18n>orientation}" labelFor="exportOrientationSelect" />
+          <Select
+            id="exportOrientationSelect"
+            selectedKey="{detail>/export/orientation}"
+            enabled="{= !${detail>/export/busy} }">
+            <items>
+              <core:Item key="P" text="{i18n>orientationPortrait}" />
+              <core:Item key="L" text="{i18n>orientationLandscape}" />
+            </items>
+          </Select>
+
+          <Label text="{i18n>fontSize}" labelFor="exportFontSizeInput" />
+          <Input
+            id="exportFontSizeInput"
+            value="{detail>/export/fontSize}"
+            type="Number"
+            enabled="{= !${detail>/export/busy} }" />
+
+          <CheckBox
+            text="{i18n>fitToPage}"
+            selected="{detail>/export/fitToPage}"
+            enabled="{= !${detail>/export/busy} }" />
+          <CheckBox
+            text="{i18n>splitMultiValue}"
+            selected="{detail>/export/splitMultiValue}"
+            enabled="{= !${detail>/export/busy} }" />
+        </VBox>
+
         <Toolbar>
           <Title text="{i18n>selectedColumns}" level="H5" />
           <ToolbarSpacer />
@@ -92,6 +147,7 @@
         text="{i18n>download}"
         type="Emphasized"
         icon="sap-icon://download"
+        visible="{auth>/canExport}"
         enabled="{= !${detail>/export/busy} }"
         press=".onDownloadExport" />
     </beginButton>

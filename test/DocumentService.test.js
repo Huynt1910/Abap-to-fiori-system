@@ -269,10 +269,17 @@ test("prepare selected export executes bound action with property keys", async (
 
   assert.equal(calls[0][0], "bindContext");
   assert.match(calls[0][1], /\/Analyses\(11111111-2222-3333-4444-555555555555\)\/com\.sap\.gateway\.srvd\.zui_mig_analysis\.v0001\.PrepareSelectedExport\(\.\.\.\)$/);
-  assert.deepEqual(calls.slice(1, 5), [
+  assert.deepEqual(calls.slice(1), [
     ["setParameter", "FileFormat", "X"],
     ["setParameter", "ExportSection", "UI_FILTER"],
     ["setParameter", "SelectedFields", "FieldName,DataElement"],
+    ["setParameter", "PdfHeaderText", ""],
+    ["setParameter", "PdfFooterText", ""],
+    ["setParameter", "PaperSize", "A4"],
+    ["setParameter", "Orientation", "P"],
+    ["setParameter", "FontSize", 10],
+    ["setParameter", "FitToPage", true],
+    ["setParameter", "SplitMultiValue", false],
     ["execute", "$direct"]
   ]);
   assert.equal(result.DownloadUrl, "/download/1");
@@ -320,6 +327,27 @@ test("selected export validates selected fields and parameter lengths", async ()
     exportSection: "UI_FILTER",
     selectedFields: { FieldName: true }
   }), /SelectedFields must be a string or an array/);
+
+  assert.throws(() => service.prepareSelectedExport("A", {
+    fileFormat: "X",
+    exportSection: "UI_FILTER",
+    selectedFields: [],
+    paperSize: "TOO_LONG_PAPER_SIZE"
+  }), /PaperSize/);
+
+  assert.throws(() => service.prepareSelectedExport("A", {
+    fileFormat: "X",
+    exportSection: "UI_FILTER",
+    selectedFields: [],
+    orientation: "PORTRAIT"
+  }), /Orientation/);
+
+  assert.throws(() => service.prepareSelectedExport("A", {
+    fileFormat: "X",
+    exportSection: "UI_FILTER",
+    selectedFields: [],
+    fontSize: 0
+  }), /FontSize/);
 });
 
 test("prepare selected export accepts pre-serialized ALL section field expression", async () => {
@@ -349,7 +377,59 @@ test("prepare selected export accepts pre-serialized ALL section field expressio
   assert.deepEqual(calls, [
     ["FileFormat", "X"],
     ["ExportSection", "ALL"],
-    ["SelectedFields", "UI_FILTER:FieldName,FieldKind;DB_OBJ:ObjectName,Operation"]
+    ["SelectedFields", "UI_FILTER:FieldName,FieldKind;DB_OBJ:ObjectName,Operation"],
+    ["PdfHeaderText", ""],
+    ["PdfFooterText", ""],
+    ["PaperSize", "A4"],
+    ["Orientation", "P"],
+    ["FontSize", 10],
+    ["FitToPage", true],
+    ["SplitMultiValue", false]
+  ]);
+});
+
+test("prepare selected export forwards custom PDF action parameters", async () => {
+  const calls = [];
+  const service = new DocumentService({
+    bindContext() {
+      return {
+        setParameter(name, value) {
+          calls.push([name, value]);
+        },
+        execute: async () => undefined,
+        getBoundContext() {
+          return {
+            requestObject: async () => ({ DownloadUrl: "/download/1" })
+          };
+        }
+      };
+    }
+  });
+
+  await service.prepareSelectedExport("11111111-2222-3333-4444-555555555555", {
+    fileFormat: "P",
+    exportSection: "OVERVIEW",
+    selectedFields: ["ProgramName"],
+    pdfHeaderText: "Header",
+    pdfFooterText: "Footer",
+    paperSize: "LETTER",
+    orientation: "L",
+    fontSize: "12",
+    fitToPage: false,
+    splitMultiValue: true
+  });
+
+  assert.deepEqual(calls, [
+    ["FileFormat", "P"],
+    ["ExportSection", "OVERVIEW"],
+    ["SelectedFields", "ProgramName"],
+    ["PdfHeaderText", "Header"],
+    ["PdfFooterText", "Footer"],
+    ["PaperSize", "LETTER"],
+    ["Orientation", "L"],
+    ["FontSize", 12],
+    ["FitToPage", false],
+    ["SplitMultiValue", true]
   ]);
 });
 

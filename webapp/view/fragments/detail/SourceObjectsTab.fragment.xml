@@ -21,7 +21,7 @@
         <Column width="7rem" hAlign="End" visible="{detail>/columns/sourceObjects/lineCount}"><Text text="{i18n>lineCount}" /></Column>
       </columns>
       <items>
-        <ColumnListItem>
+        <ColumnListItem type="Navigation" press=".onSourceObjectPress">
           <cells>
             <Text text="{path: 'detail>ObjectName', formatter: '.formatter.formatText'}" visible="{detail>/columns/sourceObjects/objectName}" />
             <Text text="{path: 'detail>ObjectType', formatter: '.formatter.formatText'}" visible="{detail>/columns/sourceObjects/objectType}" />

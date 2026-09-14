@@ -88,6 +88,7 @@ sap.ui.define([
   DocumentService.prototype.prepareSelectedExport = function (sAnalysisId, mParameters) {
     var sId = String(sAnalysisId || "").trim();
     var oAction;
+    var mActionParameters;
 
     this._validateSelectedExportParameters(mParameters);
 
@@ -95,12 +96,13 @@ sap.ui.define([
       return Promise.reject(new Error("AnalysisId is required for export."));
     }
 
+    mActionParameters = this._buildSelectedExportActionParameters(mParameters);
     oAction = this._oModel.bindContext(
       Constants.entitySet.analyses + "(" + encodeURIComponent(sId) + ")/" + Constants.action.prepareSelectedExportSuffix
     );
-    oAction.setParameter("FileFormat", mParameters.fileFormat);
-    oAction.setParameter("ExportSection", mParameters.exportSection);
-    oAction.setParameter("SelectedFields", this.serializeSelectedFields(mParameters.selectedFields));
+    Object.keys(mActionParameters).forEach(function (sName) {
+      oAction.setParameter(sName, mActionParameters[sName]);
+    });
 
     return oAction.execute("$direct").then(function () {
       var oContext = oAction.getBoundContext && oAction.getBoundContext();
@@ -136,6 +138,43 @@ sap.ui.define([
       return aFieldKeys;
     }
     return (aFieldKeys || []).join(",");
+  };
+
+  DocumentService.prototype._buildSelectedExportActionParameters = function (mParameters) {
+    var mDefaults = Constants.exportDefaults || {};
+    var iFontSize = parseInt(mParameters.fontSize !== undefined ? mParameters.fontSize : mDefaults.fontSize, 10);
+
+    if (isNaN(iFontSize)) {
+      iFontSize = 10;
+    }
+
+    return {
+      FileFormat: mParameters.fileFormat,
+      ExportSection: mParameters.exportSection,
+      SelectedFields: this.serializeSelectedFields(mParameters.selectedFields),
+      PdfHeaderText: String(mParameters.pdfHeaderText !== undefined ? mParameters.pdfHeaderText : mDefaults.pdfHeaderText || ""),
+      PdfFooterText: String(mParameters.pdfFooterText !== undefined ? mParameters.pdfFooterText : mDefaults.pdfFooterText || ""),
+      PaperSize: String(mParameters.paperSize !== undefined ? mParameters.paperSize : mDefaults.paperSize || "A4"),
+      Orientation: String(mParameters.orientation !== undefined ? mParameters.orientation : mDefaults.orientation || "P"),
+      FontSize: iFontSize,
+      FitToPage: this._normalizeBoolean(mParameters.fitToPage, mDefaults.fitToPage),
+      SplitMultiValue: this._normalizeBoolean(mParameters.splitMultiValue, mDefaults.splitMultiValue)
+    };
+  };
+
+  DocumentService.prototype._normalizeBoolean = function (vValue, bDefault) {
+    var sValue;
+
+    if (vValue === undefined || vValue === null) {
+      return bDefault === true;
+    }
+
+    if (typeof vValue === "boolean") {
+      return vValue;
+    }
+
+    sValue = String(vValue).trim().toUpperCase();
+    return sValue === "TRUE" || sValue === "X" || sValue === "1" || sValue === "Y";
   };
 
   DocumentService.prototype.cancelExportPolling = function () {
@@ -311,6 +350,18 @@ sap.ui.define([
 
     if (mParameters.selectedFields !== undefined && typeof mParameters.selectedFields !== "string" && !Array.isArray(mParameters.selectedFields)) {
       throw new Error("SelectedFields must be a string or an array.");
+    }
+
+    if (mParameters.paperSize !== undefined && String(mParameters.paperSize).length > 10) {
+      throw new Error("PaperSize must not exceed 10 characters.");
+    }
+
+    if (mParameters.orientation !== undefined && String(mParameters.orientation).length > 1) {
+      throw new Error("Orientation must not exceed 1 character.");
+    }
+
+    if (mParameters.fontSize !== undefined && (isNaN(parseInt(mParameters.fontSize, 10)) || parseInt(mParameters.fontSize, 10) <= 0)) {
+      throw new Error("FontSize must be a positive integer.");
     }
   };
 

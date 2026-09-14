@@ -42,18 +42,22 @@ class Sorter {
 }
 
 let messageData = [];
-const Messaging = {
-  getMessageModel() {
+const Core = {
+  getMessageManager() {
     return {
-      getData() {
-        return messageData;
+      getMessageModel() {
+        return {
+          getData() {
+            return messageData;
+          }
+        };
       }
     };
   }
 };
 
 const MailService = loadUi5Module(path.join(root, "webapp", "service", "MailService.js"), {
-  "sap/ui/core/Messaging": Messaging,
+  "sap/ui/core/Core": Core,
   "sap/ui/model/Filter": Filter,
   "sap/ui/model/FilterOperator": { EQ: "EQ", Contains: "Contains" },
   "sap/ui/model/Sorter": Sorter,

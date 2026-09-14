@@ -253,16 +253,19 @@
                                         icon="sap-icon://edit"
                                         tooltip="{i18n>edit}"
                                         press=".onEditMailJob"
+                                        visible="{auth>/canMail}"
                                     />
                                     <Button
                                         icon="sap-icon://add-contact"
                                         tooltip="{i18n>addRecipient}"
                                         press=".onAddRecipient"
+                                        visible="{auth>/canMail}"
                                     />
                                     <Button
                                         icon="sap-icon://email"
                                         tooltip="{i18n>sendNow}"
                                         press=".onSendNow"
+                                        visible="{auth>/canMail}"
                                         enabled="{parts: [{path: 'mail>JobId', targetType: 'any'}, {path: 'mailUi>/sendBusyJobId', targetType: 'any'}, {path: 'mail>__OperationControl/sendNow', targetType: 'any'}], formatter: '.canSendNowForJob'}"
                                     />
                                     <Button
@@ -270,6 +273,7 @@
                                         tooltip="{i18n>delete}"
                                         type="Transparent"
                                         press=".onDeleteMailJob"
+                                        visible="{auth>/canMail}"
                                     />
                                 </OverflowToolbar>
                             </cells>

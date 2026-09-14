@@ -114,6 +114,17 @@ sap.ui.define([
     });
   };
 
+  AnalysisService.prototype.getSourceLines = function (sAnalysisId, sSourceItemId, iLength) {
+    return this._readList(this._buildSourceObjectPath(sAnalysisId, sSourceItemId) + "/" + Constants.navigation.sourceLines, {
+      parameters: {
+        $select: Constants.field.sourceLines.join(","),
+        $$groupId: "$direct"
+      },
+      sorters: [new Sorter("LineNumber", false)],
+      length: iLength || 10000
+    });
+  };
+
   AnalysisService.prototype.getDatabaseObjects = function (sAnalysisId) {
     return this._readNavigationList(sAnalysisId, Constants.navigation.databaseObjects, {
       parameters: { $select: Constants.field.databaseObjects.join(",") }
@@ -123,6 +134,17 @@ sap.ui.define([
   AnalysisService.prototype.getBusinessLogic = function (sAnalysisId) {
     return this._readNavigationList(sAnalysisId, Constants.navigation.businessLogic, {
       parameters: { $select: Constants.field.businessLogic.join(",") }
+    });
+  };
+
+  AnalysisService.prototype.getBusinessLogicCallBindings = function (sAnalysisId, sItemId) {
+    return this._readList(this._buildBusinessLogicPath(sAnalysisId, sItemId) + "/" + Constants.navigation.callBindings, {
+      sorters: [new Sorter("BindingPosition", false)],
+      parameters: {
+        $select: Constants.field.callBindings.join(","),
+        $$groupId: "$direct"
+      },
+      length: 1000
     });
   };
 
@@ -256,6 +278,17 @@ sap.ui.define([
     return Constants.entitySet.analyses + "(" + encodeURIComponent(sId) + ")";
   };
 
+  AnalysisService.prototype._buildSourceObjectPath = function (sAnalysisId, sSourceItemId) {
+    var sAnalysis = String(sAnalysisId || "").trim();
+    var sSourceItem = String(sSourceItemId || "").trim();
+
+    if (!sAnalysis || !sSourceItem) {
+      throw new Error("AnalysisId and SourceItemId are required.");
+    }
+
+    return Constants.entitySet.sourceObjects + "(AnalysisId=" + encodeURIComponent(sAnalysis) + ",ItemId=" + encodeURIComponent(sSourceItem) + ")";
+  };
+
   AnalysisService.prototype._buildAlvOutputPath = function (sAnalysisId, sOutputId) {
     var sAnalysis = String(sAnalysisId || "").trim();
     var sOutput = String(sOutputId || "").trim();
@@ -265,6 +298,17 @@ sap.ui.define([
     }
 
     return Constants.entitySet.alvOutputs + "(AnalysisId=" + encodeURIComponent(sAnalysis) + ",OutputId=" + encodeURIComponent(sOutput) + ")";
+  };
+
+  AnalysisService.prototype._buildBusinessLogicPath = function (sAnalysisId, sItemId) {
+    var sAnalysis = String(sAnalysisId || "").trim();
+    var sItem = String(sItemId || "").trim();
+
+    if (!sAnalysis || !sItem) {
+      throw new Error("AnalysisId and ItemId are required.");
+    }
+
+    return Constants.entitySet.businessLogic + "(AnalysisId=" + encodeURIComponent(sAnalysis) + ",ItemId=" + encodeURIComponent(sItem) + ")";
   };
 
   AnalysisService.prototype._buildRecommendationPath = function (sAnalysisId, sRecommendationId) {

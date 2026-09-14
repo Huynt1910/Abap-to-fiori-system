@@ -37,6 +37,7 @@
                         icon="sap-icon://email"
                         type="Emphasized"
                         press=".onSendNow"
+                        visible="{auth>/canMail}"
                         enabled="{parts: [{path: 'mail>JobId', targetType: 'any'}, {path: 'mailUi>/sendBusyJobId', targetType: 'any'}, {path: 'mail>__OperationControl/sendNow', targetType: 'any'}], formatter: '.mailFormatter.canSendNow'}"
                     />
                 </uxap:actions>
@@ -152,6 +153,7 @@
                                         text="{i18n>addRecipient}"
                                         icon="sap-icon://add"
                                         press=".onAddRecipient"
+                                        visible="{auth>/canMail}"
                                     />
                                 </OverflowToolbar>
                                 <Table
@@ -201,11 +203,13 @@
                                                         icon="sap-icon://edit"
                                                         tooltip="{i18n>edit}"
                                                         press=".onEditRecipient"
+                                                        visible="{auth>/canMail}"
                                                     />
                                                     <Button
                                                         icon="sap-icon://delete"
                                                         tooltip="{i18n>delete}"
                                                         press=".onDeleteRecipient"
+                                                        visible="{auth>/canMail}"
                                                     />
                                                 </HBox>
                                             </cells>

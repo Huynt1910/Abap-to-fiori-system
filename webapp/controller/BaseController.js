@@ -7,6 +7,11 @@ sap.ui.define([
   "use strict";
 
   return Controller.extend("abap.to.fiori.system.controller.BaseController", {
+    onLogout: function () {
+      this.getAuthenticationService().logout().catch(function (oError) {
+        MessageBox.information(oError.message);
+      });
+    },
     getRouter: function () {
       return UIComponent.getRouterFor(this);
     },
@@ -43,6 +48,10 @@ sap.ui.define([
       return this.getOwnerComponent().getMailService();
     },
 
+    getAuthenticationService: function () {
+      return this.getOwnerComponent().getAuthenticationService();
+    },
+
     parseError: function (oError) {
       return ODataErrorHandler.parse(oError);
     },
@@ -50,6 +59,10 @@ sap.ui.define([
     showError: function (oError, sFallbackKey) {
       var oParsedError = this.parseError(oError);
       var sMessage = oParsedError.message;
+
+      if (this.getAuthenticationService().handleHttpStatus(oParsedError.status)) {
+        return;
+      }
 
       if (!sMessage || sMessage === "Unexpected error.") {
         sMessage = this.getText(sFallbackKey || "errorGeneric");

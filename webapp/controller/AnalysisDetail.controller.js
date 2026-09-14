@@ -21,6 +21,10 @@ sap.ui.define([
     formatter: formatter,
     mailFormatter: mailFormatter,
 
+    onOpenModernization: function () {
+      this.getRouter().navTo("modernization", { analysisId: encodeURIComponent(this._oViewModel.getProperty("/analysisId")) });
+    },
+
     onInit: function () {
       this._oViewModel = models.createAnalysisDetailModel();
       this._oTablePersonalization = new TablePersonalizationService();
@@ -423,6 +427,13 @@ sap.ui.define([
         fileFormat: oExport.fileFormat,
         exportSection: oExport.exportSection,
         selectedFields: sSelectedFields,
+        pdfHeaderText: oExport.pdfHeaderText,
+        pdfFooterText: oExport.pdfFooterText,
+        paperSize: oExport.paperSize,
+        orientation: oExport.orientation,
+        fontSize: oExport.fontSize,
+        fitToPage: oExport.fitToPage,
+        splitMultiValue: oExport.splitMultiValue,
         fileName: sFileName
       }).then(function () {
         MessageToast.show(this.getText("exportSuccess"));
@@ -443,8 +454,44 @@ sap.ui.define([
       this._showRowText(oEvent, "Description", "databaseObjectDetailsTitle");
     },
 
+    onSourceObjectPress: function (oEvent) {
+      var oContext = this._getDetailRowContext(oEvent);
+      var oSourceObject = oContext && oContext.getObject();
+
+      if (oSourceObject) {
+        this._selectSourceObject(oSourceObject);
+        this._showSourceCodeSection();
+      }
+    },
+
+    onRefreshSourceCode: function () {
+      var oSourceObject = this._oViewModel.getProperty("/selectedSourceObject");
+
+      if (oSourceObject && !this._oViewModel.getProperty("/sourceCodeDetail/loading")) {
+        this._selectSourceObject(oSourceObject);
+      }
+    },
+
+    onCloseSourceCode: function () {
+      this._resetSourceCodeDetail();
+    },
+
     onBusinessLogicPress: function (oEvent) {
-      this._showRowText(oEvent, "Description", "businessLogicDetailsTitle");
+      var oContext = this._getDetailRowContext(oEvent);
+      var oRow = oContext && oContext.getObject();
+
+      if (oRow) {
+        this._selectBusinessLogic(oRow);
+      }
+    },
+
+    onCloseBusinessLogicInlineDetail: function () {
+      this._oViewModel.setProperty("/selectedBusinessLogic", null);
+      this._oViewModel.setProperty("/businessLogicDetail", {
+        loading: false,
+        error: null,
+        callBindings: []
+      });
     },
 
     onAlvOutputPress: function (oEvent) {
@@ -537,6 +584,7 @@ sap.ui.define([
     },
 
     _resetState: function (sAnalysisId) {
+      this._iSourceCodeRequestToken = (this._iSourceCodeRequestToken || 0) + 1;
       this._oViewModel.setData(models.createAnalysisDetailModel().getData());
       this._oViewModel.setProperty("/analysisId", sAnalysisId);
       this._loadPersistedPersonalizationStates();
@@ -547,6 +595,7 @@ sap.ui.define([
       Object.keys(this._oViewModel.getProperty("/loaded")).forEach(function (sKey) {
         this._oViewModel.setProperty("/loaded/" + sKey, false);
       }.bind(this));
+      this._resetSourceCodeDetail();
     },
 
     _loadHeader: function () {
@@ -691,6 +740,121 @@ sap.ui.define([
       return null;
     },
 
+    _selectSourceObject: function (oSourceObject) {
+      var sAnalysisId = oSourceObject && oSourceObject.AnalysisId;
+      var sSourceItemId = oSourceObject && oSourceObject.ItemId;
+      var iRequestedLength = Math.max(Number(oSourceObject && oSourceObject.LineCount) || 0, 10000);
+      var iToken;
+
+      this._oViewModel.setProperty("/selectedSourceObject", oSourceObject || null);
+      this._oViewModel.setProperty("/sourceCodeDetail", {
+        loading: true,
+        error: null,
+        lines: [],
+        lineCount: 0
+      });
+
+      if (!sAnalysisId || !sSourceItemId) {
+        this._oViewModel.setProperty("/sourceCodeDetail", {
+          loading: false,
+          error: this.getText("loadSourceLinesError"),
+          lines: [],
+          lineCount: 0
+        });
+        return;
+      }
+
+      iToken = (this._iSourceCodeRequestToken || 0) + 1;
+      this._iSourceCodeRequestToken = iToken;
+
+      this.getAnalysisService().getSourceLines(sAnalysisId, sSourceItemId, iRequestedLength)
+        .then(function (aRows) {
+          var aLines;
+
+          if (iToken !== this._iSourceCodeRequestToken) {
+            return;
+          }
+
+          aLines = this._normalizeSourceLines(aRows);
+          this._oViewModel.setProperty("/sourceCodeDetail/lines", aLines);
+          this._oViewModel.setProperty("/sourceCodeDetail/lineCount", aLines.length);
+        }.bind(this))
+        .catch(function (oError) {
+          if (iToken !== this._iSourceCodeRequestToken) {
+            return;
+          }
+
+          this._oViewModel.setProperty("/sourceCodeDetail/error", oError && oError.message || this.getText("loadSourceLinesError"));
+        }.bind(this))
+        .finally(function () {
+          if (iToken === this._iSourceCodeRequestToken) {
+            this._oViewModel.setProperty("/sourceCodeDetail/loading", false);
+          }
+        }.bind(this));
+    },
+
+    _normalizeSourceLines: function (aRows) {
+      return (aRows || []).slice().sort(function (a, b) {
+        return Number(a && a.LineNumber || 0) - Number(b && b.LineNumber || 0);
+      }).map(function (oRow) {
+        return Object.assign({}, oRow, {
+          SourceText: oRow && oRow.SourceText !== null && oRow.SourceText !== undefined ? String(oRow.SourceText) : ""
+        });
+      });
+    },
+
+    _resetSourceCodeDetail: function () {
+      this._iSourceCodeRequestToken = (this._iSourceCodeRequestToken || 0) + 1;
+      this._oViewModel.setProperty("/selectedSourceObject", null);
+      this._oViewModel.setProperty("/sourceCodeDetail", {
+        loading: false,
+        error: null,
+        lines: [],
+        lineCount: 0
+      });
+    },
+
+    _showSourceCodeSection: function () {
+      var oPage = this.byId("analysisDetailPage");
+      var oSection = this.byId("sourceCodeSection");
+
+      if (oPage && oSection && typeof oPage.setSelectedSection === "function") {
+        oPage.setSelectedSection(oSection.getId());
+      }
+    },
+
+    _selectBusinessLogic: function (oRow) {
+      var sAnalysisId = oRow && oRow.AnalysisId;
+      var sItemId = oRow && oRow.ItemId;
+
+      this._oViewModel.setProperty("/selectedBusinessLogic", oRow || null);
+      this._oViewModel.setProperty("/businessLogicDetail", {
+        loading: true,
+        error: null,
+        callBindings: []
+      });
+
+      if (!sAnalysisId || !sItemId) {
+        this._oViewModel.setProperty("/businessLogicDetail", {
+          loading: false,
+          error: this.getText("loadCallBindingsError"),
+          callBindings: []
+        });
+        return;
+      }
+
+      this.getAnalysisService().getBusinessLogicCallBindings(sAnalysisId, sItemId)
+        .then(function (aRows) {
+          this._oViewModel.setProperty("/businessLogicDetail/callBindings", aRows || []);
+        }.bind(this))
+        .catch(function (oError) {
+          this._oViewModel.setProperty("/businessLogicDetail/error", oError && oError.message || this.getText("loadCallBindingsError"));
+        }.bind(this))
+        .finally(function () {
+          this._oViewModel.setProperty("/businessLogicDetail/loading", false);
+        }.bind(this));
+    },
+
     _selectAlvOutput: function (oRow) {
       var sAnalysisId = oRow && oRow.AnalysisId;
       var sOutputId = oRow && oRow.OutputId;
@@ -753,6 +917,7 @@ sap.ui.define([
       var sFileFormat = Constants.fileFormat.excel;
       var sExportSection = mOptions && mOptions.exportSection || oConfig && oConfig.exportSection || "";
       var sReportType = this._oViewModel.getProperty("/overview/ProgramName") || "";
+      var mExportDefaults = Constants.exportDefaults;
       var sDefaultFileName = this.getDocumentService().getFallbackFileName({
         reportType: sReportType,
         fileFormat: sFileFormat,
@@ -777,6 +942,13 @@ sap.ui.define([
         availableFields: aFields,
         fileName: sDefaultFileName,
         defaultFileName: sDefaultFileName,
+        pdfHeaderText: mExportDefaults.pdfHeaderText,
+        pdfFooterText: mExportDefaults.pdfFooterText,
+        paperSize: mExportDefaults.paperSize,
+        orientation: mExportDefaults.orientation,
+        fontSize: mExportDefaults.fontSize,
+        fitToPage: mExportDefaults.fitToPage,
+        splitMultiValue: mExportDefaults.splitMultiValue,
         message: ""
       });
     },

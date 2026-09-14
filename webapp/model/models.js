@@ -23,6 +23,8 @@ sap.ui.define([
       },
       visibleCount: 0,
       selectedCount: 0,
+      analyses: [],
+      errorMessage: "",
       kpi: {
         total: 0,
         completed: 0,
@@ -107,6 +109,13 @@ sap.ui.define([
         availableFields: [],
         fileName: "",
         defaultFileName: "",
+        pdfHeaderText: "",
+        pdfFooterText: "",
+        paperSize: "A4",
+        orientation: "P",
+        fontSize: 10,
+        fitToPage: true,
+        splitMultiValue: false,
         message: ""
       },
       exportAvailable: {
@@ -127,7 +136,20 @@ sap.ui.define([
       },
       columns: AnalysisTableConfig.getAllColumnDefaults(),
       tableSettingsState: {},
+      selectedSourceObject: null,
+      sourceCodeDetail: {
+        loading: false,
+        error: null,
+        lines: [],
+        lineCount: 0
+      },
       selectedAlvOutput: null,
+      selectedBusinessLogic: null,
+      businessLogicDetail: {
+        loading: false,
+        error: null,
+        callBindings: []
+      },
       alvOutputDetail: {
         loading: false,
         error: null,

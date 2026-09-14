@@ -23,14 +23,23 @@
                     <ObjectStatus
                         text="{path: 'dashboard>/visibleCount', formatter: '.formatter.formatCountText'}"
                     />
+                    <ObjectStatus
+                        text="{auth>/auditNotice}"
+                        state="Warning"
+                        visible="{= !!${auth>/auditNotice} }"
+                        class="sapUiTinyMarginBegin"
+                    />
                 </f:expandedContent>
                 <f:actions>
+                    <Button text="{auth>/displayName}" icon="sap-icon://person-placeholder" type="Transparent" enabled="false" />
+                    <Button text="Sign out" icon="sap-icon://log" press=".onLogout" visible="{= ${auth>/mode} === 'btp' }" />
                     <Button
                         id="mailDistributionButton"
                         text="{i18n>mailDistributionTitle}"
                         type="Transparent"
                         icon="sap-icon://email"
                         press=".onOpenMailJobs"
+                        enabled="{auth>/canMail}"
                     />
                     <Button
                         id="comparisonHistoryButton"
@@ -38,6 +47,7 @@
                         type="Transparent"
                         icon="sap-icon://compare"
                         press=".onOpenComparisonHistory"
+                        enabled="{auth>/canCompare}"
                     />
                     <Button
                         id="runAnalysisButton"
@@ -45,6 +55,7 @@
                         type="Emphasized"
                         icon="sap-icon://begin"
                         press=".onRunAnalysis"
+                        enabled="{auth>/canAnalyze}"
                     />
                 </f:actions>
             </f:DynamicPageTitle>
@@ -107,6 +118,20 @@
         </f:header>
         <f:content>
             <VBox class="migrationAnalyzerContent">
+                <MessageStrip
+                    visible="{= !!${auth>/error} }"
+                    text="{auth>/error}"
+                    type="Error"
+                    showIcon="true"
+                    class="sapUiSmallMarginBottom"
+                />
+                <MessageStrip
+                    visible="{path: 'dashboard>/errorMessage', formatter: '.formatter.hasValue'}"
+                    text="{dashboard>/errorMessage}"
+                    type="Error"
+                    showIcon="true"
+                    class="sapUiSmallMarginBottom"
+                />
                 <f:GridContainer
                     id="dashboardKpiGrid"
                     class="migrationAnalyzerKpiGrid"
@@ -195,21 +220,12 @@
                     mode="MultiSelect"
                     includeItemInSelection="true"
                     selectionChange=".onAnalysisSelectionChange"
-                    busy="{dashboard>/deleteBusy}"
+                    busy="{= ${dashboard>/busy} || ${dashboard>/deleteBusy} }"
                     busyIndicatorDelay="0"
                     autoPopinMode="true"
                     itemPress=".onAnalysisPress"
                     updateFinished=".onAnalysesUpdateFinished"
-                    items="{
-            path: '/Analyses',
-            parameters: {
-              $select: 'AnalysisId,ProgramName,ProgramDescription,Status,TotalSourceObjects,TotalUiFilters,TotalDatabaseObjects,TotalBusinessLogic,TotalAlvOutputs,TotalAlvColumns,TotalRecommendations,ComplexityScore,ReadinessScore,CreatedAt,CreatedBy,__EntityControl'
-            },
-            sorter: {
-              path: 'CreatedAt',
-              descending: true
-            }
-          }"
+                    items="{dashboard>/analyses}"
                 >
                     <headerToolbar>
                         <OverflowToolbar>
@@ -320,38 +336,38 @@
                         >
                             <cells>
                                 <ObjectIdentifier
-                                    title="{path: 'ProgramName', formatter: '.formatter.formatText'}"
-                                    text="{path: 'ProgramDescription', formatter: '.formatter.formatText'}"
+                                    title="{path: 'dashboard>ProgramName', formatter: '.formatter.formatText'}"
+                                    text="{path: 'dashboard>ProgramDescription', formatter: '.formatter.formatText'}"
                                     visible="{dashboard>/columns/program}"
                                 />
                                 <ObjectStatus
-                                    text="{path: 'Status', formatter: '.formatter.formatText'}"
-                                    state="{path: 'Status', formatter: '.formatter.formatStatusState'}"
-                                    icon="{path: 'Status', formatter: '.formatter.formatStatusIcon'}"
+                                    text="{path: 'dashboard>Status', formatter: '.formatter.formatText'}"
+                                    state="{path: 'dashboard>Status', formatter: '.formatter.formatStatusState'}"
+                                    icon="{path: 'dashboard>Status', formatter: '.formatter.formatStatusIcon'}"
                                     visible="{dashboard>/columns/status}"
                                 />
                                 <ObjectNumber
-                                    number="{path: 'TotalSourceObjects', formatter: '.formatter.formatNumber'}"
+                                    number="{path: 'dashboard>TotalSourceObjects', formatter: '.formatter.formatNumber'}"
                                     visible="{dashboard>/columns/sourceObjects}"
                                 />
                                 <ObjectNumber
-                                    number="{path: 'TotalDatabaseObjects', formatter: '.formatter.formatNumber'}"
+                                    number="{path: 'dashboard>TotalDatabaseObjects', formatter: '.formatter.formatNumber'}"
                                     visible="{dashboard>/columns/dbTables}"
                                 />
                                 <ObjectNumber
-                                    number="{path: 'TotalAlvOutputs', formatter: '.formatter.formatNumber'}"
+                                    number="{path: 'dashboard>TotalAlvOutputs', formatter: '.formatter.formatNumber'}"
                                     visible="{dashboard>/columns/alvOutputs}"
                                 />
                                 <ObjectNumber
-                                    number="{path: 'ReadinessScore', formatter: '.formatter.formatScoreText'}"
+                                    number="{path: 'dashboard>ReadinessScore', formatter: '.formatter.formatScoreText'}"
                                     visible="{dashboard>/columns/readinessScore}"
                                 />
                                 <Text
-                                    text="{path: 'CreatedAt', formatter: '.formatter.formatDateTime'}"
+                                    text="{path: 'dashboard>CreatedAt', formatter: '.formatter.formatDateTime'}"
                                     visible="{dashboard>/columns/createdAt}"
                                 />
                                 <Text
-                                    text="{path: 'CreatedBy', formatter: '.formatter.formatText'}"
+                                    text="{path: 'dashboard>CreatedBy', formatter: '.formatter.formatText'}"
                                     visible="{dashboard>/columns/createdBy}"
                                 />
                             </cells>

@@ -1,0 +1,59 @@
+<core:FragmentDefinition xmlns:core="sap.ui.core" xmlns="sap.m">
+  <VBox class="tabSurface sourceCodeSurface">
+    <MessageStrip visible="{path: 'detail>/errors/sourceObjects', formatter: '.formatter.hasValue'}" text="{detail>/errors/sourceObjects}" type="Error" showIcon="true" class="sapUiSmallMarginBottom" />
+    <OverflowToolbar class="sectionToolbar">
+      <Title text="{i18n>sourceCode}" level="H3" />
+      <ObjectStatus text="{path: 'detail>/sourceCodeDetail/lineCount', formatter: '.formatter.formatCountText'}" visible="{= !!${detail>/selectedSourceObject} }" />
+      <ToolbarSpacer />
+      <Button icon="sap-icon://refresh" tooltip="{i18n>refreshSourceCode}" enabled="{= !!${detail>/selectedSourceObject} }" busy="{detail>/sourceCodeDetail/loading}" press=".onRefreshSourceCode" />
+      <Button icon="sap-icon://decline" tooltip="{i18n>closeSourceCode}" visible="{= !!${detail>/selectedSourceObject} }" press=".onCloseSourceCode" />
+    </OverflowToolbar>
+    <FlexBox class="sourceCodeWorkspace" direction="Row" renderType="Div">
+      <VBox class="sourceCodeObjectPane">
+        <Title text="{i18n>sourceObjectList}" level="H4" class="sapUiSmallMarginBottom" />
+        <IllustratedMessage visible="{path: 'detail>/sourceObjects', formatter: '.formatter.hasNoItems'}" illustrationType="sapIllus-NoEntries" title="{i18n>noSourceObjects}" />
+        <Table id="sourceCodeObjectsTable" showSeparators="None" sticky="ColumnHeaders" mode="SingleSelectMaster" visible="{path: 'detail>/sourceObjects', formatter: '.formatter.hasItems'}" items="{detail>/sourceObjects}" growing="true" growingThreshold="20" selectionChange=".onSourceObjectPress">
+          <columns>
+            <Column width="14rem"><Text text="{i18n>objectName}" /></Column>
+            <Column width="7rem" hAlign="End"><Text text="{i18n>lineCount}" /></Column>
+          </columns>
+          <items>
+            <ColumnListItem>
+              <cells>
+                <ObjectIdentifier title="{path: 'detail>ObjectName', formatter: '.formatter.formatText'}" text="{path: 'detail>ObjectType', formatter: '.formatter.formatText'}" />
+                <ObjectNumber number="{path: 'detail>LineCount', formatter: '.formatter.formatNumber'}" />
+              </cells>
+            </ColumnListItem>
+          </items>
+        </Table>
+      </VBox>
+      <VBox class="sourceCodeViewerPane" busy="{detail>/sourceCodeDetail/loading}" busyIndicatorDelay="0">
+        <MessageStrip visible="{path: 'detail>/sourceCodeDetail/error', formatter: '.formatter.hasValue'}" text="{detail>/sourceCodeDetail/error}" type="Error" showIcon="true" class="sapUiSmallMarginBottom" />
+        <IllustratedMessage visible="{= !${detail>/selectedSourceObject} }" illustrationType="sapIllus-SearchFolder" title="{i18n>selectSourceObject}" description="{i18n>selectSourceObjectDescription}" />
+        <VBox visible="{= !!${detail>/selectedSourceObject} }">
+          <ObjectIdentifier title="{path: 'detail>/selectedSourceObject/ObjectName', formatter: '.formatter.formatText'}" text="{path: 'detail>/selectedSourceObject/ObjectType', formatter: '.formatter.formatText'}" class="sapUiTinyMarginBottom" />
+          <HBox wrap="Wrap" class="sourceCodeMetaLine sapUiSmallMarginBottom">
+            <ObjectAttribute title="{i18n>parentObject}" text="{path: 'detail>/selectedSourceObject/ParentObject', formatter: '.formatter.formatText'}" />
+            <ObjectAttribute title="{i18n>includeDepth}" text="{path: 'detail>/selectedSourceObject/IncludeDepth', formatter: '.formatter.formatNumber'}" />
+            <ObjectAttribute title="{i18n>lineCount}" text="{path: 'detail>/selectedSourceObject/LineCount', formatter: '.formatter.formatNumber'}" />
+          </HBox>
+          <IllustratedMessage visible="{= !${detail>/sourceCodeDetail/loading} &amp;&amp; !${detail>/sourceCodeDetail/error} &amp;&amp; ${detail>/sourceCodeDetail/lines/length} === 0 }" illustrationType="sapIllus-NoEntries" title="{i18n>noSourceLines}" />
+          <Table id="sourceCodeLinesTable" showSeparators="None" class="sourceCodeTable" visible="{path: 'detail>/sourceCodeDetail/lines', formatter: '.formatter.hasItems'}" items="{detail>/sourceCodeDetail/lines}" growing="true" growingThreshold="100" sticky="ColumnHeaders">
+            <columns>
+              <Column width="5rem" hAlign="End"><Text text="{i18n>lineNumber}" /></Column>
+              <Column><Text text="{i18n>sourceCode}" /></Column>
+            </columns>
+            <items>
+              <ColumnListItem>
+                <cells>
+                  <ObjectNumber number="{detail>LineNumber}" class="sourceCodeLineNumber" />
+                  <Text text="{detail>SourceText}" wrapping="false" class="sourceCodeText" />
+                </cells>
+              </ColumnListItem>
+            </items>
+          </Table>
+        </VBox>
+      </VBox>
+    </FlexBox>
+  </VBox>
+</core:FragmentDefinition>

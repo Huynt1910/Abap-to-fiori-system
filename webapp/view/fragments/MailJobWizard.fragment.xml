@@ -145,6 +145,7 @@
         text="{= ${mailUi>/wizard/mode} === 'edit' ? ${i18n>save} : ${i18n>create} }"
         type="Emphasized"
         press=".onSaveMailJob"
+        visible="{auth>/canMail}"
         enabled="{= !${mailUi>/wizard/busy} }" />
     </beginButton>
     <endButton>

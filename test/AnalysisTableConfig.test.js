@@ -39,6 +39,7 @@ test("analysis table registry covers every configured metadata field once", () =
     "uiFilters",
     "databaseObjects",
     "businessLogic",
+    "callBindings",
     "alvOutputs",
     "alvColumns",
     "alvSorts",

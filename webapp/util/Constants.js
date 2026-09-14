@@ -12,6 +12,7 @@ sap.ui.define([], function () {
       analyses: "/Analyses",
       programValueHelp: "/ProgramValueHelp",
       sourceObjects: "/SourceObjects",
+      sourceLines: "/SourceLines",
       uiFilters: "/UiFilters",
       databaseObjects: "/DatabaseObjects",
       businessLogic: "/BusinessLogic",
@@ -24,6 +25,9 @@ sap.ui.define([], function () {
       alvEvents: "/AlvEvents",
       annotations: "/Annotations",
       analysisMessages: "/AnalysisMessages",
+      callBindings: "/CallBindings",
+      chatSessions: "/ChatSessions",
+      chatMessages: "/ChatMessages",
       exportResult: "/ExportResult",
       exportJobs: "/ExportJobs"
     }),
@@ -31,6 +35,7 @@ sap.ui.define([], function () {
     navigation: Object.freeze({
       uiFilters: "_UiFilters",
       sourceObjects: "_SourceObjects",
+      sourceLines: "_SourceLines",
       databaseObjects: "_DatabaseObjects",
       businessLogic: "_BusinessLogic",
       alvOutputs: "_AlvOutputs",
@@ -41,19 +46,35 @@ sap.ui.define([], function () {
       alvFilters: "_Filters",
       alvEvents: "_Events",
       annotations: "_Annotations",
+      callBindings: "_CallBindings",
+      chatMessages: "_Messages",
       messages: "_Messages"
     }),
 
     action: Object.freeze({
       analyzeHttpPath: "/Analyses/com.sap.gateway.srvd.zui_mig_analysis.v0001.Analyze",
       analyzeBindingPath: "/Analyses/com.sap.gateway.srvd.zui_mig_analysis.v0001.Analyze(...)",
-      prepareSelectedExportSuffix: "com.sap.gateway.srvd.zui_mig_analysis.v0001.PrepareSelectedExport(...)"
+      generateAIAssessmentSuffix: "com.sap.gateway.srvd.zui_mig_analysis.v0001.GenerateAIAssessment(...)",
+      generateTechnicalDocumentSuffix: "com.sap.gateway.srvd.zui_mig_analysis.v0001.GenerateTechnicalDocument(...)",
+      prepareFioriUiSuffix: "com.sap.gateway.srvd.zui_mig_analysis.v0001.PrepareFioriUi(...)",
+      prepareSelectedExportSuffix: "com.sap.gateway.srvd.zui_mig_analysis.v0001.PrepareSelectedExport(...)",
+      askChatSuffix: "com.sap.gateway.srvd.zui_mig_analysis.v0001.ask(...)"
     }),
 
     fileFormat: Object.freeze({
       excel: "X",
       pdf: "P",
       csv: "C"
+    }),
+
+    exportDefaults: Object.freeze({
+      pdfHeaderText: "",
+      pdfFooterText: "",
+      paperSize: "A4",
+      orientation: "P",
+      fontSize: 10,
+      fitToPage: true,
+      splitMultiValue: false
     }),
 
     exportSection: Object.freeze({
@@ -96,7 +117,8 @@ sap.ui.define([], function () {
         "LastChangedBy",
         "LocalLastChangedAt",
         "__EntityControl",
-        "__OperationControl"
+        "__OperationControl",
+        "SAP__Messages"
       ]),
       sourceObjects: Object.freeze([
         "AnalysisId",
@@ -107,6 +129,12 @@ sap.ui.define([], function () {
         "IncludeDepth",
         "LineCount",
         "SourceHash"
+      ]),
+      sourceLines: Object.freeze([
+        "AnalysisId",
+        "SourceItemId",
+        "LineNumber",
+        "SourceText"
       ]),
       uiFilters: Object.freeze([
         "AnalysisId",
@@ -142,7 +170,10 @@ sap.ui.define([], function () {
         "JoinedObjects",
         "JoinCondition",
         "Aggregation",
+        "ResultTarget",
         "ContainingRoutine",
+        "ExecutionKind",
+        "ExecutionContext",
         "DynamicAccess",
         "ReadOnly",
         "PagingCapability",
@@ -157,12 +188,25 @@ sap.ui.define([], function () {
         "ObjectType",
         "ContainerName",
         "CallingRoutine",
+        "ExecutionKind",
+        "ExecutionContext",
         "InterfaceSummary",
         "Description",
         "SideEffect",
         "TransactionDependency",
         "GuiDependency",
         "ReuseFeasibility",
+        "Confidence"
+      ]),
+      callBindings: Object.freeze([
+        "AnalysisId",
+        "ItemId",
+        "CallItemId",
+        "EvidenceId",
+        "ParameterName",
+        "Direction",
+        "ActualExpression",
+        "BindingPosition",
         "Confidence"
       ]),
       recommendations: Object.freeze([
@@ -208,6 +252,7 @@ sap.ui.define([], function () {
         "OutputName",
         "OutputKind",
         "Framework",
+        "ContainingRoutine",
         "ControlObject",
         "OutputTable",
         "RowType",
