@@ -19,4 +19,10 @@ server:
       mountPath: /sap
       configuration:
         baseUri: "https://s40lp1.ucc.cit.tum.de/sap"
-        strictSSL: true
+        # Development system uses a non-public certificate. Do not use strictSSL: false for production.
+        strictSSL: false
+builder:
+  resources:
+    excludes:
+      - /test/**
+      - /localService/**

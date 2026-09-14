@@ -35,7 +35,7 @@
     "crossNavigation": {
       "inbounds": {
         "display": {
-          "semanticObject": "ABAPMigrationAnalyzer",
+          "semanticObject": "ZABAP_TO_FIORI",
           "action": "display",
           "title": "{{appTitle}}",
           "signature": {
@@ -65,7 +65,7 @@
       "async": true
     },
     "dependencies": {
-      "minUI5Version": "1.108.0",
+      "minUI5Version": "1.108.33",
       "libs": {
         "sap.m": {},
         "sap.ui.core": {},
@@ -83,16 +83,14 @@
         "type": "sap.ui.model.resource.ResourceModel",
         "settings": {
           "bundleName": "abap.to.fiori.system.i18n.i18n",
-          "supportedLocales": [
-            ""
-          ],
+          "supportedLocales": [""],
           "fallbackLocale": ""
         }
       },
       "": {
         "dataSource": "mainService",
         "type": "sap.ui.model.odata.v4.ODataModel",
-        "preload": true,
+        "preload": false,
         "settings": {
           "operationMode": "Server",
           "synchronizationMode": "None",
@@ -105,7 +103,7 @@
       "mail": {
         "dataSource": "mailService",
         "type": "sap.ui.model.odata.v4.ODataModel",
-        "preload": true,
+        "preload": false,
         "settings": {
           "operationMode": "Server",
           "synchronizationMode": "None",
@@ -118,7 +116,7 @@
       "comparison": {
         "dataSource": "comparisonService",
         "type": "sap.ui.model.odata.v4.ODataModel",
-        "preload": true,
+        "preload": false,
         "settings": {
           "operationMode": "Server",
           "synchronizationMode": "None",

@@ -11,18 +11,34 @@
       data-sap-ui-theme="sap_horizon"
       data-sap-ui-libs="sap.m,sap.f,sap.ui.layout"
       data-sap-ui-resourceroots='{"abap.to.fiori.system": "./"}'
-      data-sap-ui-compatversion="edge"
+      data-sap-ui-compat-version="edge"
+      data-sap-ui-bindingSyntax="complex"
       data-sap-ui-async="true"
-      data-sap-ui-oninit="module:sap/ui/core/ComponentSupport"
     ></script>
+
+    <script>
+      sap.ui.getCore().attachInit(function () {
+        sap.ui.require(
+          ["sap/ui/core/Component", "sap/ui/core/ComponentContainer"],
+          function (Component, ComponentContainer) {
+            Component.create({
+              name: "abap.to.fiori.system",
+              id: "abap-to-fiori-system",
+              manifest: true,
+            }).then(function (oComp) {
+              new ComponentContainer({
+                component: oComp,
+                height: "100%",
+                width: "100%",
+              }).placeAt("container");
+            });
+          },
+        );
+      });
+    </script>
   </head>
 
   <body class="sapUiBody sapUiSizeCompact">
-    <div
-      data-sap-ui-component
-      data-name="abap.to.fiori.system"
-      data-id="container"
-      data-settings='{"id":"abap-to-fiori-system"}'
-    ></div>
+    <div id="container" style="height: 100%"></div>
   </body>
 </html>
