@@ -349,7 +349,8 @@
                                     growing="true"
                                     growingThreshold="20"
                                     sticky="ColumnHeaders"
-                                    autoPopinMode="true" contextualWidth="Auto"
+                                    autoPopinMode="true"
+                                    contextualWidth="Auto"
                                 >
                                     <headerToolbar>
                                         <OverflowToolbar>
@@ -365,7 +366,8 @@
                                     </headerToolbar>
                                     <noData>
                                         <IllustratedMessage
-                                            illustrationType="sapIllus-NoEntries" illustrationSize="Spot"
+                                            illustrationType="sapIllus-NoEntries"
+                                            illustrationSize="Spot"
                                             title="{i18n>noAnalysisHistory}"
                                             description="{i18n>noAnalysisHistoryDescription}"
                                         />

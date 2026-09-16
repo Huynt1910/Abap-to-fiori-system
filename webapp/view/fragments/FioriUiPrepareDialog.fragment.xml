@@ -1,0 +1,59 @@
+<core:FragmentDefinition xmlns:core="sap.ui.core" xmlns="sap.m">
+  <Dialog
+    id="fioriUiPrepareDialog"
+    title="{i18n>fioriUiPrepareTitle}"
+    contentWidth="44rem"
+    stretchOnPhone="true"
+    busy="{detail>/fioriUi/busy}"
+    busyIndicatorDelay="0">
+    <content>
+      <VBox class="sapUiMediumMargin formStack">
+        <Label text="{i18n>fioriUiTargetPackage}" labelFor="fioriUiTargetPackageInput" required="true" />
+        <Input id="fioriUiTargetPackageInput" value="{detail>/fioriUi/targetPackage}" enabled="{= !${detail>/fioriUi/busy} }" />
+        <Label text="{i18n>fioriUiServiceRootUrl}" labelFor="fioriUiServiceRootUrlInput" required="true" />
+        <Input id="fioriUiServiceRootUrlInput" value="{detail>/fioriUi/serviceRootUrl}" enabled="{= !${detail>/fioriUi/busy} }" />
+        <MessageStrip
+          text="{detail>/fioriUi/error}"
+          visible="{= !!${detail>/fioriUi/error} }"
+          type="Error"
+          showIcon="true"
+          class="sapUiSmallMarginTop" />
+        <VBox visible="{detail>/fioriUi/hasResult}" class="sapUiMediumMarginTop">
+          <Title text="{i18n>fioriUiResultTitle}" level="H4" />
+          <ObjectAttribute title="{i18n>fioriUiStatus}" text="{detail>/fioriUi/status}" />
+          <ObjectStatus title="{i18n>fioriUiRuntimeCheck}" text="{detail>/fioriUi/runtimeCheck}" state="Information" />
+          <MessageStrip
+            text="{i18n>fioriUiMetadataRequiredHint}"
+            visible="{= ${detail>/fioriUi/runtimeCheck} === 'METADATA_REQUIRED' }"
+            type="Information"
+            showIcon="true"
+            class="sapUiSmallMarginTop" />
+          <ObjectAttribute title="{i18n>fioriUiIssueCount}" text="{detail>/fioriUi/issueCount}" />
+          <Label text="{i18n>fioriUiEntitySet}" />
+          <Text text="{path: 'detail>/fioriUi/entitySet', formatter: '.formatter.formatText'}" />
+          <Title text="{i18n>fioriUiIssues}" level="H5" class="sapUiSmallMarginTop" />
+          <Text text="{i18n>fioriUiNoIssues}" visible="{= ${detail>/fioriUi/issues}.length === 0 }" />
+          <List items="{detail>/fioriUi/issues}" visible="{= ${detail>/fioriUi/issues}.length &gt; 0 }">
+            <StandardListItem title="{detail>label}" description="{detail>detail}" />
+          </List>
+          <Title text="{i18n>fioriUiColumns}" level="H5" class="sapUiSmallMarginTop" />
+          <Text text="{i18n>fioriUiNoColumns}" visible="{= ${detail>/fioriUi/columns}.length === 0 }" />
+          <List items="{detail>/fioriUi/columns}" visible="{= ${detail>/fioriUi/columns}.length &gt; 0 }">
+            <StandardListItem title="{detail>label}" description="{detail>detail}" />
+          </List>
+          <Title text="{i18n>fioriUiFilters}" level="H5" class="sapUiSmallMarginTop" />
+          <Text text="{i18n>fioriUiNoFilters}" visible="{= ${detail>/fioriUi/filters}.length === 0 }" />
+          <List items="{detail>/fioriUi/filters}" visible="{= ${detail>/fioriUi/filters}.length &gt; 0 }">
+            <StandardListItem title="{detail>label}" description="{detail>detail}" />
+          </List>
+        </VBox>
+      </VBox>
+    </content>
+    <beginButton>
+      <Button text="{i18n>fioriUiPrepareButton}" type="Emphasized" enabled="{= !${detail>/fioriUi/busy} }" press=".onPrepareFioriUi" />
+    </beginButton>
+    <endButton>
+      <Button text="{i18n>close}" enabled="{= !${detail>/fioriUi/busy} }" press=".onCloseFioriUiPrepareDialog" />
+    </endButton>
+  </Dialog>
+</core:FragmentDefinition>

@@ -1,13 +1,13 @@
 sap.ui.define(
   [
-    // "sap/ui/core/Messaging",
+    "abap/to/fiori/system/util/MessagingCompat",
     "sap/ui/model/Filter",
     "sap/ui/model/FilterOperator",
     "sap/ui/model/Sorter",
     "abap/to/fiori/system/model/mailConstants",
     "abap/to/fiori/system/util/ODataErrorHandler",
   ],
-  function (Filter, FilterOperator, Sorter, MailConstants, ODataErrorHandler) {
+  function (Messaging, Filter, FilterOperator, Sorter, MailConstants, ODataErrorHandler) {
     "use strict";
 
     function MailService(oMailModel) {
@@ -318,13 +318,9 @@ sap.ui.define(
     };
 
     MailService.prototype._getLatestTechnicalError = function () {
-      // var oMessageModel = Messaging && typeof Messaging.getMessageModel === "function"
-      //   ? Messaging.getMessageModel()
-      //   : null;
-      var oMessageManager = sap.ui.getCore().getMessageManager();
       var oMessageModel =
-        oMessageManager && typeof oMessageManager.getMessageModel === "function"
-          ? oMessageManager.getMessageModel()
+        Messaging && typeof Messaging.getMessageModel === "function"
+          ? Messaging.getMessageModel()
           : null;
       var aMessages =
         oMessageModel && typeof oMessageModel.getData === "function"
@@ -346,9 +342,7 @@ sap.ui.define(
             return (
               oEntry &&
               (oEntry.technical === true ||
-                oEntry.processor === this._oModel ||
-                oEntry.code ||
-                oEntry.message)
+                (typeof oEntry.getTechnical === "function" && oEntry.getTechnical() === true))
             );
           }.bind(this),
         );

@@ -1,0 +1,97 @@
+<core:FragmentDefinition xmlns:core="sap.ui.core" xmlns="sap.m" xmlns:f="sap.ui.layout.form">
+  <Dialog
+    id="odataGenerationDialog"
+    title="{i18n>odataGenerationTitle}"
+    contentWidth="52rem"
+    stretchOnPhone="true"
+    busy="{detail>/odataGeneration/dialogBusy}"
+    busyIndicatorDelay="0"
+    afterClose=".onAfterCloseODataGenerationDialog">
+    <content>
+      <VBox class="sapUiMediumMargin">
+        <f:SimpleForm editable="true" layout="ResponsiveGridLayout">
+          <Label text="{i18n>odataGenerationTargetPackage}" required="true" />
+          <Input value="{detail>/odataGeneration/targetPackage}"
+            enabled="{= !${detail>/odataGeneration/dialogBusy} &amp;&amp; ${detail>/odataGeneration/status} !== 'QUEUED' &amp;&amp; ${detail>/odataGeneration/status} !== 'RUNNING' }"
+            liveChange=".onODataGenerationInputChange" />
+          <Label text="{i18n>odataGenerationProviderLanguage}" required="true" />
+          <Select selectedKey="{detail>/odataGeneration/providerLanguage}"
+            enabled="{= !${detail>/odataGeneration/dialogBusy} &amp;&amp; ${detail>/odataGeneration/status} !== 'QUEUED' &amp;&amp; ${detail>/odataGeneration/status} !== 'RUNNING' }"
+            change=".onODataGenerationInputChange">
+            <core:Item key="STANDARD" text="{i18n>odataGenerationLanguageStandard}" />
+            <core:Item key="CLOUD" text="{i18n>odataGenerationLanguageCloud}" />
+          </Select>
+          <Label
+            text="{i18n>odataGenerationProviderPackage}"
+            required="{= ${detail>/odataGeneration/providerLanguage} === 'STANDARD' }" />
+          <Input
+            value="{detail>/odataGeneration/providerPackage}"
+            enabled="{= ${detail>/odataGeneration/providerLanguage} === 'STANDARD' &amp;&amp; !${detail>/odataGeneration/dialogBusy} &amp;&amp; ${detail>/odataGeneration/status} !== 'QUEUED' &amp;&amp; ${detail>/odataGeneration/status} !== 'RUNNING' }"
+            liveChange=".onODataGenerationInputChange" />
+          <Label text="{i18n>odataGenerationTransportRequest}" />
+          <Input value="{detail>/odataGeneration/transportRequest}"
+            enabled="{= !${detail>/odataGeneration/dialogBusy} &amp;&amp; ${detail>/odataGeneration/status} !== 'QUEUED' &amp;&amp; ${detail>/odataGeneration/status} !== 'RUNNING' }"
+            liveChange=".onODataGenerationInputChange" />
+        </f:SimpleForm>
+
+        <MessageStrip
+          text="{detail>/odataGeneration/error}"
+          visible="{= !!${detail>/odataGeneration/error} }"
+          type="Error"
+          showIcon="true"
+          class="sapUiSmallMarginTop" />
+        <MessageStrip
+          text="{i18n>odataGenerationInvalidResultJson}"
+          visible="{detail>/odataGeneration/resultJsonInvalid}"
+          type="Warning"
+          showIcon="true"
+          class="sapUiSmallMarginTop" />
+        <MessageStrip
+          text="{detail>/odataGeneration/message}"
+          visible="{= !!${detail>/odataGeneration/message} }"
+          type="Information"
+          showIcon="true"
+          class="sapUiSmallMarginTop" />
+
+        <VBox visible="{detail>/odataGeneration/hasResult}" class="sapUiMediumMarginTop">
+          <Title text="{i18n>odataGenerationResultTitle}" level="H4" />
+          <ObjectAttribute title="{i18n>odataGenerationStatus}" text="{detail>/odataGeneration/status}" />
+          <ObjectStatus title="{i18n>odataGenerationRuntimeCheck}" text="{detail>/odataGeneration/runtimeCheck}" state="Information" />
+          <MessageStrip
+            text="{i18n>odataGenerationMetadataRequiredHint}"
+            visible="{= ${detail>/odataGeneration/runtimeCheck} === 'METADATA_REQUIRED' }"
+            type="Information"
+            showIcon="true"
+            class="sapUiTinyMarginTop" />
+          <ObjectAttribute title="{i18n>odataGenerationRequestId}" text="{detail>/odataGeneration/requestId}" />
+          <ObjectAttribute title="{i18n>odataGenerationStrategy}" text="{detail>/odataGeneration/result/strategy}" />
+          <ObjectAttribute title="{i18n>odataGenerationProviderKind}" text="{detail>/odataGeneration/result/providerKind}" />
+          <ObjectAttribute title="{i18n>odataGenerationProviderObject}" text="{detail>/odataGeneration/result/providerObject}" />
+          <ObjectAttribute title="{i18n>odataGenerationQueryProviderClass}" text="{detail>/odataGeneration/result/queryProviderClass}" />
+          <ObjectAttribute title="{i18n>odataGenerationProviderPackage}" text="{detail>/odataGeneration/result/providerPackage}" />
+          <ObjectAttribute title="{i18n>odataGenerationProviderLanguage}" text="{detail>/odataGeneration/result/providerLanguage}" />
+          <ObjectAttribute title="{i18n>odataGenerationCustomEntity}" text="{detail>/odataGeneration/result/entityName}" />
+          <ObjectAttribute title="{i18n>odataGenerationServiceDefinition}" text="{detail>/odataGeneration/result/serviceName}" />
+          <ObjectAttribute title="{i18n>odataGenerationSharedBinding}" text="{detail>/odataGeneration/result/serviceBinding}" />
+          <ObjectAttribute title="{i18n>odataGenerationCreateCount}" text="{detail>/odataGeneration/result/createCount}" />
+          <ObjectAttribute title="{i18n>odataGenerationBlockCount}" text="{detail>/odataGeneration/result/blockCount}" />
+        </VBox>
+      </VBox>
+    </content>
+    <buttons>
+      <Button text="{i18n>odataGenerationPreflightButton}"
+        enabled="{= !${detail>/odataGeneration/dialogBusy} &amp;&amp; ${detail>/odataGeneration/status} !== 'QUEUED' &amp;&amp; ${detail>/odataGeneration/status} !== 'RUNNING' }"
+        press=".onPreflightOData" />
+      <Button
+        text="{i18n>odataGenerationGenerateButton}"
+        type="Emphasized"
+        enabled="{= ${detail>/odataGeneration/canGenerate} &amp;&amp; !${detail>/odataGeneration/dialogBusy} &amp;&amp; ${detail>/odataGeneration/status} !== 'QUEUED' &amp;&amp; ${detail>/odataGeneration/status} !== 'RUNNING' }"
+        press=".onGenerateOData" />
+      <Button
+        text="{i18n>odataGenerationRefreshButton}"
+        enabled="{= !!${detail>/odataGeneration/requestId} &amp;&amp; ${detail>/odataGeneration/requestId} !== '00000000-0000-0000-0000-000000000000' &amp;&amp; !${detail>/odataGeneration/dialogBusy} }"
+        press=".onRefreshODataGeneration" />
+      <Button text="{i18n>close}" press=".onCloseODataGenerationDialog" />
+    </buttons>
+  </Dialog>
+</core:FragmentDefinition>

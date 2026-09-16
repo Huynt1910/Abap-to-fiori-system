@@ -5,7 +5,7 @@ sap.ui.define([], function () {
     service: Object.freeze({
       root: "/sap/opu/odata4/sap/zui_mig_analysis_o4/srvd/sap/zui_mig_analysis/0001/",
       namespace: "com.sap.gateway.srvd.zui_mig_analysis.v0001",
-      sapClient: "324"
+      sapClient: "324",
     }),
 
     entitySet: Object.freeze({
@@ -29,7 +29,7 @@ sap.ui.define([], function () {
       chatSessions: "/ChatSessions",
       chatMessages: "/ChatMessages",
       exportResult: "/ExportResult",
-      exportJobs: "/ExportJobs"
+      exportJobs: "/ExportJobs",
     }),
 
     navigation: Object.freeze({
@@ -48,25 +48,29 @@ sap.ui.define([], function () {
       annotations: "_Annotations",
       callBindings: "_CallBindings",
       chatMessages: "_Messages",
-      messages: "_Messages"
+      messages: "_Messages",
     }),
 
     action: Object.freeze({
-      analyzeHttpPath: "/Analyses/com.sap.gateway.srvd.zui_mig_analysis.v0001.Analyze",
-      analyzeBindingPath: "/Analyses/com.sap.gateway.srvd.zui_mig_analysis.v0001.Analyze(...)",
-      generateTechnicalDocumentSuffix: "com.sap.gateway.srvd.zui_mig_analysis.v0001.GenerateTechnicalDocument(...)",
-      prepareSelectedExportSuffix: "com.sap.gateway.srvd.zui_mig_analysis.v0001.PrepareSelectedExport(...)",
-      askChatSuffix: "com.sap.gateway.srvd.zui_mig_analysis.v0001.ask(...)"
+      analyzeHttpPath:
+        "/Analyses/com.sap.gateway.srvd.zui_mig_analysis.v0001.Analyze",
+      analyzeBindingPath:
+        "/Analyses/com.sap.gateway.srvd.zui_mig_analysis.v0001.Analyze(...)",
+      generateTechnicalDocumentSuffix:
+        "com.sap.gateway.srvd.zui_mig_analysis.v0001.GenerateTechnicalDocument(...)",
+      prepareSelectedExportSuffix:
+        "com.sap.gateway.srvd.zui_mig_analysis.v0001.PrepareSelectedExport(...)",
+      askChatSuffix: "com.sap.gateway.srvd.zui_mig_analysis.v0001.ask(...)",
     }),
 
     fileFormat: Object.freeze({
       excel: "X",
       pdf: "P",
-      csv: "C"
+      csv: "C",
     }),
 
     technicalDocument: Object.freeze({
-      fileFormat: "M"
+      fileFormat: "M",
     }),
 
     exportDefaults: Object.freeze({
@@ -76,7 +80,7 @@ sap.ui.define([], function () {
       orientation: "L",
       fontSize: 10,
       fitToPage: false,
-      splitMultiValue: false
+      splitMultiValue: false,
     }),
 
     exportSection: Object.freeze({
@@ -88,7 +92,7 @@ sap.ui.define([], function () {
       alvOutput: "ALV_OUTPUT",
       sourceEvidence: "SRC_EVIDEN",
       recommendations: "RECOMMEN",
-      messages: "MESSAGE"
+      messages: "MESSAGE",
     }),
 
     field: Object.freeze({
@@ -120,7 +124,7 @@ sap.ui.define([], function () {
         "LocalLastChangedAt",
         "__EntityControl",
         "__OperationControl",
-        "SAP__Messages"
+        "SAP__Messages",
       ]),
       sourceObjects: Object.freeze([
         "AnalysisId",
@@ -130,13 +134,13 @@ sap.ui.define([], function () {
         "ParentObject",
         "IncludeDepth",
         "LineCount",
-        "SourceHash"
+        "SourceHash",
       ]),
       sourceLines: Object.freeze([
         "AnalysisId",
         "SourceItemId",
         "LineNumber",
-        "SourceText"
+        "SourceText",
       ]),
       uiFilters: Object.freeze([
         "AnalysisId",
@@ -158,7 +162,7 @@ sap.ui.define([], function () {
         "RangeSupported",
         "DefaultValue",
         "ValidationRoutine",
-        "Confidence"
+        "Confidence",
       ]),
       databaseObjects: Object.freeze([
         "AnalysisId",
@@ -180,7 +184,7 @@ sap.ui.define([], function () {
         "ReadOnly",
         "PagingCapability",
         "Description",
-        "Confidence"
+        "Confidence",
       ]),
       businessLogic: Object.freeze([
         "AnalysisId",
@@ -198,7 +202,7 @@ sap.ui.define([], function () {
         "TransactionDependency",
         "GuiDependency",
         "ReuseFeasibility",
-        "Confidence"
+        "Confidence",
       ]),
       callBindings: Object.freeze([
         "AnalysisId",
@@ -209,7 +213,7 @@ sap.ui.define([], function () {
         "Direction",
         "ActualExpression",
         "BindingPosition",
-        "Confidence"
+        "Confidence",
       ]),
       recommendations: Object.freeze([
         "AnalysisId",
@@ -225,7 +229,7 @@ sap.ui.define([], function () {
         "Severity",
         "Confidence",
         "ReviewStatus",
-        "ManualReview"
+        "ManualReview",
       ]),
       evidences: Object.freeze([
         "AnalysisId",
@@ -235,7 +239,7 @@ sap.ui.define([], function () {
         "EndLine",
         "StatementId",
         "StatementText",
-        "Confidence"
+        "Confidence",
       ]),
       messages: Object.freeze([
         "AnalysisId",
@@ -244,7 +248,7 @@ sap.ui.define([], function () {
         "MessageCode",
         "SourceObject",
         "SourceLine",
-        "MessageText"
+        "MessageText",
       ]),
       alvOutputs: Object.freeze([
         "AnalysisId",
@@ -268,7 +272,7 @@ sap.ui.define([], function () {
         "Zebra",
         "AutoWidth",
         "SelectionMode",
-        "Confidence"
+        "Confidence",
       ]),
       alvColumns: Object.freeze([
         "AnalysisId",
@@ -295,7 +299,7 @@ sap.ui.define([], function () {
         "UnitField",
         "Aggregation",
         "SourceMapping",
-        "Confidence"
+        "Confidence",
       ]),
       alvSorts: Object.freeze([
         "AnalysisId",
@@ -307,7 +311,7 @@ sap.ui.define([], function () {
         "IsAscending",
         "IsDescending",
         "Subtotal",
-        "Confidence"
+        "Confidence",
       ]),
       alvFilters: Object.freeze([
         "AnalysisId",
@@ -319,7 +323,7 @@ sap.ui.define([], function () {
         "FilterOption",
         "LowValue",
         "HighValue",
-        "Confidence"
+        "Confidence",
       ]),
       alvEvents: Object.freeze([
         "AnalysisId",
@@ -331,7 +335,7 @@ sap.ui.define([], function () {
         "HandlerKind",
         "ControlObject",
         "GuiDependency",
-        "Confidence"
+        "Confidence",
       ]),
       annotations: Object.freeze([
         "AnalysisId",
@@ -341,8 +345,8 @@ sap.ui.define([], function () {
         "TargetElement",
         "AnnotationName",
         "AnnotationValue",
-        "AnnotationSequence"
-      ])
+        "AnnotationSequence",
+      ]),
     }),
 
     section: Object.freeze({
@@ -353,7 +357,7 @@ sap.ui.define([], function () {
       alvOutputs: "alvOutputs",
       evidences: "evidences",
       recommendations: "recommendations",
-      messages: "messages"
-    })
+      messages: "messages",
+    }),
   });
 });
