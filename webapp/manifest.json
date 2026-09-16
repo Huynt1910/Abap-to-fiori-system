@@ -202,11 +202,6 @@
           "name": "comparisonDetail",
           "pattern": "comparison/{cmpRunId}",
           "target": "comparisonDetail"
-        },
-        {
-          "name": "modernization",
-          "pattern": "analysis/{analysisId}/modernization",
-          "target": "modernization"
         }
       ],
       "targets": {
@@ -233,9 +228,6 @@
         },
         "comparisonDetail": {
           "viewName": "ComparisonDetail"
-        },
-        "modernization": {
-          "viewName": "Modernization"
         }
       }
     }

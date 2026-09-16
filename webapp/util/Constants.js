@@ -54,9 +54,7 @@ sap.ui.define([], function () {
     action: Object.freeze({
       analyzeHttpPath: "/Analyses/com.sap.gateway.srvd.zui_mig_analysis.v0001.Analyze",
       analyzeBindingPath: "/Analyses/com.sap.gateway.srvd.zui_mig_analysis.v0001.Analyze(...)",
-      generateAIAssessmentSuffix: "com.sap.gateway.srvd.zui_mig_analysis.v0001.GenerateAIAssessment(...)",
       generateTechnicalDocumentSuffix: "com.sap.gateway.srvd.zui_mig_analysis.v0001.GenerateTechnicalDocument(...)",
-      prepareFioriUiSuffix: "com.sap.gateway.srvd.zui_mig_analysis.v0001.PrepareFioriUi(...)",
       prepareSelectedExportSuffix: "com.sap.gateway.srvd.zui_mig_analysis.v0001.PrepareSelectedExport(...)",
       askChatSuffix: "com.sap.gateway.srvd.zui_mig_analysis.v0001.ask(...)"
     }),
@@ -67,13 +65,17 @@ sap.ui.define([], function () {
       csv: "C"
     }),
 
+    technicalDocument: Object.freeze({
+      fileFormat: "M"
+    }),
+
     exportDefaults: Object.freeze({
       pdfHeaderText: "",
       pdfFooterText: "",
       paperSize: "A4",
-      orientation: "P",
+      orientation: "L",
       fontSize: 10,
-      fitToPage: true,
+      fitToPage: false,
       splitMultiValue: false
     }),
 

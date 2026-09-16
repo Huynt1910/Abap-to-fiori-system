@@ -11,8 +11,8 @@
     <FlexBox class="sourceCodeWorkspace" direction="Row" renderType="Div">
       <VBox class="sourceCodeObjectPane">
         <Title text="{i18n>sourceObjectList}" level="H4" class="sapUiSmallMarginBottom" />
-        <IllustratedMessage visible="{path: 'detail>/sourceObjects', formatter: '.formatter.hasNoItems'}" illustrationType="sapIllus-NoEntries" title="{i18n>noSourceObjects}" />
-        <Table id="sourceCodeObjectsTable" showSeparators="None" sticky="ColumnHeaders" mode="SingleSelectMaster" visible="{path: 'detail>/sourceObjects', formatter: '.formatter.hasItems'}" items="{detail>/sourceObjects}" growing="true" growingThreshold="20" selectionChange=".onSourceObjectPress">
+        <IllustratedMessage visible="{path: 'detail>/sourceObjects', formatter: '.formatter.hasNoItems'}" illustrationType="sapIllus-NoEntries" illustrationSize="Spot" title="{i18n>noSourceObjects}" />
+        <Table autoPopinMode="true" contextualWidth="Auto" id="sourceCodeObjectsTable" showSeparators="None" sticky="ColumnHeaders" mode="SingleSelectMaster" visible="{path: 'detail>/sourceObjects', formatter: '.formatter.hasItems'}" items="{detail>/sourceObjects}" growing="true" growingThreshold="20" selectionChange=".onSourceObjectPress">
           <columns>
             <Column width="14rem"><Text text="{i18n>objectName}" /></Column>
             <Column width="7rem" hAlign="End"><Text text="{i18n>lineCount}" /></Column>
@@ -37,7 +37,7 @@
             <ObjectAttribute title="{i18n>includeDepth}" text="{path: 'detail>/selectedSourceObject/IncludeDepth', formatter: '.formatter.formatNumber'}" />
             <ObjectAttribute title="{i18n>lineCount}" text="{path: 'detail>/selectedSourceObject/LineCount', formatter: '.formatter.formatNumber'}" />
           </HBox>
-          <IllustratedMessage visible="{= !${detail>/sourceCodeDetail/loading} &amp;&amp; !${detail>/sourceCodeDetail/error} &amp;&amp; ${detail>/sourceCodeDetail/lines/length} === 0 }" illustrationType="sapIllus-NoEntries" title="{i18n>noSourceLines}" />
+          <IllustratedMessage visible="{= !${detail>/sourceCodeDetail/loading} &amp;&amp; !${detail>/sourceCodeDetail/error} &amp;&amp; ${detail>/sourceCodeDetail/lines/length} === 0 }" illustrationType="sapIllus-NoEntries" illustrationSize="Spot" title="{i18n>noSourceLines}" />
           <Table id="sourceCodeLinesTable" showSeparators="None" class="sourceCodeTable" visible="{path: 'detail>/sourceCodeDetail/lines', formatter: '.formatter.hasItems'}" items="{detail>/sourceCodeDetail/lines}" growing="true" growingThreshold="100" sticky="ColumnHeaders">
             <columns>
               <Column width="5rem" hAlign="End"><Text text="{i18n>lineNumber}" /></Column>

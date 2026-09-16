@@ -112,9 +112,9 @@ sap.ui.define([
         pdfHeaderText: "",
         pdfFooterText: "",
         paperSize: "A4",
-        orientation: "P",
+        orientation: "L",
         fontSize: 10,
-        fitToPage: true,
+        fitToPage: false,
         splitMultiValue: false,
         message: ""
       },

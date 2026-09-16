@@ -6,13 +6,15 @@ sap.ui.define([
   var MIME_TYPES = Object.freeze({
     X: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     P: "application/pdf",
-    C: "text/csv;charset=utf-8"
+    C: "text/csv;charset=utf-8",
+    M: "text/markdown;charset=utf-8"
   });
 
   var EXTENSIONS = Object.freeze({
     X: "xlsx",
     P: "pdf",
-    C: "csv"
+    C: "csv",
+    M: "md"
   });
 
   function DocumentService(oODataModel, mOptions) {
@@ -133,6 +135,50 @@ sap.ui.define([
     }.bind(this));
   };
 
+  DocumentService.prototype.generateTechnicalDocument = function (sAnalysisId) {
+    var sId = String(sAnalysisId || "").trim();
+    var oAction;
+
+    if (!sId) {
+      return Promise.reject(new Error("AnalysisId is required for technical document generation."));
+    }
+
+    oAction = this._oModel.bindContext(
+      Constants.entitySet.analyses + "(" + encodeURIComponent(sId) + ")/" + Constants.action.generateTechnicalDocumentSuffix
+    );
+
+    return oAction.execute("$direct").then(function () {
+      var oContext = oAction.getBoundContext && oAction.getBoundContext();
+      return oContext && oContext.requestObject ? oContext.requestObject() : {};
+    });
+  };
+
+  DocumentService.prototype.downloadTechnicalDocument = function (sAnalysisId, mOptions) {
+    var mDownloadOptions = mOptions || {};
+    var sFileFormat = Constants.technicalDocument.fileFormat;
+
+    return this.generateTechnicalDocument(sAnalysisId).then(function (oResult) {
+      if (oResult && oResult.DownloadUrl) {
+        return this.downloadUrl(this._normalizeDownloadUrl(oResult.DownloadUrl), {
+          fileName: this.getDownloadFileName(mDownloadOptions.fileName, oResult.FileName, sFileFormat),
+          mimeType: oResult.MimeType,
+          fileFormat: sFileFormat
+        });
+      }
+
+      if (oResult && oResult.ExportId) {
+        return this.pollExportJob(oResult.ExportId).then(function (oJob) {
+          return this.downloadExportJobContent(oJob, {
+            fileName: mDownloadOptions.fileName,
+            fileFormat: sFileFormat
+          });
+        }.bind(this));
+      }
+
+      throw new Error("Technical document generation did not return a DownloadUrl or ExportId.");
+    }.bind(this));
+  };
+
   DocumentService.prototype.serializeSelectedFields = function (aFieldKeys) {
     if (typeof aFieldKeys === "string") {
       return aFieldKeys;
@@ -142,6 +188,8 @@ sap.ui.define([
 
   DocumentService.prototype._buildSelectedExportActionParameters = function (mParameters) {
     var mDefaults = Constants.exportDefaults || {};
+    var bPdf = mParameters.fileFormat === Constants.fileFormat.pdf;
+    var bExcel = mParameters.fileFormat === Constants.fileFormat.excel;
     var iFontSize = parseInt(mParameters.fontSize !== undefined ? mParameters.fontSize : mDefaults.fontSize, 10);
 
     if (isNaN(iFontSize)) {
@@ -152,13 +200,13 @@ sap.ui.define([
       FileFormat: mParameters.fileFormat,
       ExportSection: mParameters.exportSection,
       SelectedFields: this.serializeSelectedFields(mParameters.selectedFields),
-      PdfHeaderText: String(mParameters.pdfHeaderText !== undefined ? mParameters.pdfHeaderText : mDefaults.pdfHeaderText || ""),
-      PdfFooterText: String(mParameters.pdfFooterText !== undefined ? mParameters.pdfFooterText : mDefaults.pdfFooterText || ""),
-      PaperSize: String(mParameters.paperSize !== undefined ? mParameters.paperSize : mDefaults.paperSize || "A4"),
-      Orientation: String(mParameters.orientation !== undefined ? mParameters.orientation : mDefaults.orientation || "P"),
-      FontSize: iFontSize,
-      FitToPage: this._normalizeBoolean(mParameters.fitToPage, mDefaults.fitToPage),
-      SplitMultiValue: this._normalizeBoolean(mParameters.splitMultiValue, mDefaults.splitMultiValue)
+      PdfHeaderText: bPdf ? String(mParameters.pdfHeaderText !== undefined ? mParameters.pdfHeaderText : mDefaults.pdfHeaderText || "") : "",
+      PdfFooterText: bPdf ? String(mParameters.pdfFooterText !== undefined ? mParameters.pdfFooterText : mDefaults.pdfFooterText || "") : "",
+      PaperSize: bPdf ? String(mParameters.paperSize !== undefined ? mParameters.paperSize : mDefaults.paperSize || "A4") : "",
+      Orientation: bPdf ? String(mParameters.orientation !== undefined ? mParameters.orientation : mDefaults.orientation || "P") : "",
+      FontSize: bPdf ? iFontSize : 0,
+      FitToPage: bPdf ? this._normalizeBoolean(mParameters.fitToPage, mDefaults.fitToPage) : false,
+      SplitMultiValue: bExcel ? this._normalizeBoolean(mParameters.splitMultiValue, mDefaults.splitMultiValue) : false
     };
   };
 
@@ -298,7 +346,7 @@ sap.ui.define([
       return sSanitized;
     }
 
-    sSanitized = sSanitized.replace(/\.(xlsx|pdf|csv)$/i, "");
+    sSanitized = sSanitized.replace(/\.(xlsx|pdf|csv|md)$/i, "");
     return sSanitized + "." + sExtension;
   };
 
@@ -360,7 +408,7 @@ sap.ui.define([
       throw new Error("Orientation must not exceed 1 character.");
     }
 
-    if (mParameters.fontSize !== undefined && (isNaN(parseInt(mParameters.fontSize, 10)) || parseInt(mParameters.fontSize, 10) <= 0)) {
+    if (mParameters.fileFormat === Constants.fileFormat.pdf && mParameters.fontSize !== undefined && (isNaN(parseInt(mParameters.fontSize, 10)) || parseInt(mParameters.fontSize, 10) <= 0)) {
       throw new Error("FontSize must be a positive integer.");
     }
   };

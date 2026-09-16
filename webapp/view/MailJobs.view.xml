@@ -134,13 +134,13 @@
                     growing="true"
                     growingThreshold="20"
                     sticky="ColumnHeaders"
-                    autoPopinMode="true"
+                    autoPopinMode="true" contextualWidth="Auto"
                     updateFinished=".onMailJobsUpdateFinished"
                     items="{path: 'mail>/MailJobs', sorter: { path: 'CreatedAt', descending: true }, parameters: { $$groupId: '$direct', $select: 'JobId,AnalysisId,JobName,ReportType,FileFormat,Frequency,StartDate,StartTime,JobTimeZone,DayOfWeek,DayOfMonth,NextRunAt,MailSubject,MailBody,Status,CreatedBy,CreatedAt,LocalLastChangedAt,__OperationControl' }}"
                 >
                     <noData>
                         <IllustratedMessage
-                            illustrationType="sapIllus-NoEntries"
+                            illustrationType="sapIllus-NoEntries" illustrationSize="Spot"
                             title="{i18n>noMailJobs}"
                             description="{i18n>noMailJobsDescription}"
                         />

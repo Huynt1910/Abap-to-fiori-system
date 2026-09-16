@@ -3,6 +3,7 @@
     xmlns:mvc="sap.ui.core.mvc"
     xmlns:core="sap.ui.core"
     xmlns:f="sap.f"
+    xmlns:grid="sap.ui.layout.cssgrid"
     xmlns:card="sap.f.cards"
     xmlns="sap.m"
     displayBlock="true"
@@ -23,12 +24,6 @@
                     <ObjectStatus
                         text="{path: 'dashboard>/visibleCount', formatter: '.formatter.formatCountText'}"
                     />
-                    <ObjectStatus
-                        text="{auth>/auditNotice}"
-                        state="Warning"
-                        visible="{= !!${auth>/auditNotice} }"
-                        class="sapUiTinyMarginBegin"
-                    />
                 </f:expandedContent>
                 <f:actions>
                     <Button
@@ -37,7 +32,6 @@
                         type="Transparent"
                         icon="sap-icon://email"
                         press=".onOpenMailJobs"
-                        enabled="{auth>/canMail}"
                     />
                     <Button
                         id="comparisonHistoryButton"
@@ -45,7 +39,6 @@
                         type="Transparent"
                         icon="sap-icon://compare"
                         press=".onOpenComparisonHistory"
-                        enabled="{auth>/canCompare}"
                     />
                     <Button
                         id="runAnalysisButton"
@@ -53,7 +46,13 @@
                         type="Emphasized"
                         icon="sap-icon://begin"
                         press=".onRunAnalysis"
-                        enabled="{auth>/canAnalyze}"
+                    />
+                    <Button
+                        id="analysisViewSettingsButton"
+                        type="Transparent"
+                        icon="sap-icon://action-settings"
+                        tooltip="{i18n>viewSettings}"
+                        press=".onOpenAnalysisTableSettings"
                     />
                 </f:actions>
             </f:DynamicPageTitle>
@@ -88,6 +87,7 @@
                         />
                         <Select
                             id="statusSelect"
+                            width="100%"
                             selectedKey="{dashboard>/filters/status}"
                             change=".onSearch"
                         >
@@ -116,35 +116,15 @@
         </f:header>
         <f:content>
             <VBox class="migrationAnalyzerContent">
-                <MessageStrip
-                    visible="{= !!${auth>/error} }"
-                    text="{auth>/error}"
-                    type="Error"
-                    showIcon="true"
-                    class="sapUiSmallMarginBottom"
-                />
-                <MessageStrip
-                    visible="{path: 'dashboard>/errorMessage', formatter: '.formatter.hasValue'}"
-                    text="{dashboard>/errorMessage}"
-                    type="Error"
-                    showIcon="true"
-                    class="sapUiSmallMarginBottom"
-                />
-                <f:GridContainer
+                <grid:CSSGrid
                     id="dashboardKpiGrid"
                     class="migrationAnalyzerKpiGrid"
                 >
-                    <f:items>
+                    <grid:items>
                         <f:Card
                             class="migrationAnalyzerCard migrationAnalyzerCardTotal"
                             tooltip="{i18n>totalAnalysesTooltip}"
                         >
-                            <f:layoutData>
-                                <f:GridContainerItemLayoutData
-                                    columns="3"
-                                    minRows="1"
-                                />
-                            </f:layoutData>
                             <f:header>
                                 <card:Header
                                     title="{i18n>totalAnalyses}"
@@ -157,12 +137,6 @@
                             class="migrationAnalyzerCard migrationAnalyzerCardSuccess"
                             tooltip="{i18n>completedTooltip}"
                         >
-                            <f:layoutData>
-                                <f:GridContainerItemLayoutData
-                                    columns="3"
-                                    minRows="1"
-                                />
-                            </f:layoutData>
                             <f:header>
                                 <card:Header
                                     title="{i18n>statusCompleted}"
@@ -175,12 +149,6 @@
                             class="migrationAnalyzerCard migrationAnalyzerCardWarning"
                             tooltip="{i18n>warningTooltip}"
                         >
-                            <f:layoutData>
-                                <f:GridContainerItemLayoutData
-                                    columns="3"
-                                    minRows="1"
-                                />
-                            </f:layoutData>
                             <f:header>
                                 <card:Header
                                     title="{i18n>statusWarning}"
@@ -193,12 +161,6 @@
                             class="migrationAnalyzerCard migrationAnalyzerCardError"
                             tooltip="{i18n>errorTooltip}"
                         >
-                            <f:layoutData>
-                                <f:GridContainerItemLayoutData
-                                    columns="3"
-                                    minRows="1"
-                                />
-                            </f:layoutData>
                             <f:header>
                                 <card:Header
                                     title="{i18n>statusError}"
@@ -207,28 +169,25 @@
                                 />
                             </f:header>
                         </f:Card>
-                    </f:items>
-                </f:GridContainer>
+                    </grid:items>
+                </grid:CSSGrid>
                 <Table
                     id="analysisTable"
                     growing="true"
                     growingThreshold="20"
                     growingScrollToLoad="true"
                     sticky="ColumnHeaders"
-                    mode="MultiSelect"
-                    includeItemInSelection="true"
-                    selectionChange=".onAnalysisSelectionChange"
-                    busy="{= ${dashboard>/busy} || ${dashboard>/deleteBusy} }"
-                    busyIndicatorDelay="0"
-                    autoPopinMode="true"
+                    mode="None"
+                    autoPopinMode="true" contextualWidth="Auto"
                     itemPress=".onAnalysisPress"
                     updateFinished=".onAnalysesUpdateFinished"
                     items="{odata>/Analyses}"
                 >
                     <noData>
                         <IllustratedMessage
-                            illustrationType="sapIllus-NoEntries"
+                            illustrationType="sapIllus-NoEntries" illustrationSize="Spot"
                             title="{i18n>noAnalyses}"
+                            description="{i18n>noAnalysesDescription}"
                         />
                     </noData>
                     <columns>
@@ -303,7 +262,6 @@
                     <items>
                         <ColumnListItem
                             type="Navigation"
-                            press=".onAnalysisPress"
                         >
                             <cells>
                                 <ObjectIdentifier

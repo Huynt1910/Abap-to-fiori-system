@@ -480,3 +480,17 @@ test("sendNow executes the bound action once using direct group", async () => {
   assert.deepEqual(calls[1], ["execute", "$direct"]);
   assert.deepEqual(result.SAP__Messages[0].message, "Accepted");
 });
+
+
+test("wizard normalization supplies defaults without mutating an edited schedule", () => {
+  const service = new MailService({});
+  const job = {Frequency: "W", StartTime: "09:30:00", JobTimeZone: "UTC", DayOfWeek: "3"};
+  const normalized = service.normalizeSchedule(job);
+  assert.equal(normalized.StartTime, "09:30:00");
+  assert.equal(normalized.JobTimeZone, "UTC");
+  assert.equal(normalized.DayOfWeek, "3");
+  assert.equal(job.StartDate, undefined);
+  assert.equal(service.getFrequencyUiState("O").showStartDate, false);
+  assert.equal(service.getFrequencyUiState("W").showDayOfWeek, true);
+  assert.equal(service.getFrequencyUiState("M").showDayOfMonth, true);
+});

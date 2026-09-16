@@ -16,8 +16,8 @@
         </customData>
       </Button>
     </OverflowToolbar>
-    <IllustratedMessage visible="{path: 'detail>/messages', formatter: '.formatter.hasNoItems'}" illustrationType="sapIllus-NoEntries" title="{i18n>noMessages}" />
-    <Table id="messagesTable" visible="{path: 'detail>/messages', formatter: '.formatter.hasItems'}" growing="true" growingThreshold="20" items="{detail>/messages}" itemPress=".onMessagePress">
+    <IllustratedMessage visible="{path: 'detail>/messages', formatter: '.formatter.hasNoItems'}" illustrationType="sapIllus-NoEntries" illustrationSize="Spot" title="{i18n>noMessages}" />
+    <Table autoPopinMode="true" contextualWidth="Auto" id="messagesTable" visible="{path: 'detail>/messages', formatter: '.formatter.hasItems'}" growing="true" growingThreshold="20" items="{detail>/messages}" itemPress=".onMessagePress">
       <columns>
         <Column width="6rem" hAlign="End" visible="{detail>/columns/messages/messageNo}"><Text text="{i18n>messageNo}" /></Column>
         <Column width="8rem" visible="{detail>/columns/messages/messageType}"><Text text="{i18n>messageType}" /></Column>
@@ -27,7 +27,7 @@
         <Column visible="{detail>/columns/messages/messageText}"><Text text="{i18n>messageText}" /></Column>
       </columns>
       <items>
-        <ColumnListItem type="Active" press=".onMessagePress">
+        <ColumnListItem type="Active">
           <cells>
             <ObjectNumber number="{path: 'detail>MessageNo', formatter: '.formatter.formatNumber'}" visible="{detail>/columns/messages/messageNo}" />
             <ObjectStatus text="{path: 'detail>MessageType', formatter: '.formatter.formatText'}" state="{path: 'detail>MessageType', formatter: '.formatter.formatSeverityState'}" icon="sap-icon://message-warning" visible="{detail>/columns/messages/messageType}" />

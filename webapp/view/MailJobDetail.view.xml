@@ -156,7 +156,7 @@
                                         visible="{auth>/canMail}"
                                     />
                                 </OverflowToolbar>
-                                <Table
+                                <Table autoPopinMode="true" contextualWidth="Auto"
                                     id="detailRecipientsTable"
                                     items="{path: 'mail>_Recipients'}"
                                 >
@@ -226,7 +226,7 @@
                     <uxap:ObjectPageSubSection title="{i18n>executionHistory}">
                         <uxap:blocks>
                             <VBox class="tabSurface">
-                                <Table
+                                <Table autoPopinMode="true" contextualWidth="Auto"
                                     id="executionLogsTable"
                                     items="{mailUi>/logs}"
                                 >

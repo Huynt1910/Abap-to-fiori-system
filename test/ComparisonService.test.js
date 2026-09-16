@@ -231,3 +231,71 @@ test("comparison formatter maps known and unknown statuses", () => {
   assert.equal(ComparisonFormatter.formatCompatibilityRate(70), "70.00");
   assert.equal(ComparisonFormatter.formatCompatibilityRate("bad"), "-");
 });
+
+test("discovery accepts new IDs despite SAP/browser clock skew", async () => {
+  const service = new ComparisonService({});
+  service.getComparisonRuns = async () => [{ CmpRunId: runId, AnalysisId: analysisId, CreatedAt: "2020-01-01T00:00:00Z" }];
+  assert.equal((await service.discoverNewRun(analysisId, [], Date.now())).CmpRunId, runId);
+});
+
+test("discovery recognizes an updated existing run but not an unchanged result", async () => {
+  const previous = { CmpRunId: runId, AnalysisId: analysisId, RunStatus: "COMPLETED", LastChangedAt: "2026-01-01T00:00:00Z" };
+  let calls = 0;
+  const service = new ComparisonService({}, { sleep: async () => {} });
+  service.getComparisonRuns = async (options) => {
+    assert.equal(options.top, 100);
+    calls++;
+    return [calls === 1 ? previous : { ...previous, LastChangedAt: "2026-01-01T00:00:01Z" }];
+  };
+  const result = await service.discoverNewRun(analysisId, [previous]);
+  assert.equal(result.CmpRunId, runId);
+  assert.equal(calls, 2);
+});
+
+test("cancelled in-flight polling cannot return a completed run", async () => {
+  const service = new ComparisonService({});
+  service.getComparisonRunById = async () => {
+    service.cancelPolling();
+    return { CmpRunId: runId, RunStatus: "COMPLETED" };
+  };
+  await assert.rejects(service.pollRunStatus(runId), /cancelled/);
+  assert.equal(service.isTerminalRun({ RunStatus: " completed " }), true);
+});
+
+test("analysis navigates after completed discovery without redundant status requests", async () => {
+  const controller = loadUi5Module(path.join(root, "webapp/controller/AnalysisDetail.controller.js"), {
+    "abap/to/fiori/system/controller/BaseController": { extend: (name, methods) => methods },
+    "abap/to/fiori/system/model/ComparisonConstants": ComparisonConstants,
+    "sap/m/MessageToast": { show() {} },
+    "sap/m/MessageBox": { error(message) { throw new Error(message); } }
+  });
+  const previous = { CmpRunId: runId, AnalysisId: analysisId, LastChangedAt: "old" };
+  const completed = { ...previous, LastChangedAt: "new", RunStatus: "COMPLETED" };
+  let discoveries = 0;
+  let navigations = 0;
+  const service = new ComparisonService({});
+  service.getComparisonRuns = async () => [previous];
+  service.executeComparison = async () => ({});
+  service.discoverNewRun = async (id, snapshot) => {
+    discoveries++;
+    assert.equal(snapshot[0].LastChangedAt, "old");
+    return completed;
+  };
+  service.pollRunStatus = async () => { throw new Error("Redundant poll"); };
+  const context = {
+    _oViewModel: { getProperty: (key) => key === "/analysisId" ? analysisId : false },
+    getComparisonService: () => service,
+    _setComparisonProgress() {},
+    getText: (key) => key,
+    getRouter: () => ({ navTo(route, args) {
+      assert.equal(route, ComparisonConstants.route.detail);
+      assert.equal(args.cmpRunId, runId);
+      navigations++;
+    } })
+  };
+  await controller.onRunComparisonForAnalysis.call(context);
+  service.executeComparison = async () => completed;
+  await controller.onRunComparisonForAnalysis.call(context);
+  assert.equal(discoveries, 1);
+  assert.equal(navigations, 2);
+});

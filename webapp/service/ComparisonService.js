@@ -104,27 +104,27 @@ sap.ui.define([
   /**
    * Finds the new run created by ExecuteComparison.
    * @param {string} sAnalysisId Analysis UUID
-   * @param {string[]} aPreviousRunIds Known run IDs before action execution
-   * @param {number} iStartedAt Client timestamp before action execution
+   * @param {object[]|string[]} aPreviousRunIds Snapshot of runs before action execution (legacy IDs accepted)
    * @returns {Promise<object>} Newly discovered comparison run
    */
-  ComparisonService.prototype.discoverNewRun = function (sAnalysisId, aPreviousRunIds, iStartedAt) {
+  ComparisonService.prototype.discoverNewRun = function (sAnalysisId, aPreviousRunIds) {
     var sId = this.normalizeGuid(sAnalysisId);
     var mPrevious = {};
     var iTimeout = this._mOptions.discoveryTimeoutMs || ComparisonConstants.polling.timeoutMs;
     var iInterval = this._mOptions.discoveryIntervalMs || ComparisonConstants.polling.intervalMs;
     var iStarted = Date.now();
 
-    (aPreviousRunIds || []).forEach(function (sRunId) {
-      mPrevious[String(sRunId).toLowerCase()] = true;
+    (aPreviousRunIds || []).forEach(function (vRun) {
+      var sRunId = typeof vRun === "string" ? vRun : vRun.CmpRunId;
+      mPrevious[String(sRunId).trim().toLowerCase()] = typeof vRun === "string" ? true : Object.assign({}, vRun);
     });
 
     return this._pollUntil(function () {
       return this.getComparisonRuns({
-        top: 5,
+        top: 100,
         filters: { analysisId: sId }
       }).then(function (aRuns) {
-        return this._findNewRun(aRuns, mPrevious, sId, iStartedAt);
+        return this._findNewRun(aRuns, mPrevious, sId);
       }.bind(this));
     }.bind(this), iInterval, iTimeout, iStarted, "Could not identify the newly created comparison run.");
   };
@@ -169,27 +169,30 @@ sap.ui.define([
   };
 
   ComparisonService.prototype.isCompletedStatus = function (sStatus) {
-    var sValue = String(sStatus || "").toUpperCase();
+    var sValue = String(sStatus || "").trim().toUpperCase();
     return sValue === ComparisonConstants.runStatus.completed || sValue === ComparisonConstants.runStatus.success;
   };
 
   ComparisonService.prototype.isFailedStatus = function (sStatus) {
-    var sValue = String(sStatus || "").toUpperCase();
+    var sValue = String(sStatus || "").trim().toUpperCase();
     return sValue === ComparisonConstants.runStatus.failed || sValue === ComparisonConstants.runStatus.error;
   };
 
-  ComparisonService.prototype._findNewRun = function (aRuns, mPrevious, sAnalysisId, iStartedAt) {
-    var iStarted = Number(iStartedAt || 0);
-
+  ComparisonService.prototype._findNewRun = function (aRuns, mPrevious, sAnalysisId) {
     return (aRuns || []).find(function (oRun) {
-      var sRunId = String(oRun && oRun.CmpRunId || "").toLowerCase();
+      var sRunId = this.normalizeGuid(oRun && oRun.CmpRunId).toLowerCase();
       var sRunAnalysisId = this.normalizeGuid(oRun && oRun.AnalysisId);
-      var iCreatedAt = oRun && oRun.CreatedAt ? new Date(oRun.CreatedAt).getTime() : 0;
+      var oPrevious = mPrevious[sRunId];
+      // Compare server snapshots, never SAP timestamps against the browser clock.
+      // A rerun may update an existing entity instead of allocating a new UUID.
+      var bChanged = oPrevious && oPrevious !== true &&
+        ["@odata.etag", "LastChangedAt", "CreatedAt", "RunStatus"].some(function (sField) {
+          return oRun[sField] !== undefined && oRun[sField] !== oPrevious[sField];
+        });
 
-      return sRunId &&
-        !mPrevious[sRunId] &&
-        sRunAnalysisId.toLowerCase() === sAnalysisId.toLowerCase() &&
-        (!iStarted || !iCreatedAt || iCreatedAt >= iStarted - 5000);
+      return this.isGuid(sRunId) &&
+        (!oPrevious || bChanged) &&
+        sRunAnalysisId.toLowerCase() === sAnalysisId.toLowerCase();
     }.bind(this)) || null;
   };
 
@@ -211,6 +214,9 @@ sap.ui.define([
         return Promise.reject(new Error(sTimeoutMessage));
       }
       return fnCheck().then(function (vResult) {
+        if (this._bCancelled || iToken !== this._iPollToken) {
+          throw new Error("Comparison polling was cancelled.");
+        }
         if (vResult) {
           return vResult;
         }

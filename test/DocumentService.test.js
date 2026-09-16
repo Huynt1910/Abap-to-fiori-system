@@ -110,9 +110,11 @@ test("file format mappings return expected mime types and extensions", () => {
   assert.equal(service.getFallbackMimeType("X"), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
   assert.equal(service.getFallbackMimeType("P"), "application/pdf");
   assert.equal(service.getFallbackMimeType("C"), "text/csv;charset=utf-8");
+  assert.equal(service.getFallbackMimeType("M"), "text/markdown;charset=utf-8");
   assert.equal(service.getFallbackFileName({ reportType: "ZREP", fileFormat: "X", exportSection: "RECOMMEN" }), "ZREP_RECOMMEN_20260805_103000.xlsx");
   assert.equal(service.getFallbackFileName({ reportType: "ZREP", fileFormat: "P", exportSection: "OVERVIEW" }), "ZREP_OVERVIEW_20260805_103000.pdf");
   assert.equal(service.getFallbackFileName({ reportType: "ZREP", fileFormat: "C", exportSection: "UI_FILTER" }), "ZREP_UI_FILTER_20260805_103000.csv");
+  assert.equal(service.getFallbackFileName({ reportType: "ZREP", fileFormat: "M", exportSection: "ALL" }), "ZREP_ALL_20260805_103000.md");
 });
 
 test("all supported export sections are accepted and invalid sections are rejected", () => {
@@ -275,14 +277,67 @@ test("prepare selected export executes bound action with property keys", async (
     ["setParameter", "SelectedFields", "FieldName,DataElement"],
     ["setParameter", "PdfHeaderText", ""],
     ["setParameter", "PdfFooterText", ""],
-    ["setParameter", "PaperSize", "A4"],
-    ["setParameter", "Orientation", "P"],
-    ["setParameter", "FontSize", 10],
-    ["setParameter", "FitToPage", true],
+    ["setParameter", "PaperSize", ""],
+    ["setParameter", "Orientation", ""],
+    ["setParameter", "FontSize", 0],
+    ["setParameter", "FitToPage", false],
     ["setParameter", "SplitMultiValue", false],
     ["execute", "$direct"]
   ]);
   assert.equal(result.DownloadUrl, "/download/1");
+});
+
+test("technical document executes its dedicated bound action without export parameters", async () => {
+  const calls = [];
+  const service = new DocumentService({
+    bindContext(pathValue) {
+      calls.push(["bindContext", pathValue]);
+      return {
+        execute(groupId) {
+          calls.push(["execute", groupId]);
+          return Promise.resolve();
+        },
+        getBoundContext() {
+          return {
+            requestObject: async () => ({
+              DownloadUrl: "/download/document",
+              FileName: "technical-document.md",
+              MimeType: "text/markdown"
+            })
+          };
+        }
+      };
+    }
+  });
+
+  const result = await service.generateTechnicalDocument("11111111-2222-3333-4444-555555555555");
+
+  assert.match(calls[0][1], /\/Analyses\(11111111-2222-3333-4444-555555555555\)\/com\.sap\.gateway\.srvd\.zui_mig_analysis\.v0001\.GenerateTechnicalDocument\(\.\.\.\)$/);
+  assert.deepEqual(calls.slice(1), [["execute", "$direct"]]);
+  assert.equal(result.FileName, "technical-document.md");
+});
+
+test("technical document download uses Markdown metadata and custom filename", async () => {
+  const service = createService();
+  let downloadCall;
+
+  service.generateTechnicalDocument = async () => ({
+    DownloadUrl: "/download/document",
+    FileName: "backend.md",
+    MimeType: "text/markdown"
+  });
+  service.downloadUrl = async (url, options) => {
+    downloadCall = { url, options };
+    return downloadCall;
+  };
+
+  await service.downloadTechnicalDocument("11111111-2222-3333-4444-555555555555", {
+    fileName: "custom-document"
+  });
+
+  assert.equal(downloadCall.url, "/sap/opu/odata4/sap/zui_mig_analysis_o4/srvd/sap/zui_mig_analysis/0001/download/document?sap-client=324");
+  assert.equal(downloadCall.options.fileName, "custom-document.md");
+  assert.equal(downloadCall.options.fileFormat, "M");
 });
 
 test("selected export validates selected fields and parameter lengths", async () => {
@@ -307,7 +362,13 @@ test("selected export validates selected fields and parameter lengths", async ()
   }), /Unsupported export file format|FileFormat/);
 
   assert.throws(() => service.prepareSelectedExport("A", {
-    fileFormat: "X",
+    fileFormat: "M",
+    exportSection: "ALL",
+    selectedFields: []
+  }), /Unsupported export file format/);
+
+  assert.throws(() => service.prepareSelectedExport("A", {
+    fileFormat: "P",
     exportSection: "THIS_SECTION_CODE_IS_TOO_LONG",
     selectedFields: ["FieldName"]
   }), /Unsupported export section|ExportSection/);
@@ -343,7 +404,7 @@ test("selected export validates selected fields and parameter lengths", async ()
   }), /Orientation/);
 
   assert.throws(() => service.prepareSelectedExport("A", {
-    fileFormat: "X",
+    fileFormat: "P",
     exportSection: "UI_FILTER",
     selectedFields: [],
     fontSize: 0
@@ -380,10 +441,10 @@ test("prepare selected export accepts pre-serialized ALL section field expressio
     ["SelectedFields", "UI_FILTER:FieldName,FieldKind;DB_OBJ:ObjectName,Operation"],
     ["PdfHeaderText", ""],
     ["PdfFooterText", ""],
-    ["PaperSize", "A4"],
-    ["Orientation", "P"],
-    ["FontSize", 10],
-    ["FitToPage", true],
+    ["PaperSize", ""],
+    ["Orientation", ""],
+    ["FontSize", 0],
+    ["FitToPage", false],
     ["SplitMultiValue", false]
   ]);
 });
@@ -429,7 +490,7 @@ test("prepare selected export forwards custom PDF action parameters", async () =
     ["Orientation", "L"],
     ["FontSize", 12],
     ["FitToPage", false],
-    ["SplitMultiValue", true]
+    ["SplitMultiValue", false]
   ]);
 });
 

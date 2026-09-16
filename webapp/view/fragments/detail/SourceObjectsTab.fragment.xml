@@ -11,8 +11,8 @@
         </customData>
       </Button>
     </OverflowToolbar>
-    <IllustratedMessage visible="{path: 'detail>/sourceObjects', formatter: '.formatter.hasNoItems'}" illustrationType="sapIllus-NoEntries" title="{i18n>noSourceObjects}" />
-    <Table id="sourceObjectsTable" visible="{path: 'detail>/sourceObjects', formatter: '.formatter.hasItems'}" growing="true" growingThreshold="20" items="{detail>/sourceObjects}">
+    <IllustratedMessage visible="{path: 'detail>/sourceObjects', formatter: '.formatter.hasNoItems'}" illustrationType="sapIllus-NoEntries" illustrationSize="Spot" title="{i18n>noSourceObjects}" />
+    <Table autoPopinMode="true" contextualWidth="Auto" id="sourceObjectsTable" visible="{path: 'detail>/sourceObjects', formatter: '.formatter.hasItems'}" growing="true" growingThreshold="20" items="{detail>/sourceObjects}">
       <columns>
         <Column width="14rem" visible="{detail>/columns/sourceObjects/objectName}"><Text text="{i18n>objectName}" /></Column>
         <Column width="10rem" visible="{detail>/columns/sourceObjects/objectType}"><Text text="{i18n>objectType}" /></Column>

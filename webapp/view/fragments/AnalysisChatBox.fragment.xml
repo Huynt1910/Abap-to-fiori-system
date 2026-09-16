@@ -1,0 +1,128 @@
+<core:FragmentDefinition xmlns="sap.m" xmlns:core="sap.ui.core">
+  <VBox class="analysisChatRoot">
+    <HBox class="analysisChatLauncher" visible="{= !${chatModel>/isOpen} }">
+      <Button id="aiChatLauncher" icon="sap-icon://discussion-2" type="Emphasized" tooltip="{i18n>chatTitle}" press=".onOpenAIChat" />
+      <Text class="analysisChatBadge" text="{chatModel>/unreadCount}" visible="{= ${chatModel>/unreadCount} > 0 }" tooltip="{i18n>chatUnread}" />
+    </HBox>
+
+    <VBox id="aiChatPanel" class="analysisChatPanel" visible="{chatModel>/isOpen}" renderType="Div">
+      <OverflowToolbar class="analysisChatHeader" design="Transparent">
+        <Avatar src="sap-icon://discussion-2" displaySize="S" displayShape="Circle" backgroundColor="Accent6" tooltip="{i18n>chatTitle}" />
+        <VBox class="analysisChatHeaderIdentity">
+          <Title text="{i18n>chatTitle}" level="H3" class="analysisChatHeaderTitle" />
+          <Text text="{chatModel>/activeTitle}" wrapping="false" maxLines="1" class="analysisChatHeaderSubtitle" />
+        </VBox>
+        <ToolbarSpacer />
+        <Button icon="sap-icon://add" type="Transparent" tooltip="{i18n>chatNew}" press=".onCreateChatSession" enabled="{= !${chatModel>/isLoading} &amp;&amp; !${chatModel>/isSending} }" />
+        <Button icon="sap-icon://history" type="Transparent" tooltip="{i18n>chatHistory}" press=".onOpenChatHistory" enabled="{= !${chatModel>/isLoading} &amp;&amp; !${chatModel>/isSending} }">
+          <layoutData><OverflowToolbarLayoutData priority="NeverOverflow" /></layoutData>
+        </Button>
+        <MenuButton id="aiChatMoreActions" icon="sap-icon://overflow" type="Transparent" tooltip="{i18n>chatMore}" visible="{= ${chatModel>/canRename} || ${chatModel>/canDelete} }" enabled="{= !${chatModel>/isLoading} &amp;&amp; !${chatModel>/isSending} }">
+          <layoutData><OverflowToolbarLayoutData priority="NeverOverflow" /></layoutData>
+          <menu>
+            <Menu itemSelected=".onChatActionSelected">
+              <MenuItem key="rename" text="{i18n>chatRename}" icon="sap-icon://edit" visible="{chatModel>/canRename}" />
+              <MenuItem key="delete" text="{i18n>chatDelete}" icon="sap-icon://delete" visible="{chatModel>/canDelete}" />
+            </Menu>
+          </menu>
+        </MenuButton>
+        <Button icon="sap-icon://decline" type="Transparent" tooltip="{i18n>chatClose}" press=".onCloseAIChat">
+          <layoutData><OverflowToolbarLayoutData priority="NeverOverflow" /></layoutData>
+        </Button>
+      </OverflowToolbar>
+
+      <ScrollContainer id="aiChatScroll" vertical="true" horizontal="false" height="100%" focusable="true" class="analysisChatScroll" busy="{chatModel>/isLoading}" busyIndicatorDelay="0">
+        <layoutData><FlexItemData growFactor="1" shrinkFactor="1" baseSize="0%" minHeight="0" /></layoutData>
+        <MessageStrip text="{chatModel>/error}" visible="{= !!${chatModel>/error} }" type="Error" showIcon="true" class="analysisChatError" />
+        <Button text="{i18n>chatRetry}" visible="{= !!${chatModel>/error} }" press=".onRetryAIChat" enabled="{= !${chatModel>/isLoading} &amp;&amp; !${chatModel>/isSending} }" class="analysisChatRetry" />
+
+        <VBox visible="{chatModel>/historyOpen}" class="analysisChatHistory">
+          <OverflowToolbar design="Transparent" class="analysisChatHistoryHeader">
+            <Button icon="sap-icon://nav-back" type="Transparent" tooltip="{i18n>chatHistoryBack}" press=".onBackFromChatHistory" />
+            <Title text="{i18n>chatHistory}" level="H4" />
+          </OverflowToolbar>
+          <SearchField value="{chatModel>/sessionSearch}" liveChange=".onChatSessionSearch" placeholder="{i18n>chatHistorySearch}" class="analysisChatHistorySearch" />
+          <List items="{chatModel>/sessions}" mode="SingleSelectMaster" selectionChange=".onSelectChatSession" noDataText="{i18n>chatNoSessions}" class="analysisChatSessionList">
+            <CustomListItem selected="{= ${chatModel>SessionId} === ${chatModel>/activeSessionId} }" visible="{parts: [{path: 'chatModel>SessionName'}, {path: 'chatModel>Preview'}, {path: 'chatModel>/sessionSearch'}], formatter: '.formatSessionVisible'}">
+              <HBox width="100%" alignItems="Center" class="analysisChatSessionItem">
+                <VBox class="analysisChatSessionText">
+                  <Text text="{chatModel>SessionName}" maxLines="1" class="analysisChatSessionTitle" />
+                  <Text text="{chatModel>Preview}" maxLines="2" class="analysisChatSessionPreview" />
+                  <Text text="{path: 'chatModel>LastChangedAt', formatter: '.formatTime'}" class="analysisChatSessionTime" />
+                </VBox>
+                <ToolbarSpacer />
+                <MenuButton icon="sap-icon://overflow" type="Transparent" tooltip="{i18n>chatMore}" visible="{= ${chatModel>__EntityControl/Updatable} || ${chatModel>__EntityControl/Deletable} }">
+                  <menu>
+                    <Menu itemSelected=".onHistorySessionActionSelected">
+                      <MenuItem key="rename" text="{i18n>chatRename}" icon="sap-icon://edit" visible="{chatModel>__EntityControl/Updatable}" />
+                      <MenuItem key="delete" text="{i18n>chatDelete}" icon="sap-icon://delete" visible="{chatModel>__EntityControl/Deletable}" />
+                    </Menu>
+                  </menu>
+                </MenuButton>
+              </HBox>
+            </CustomListItem>
+          </List>
+        </VBox>
+
+        <VBox visible="{= !${chatModel>/historyOpen} }" class="analysisChatConversation">
+          <MessageStrip text="{i18n>chatContextNotice}" type="Warning" showIcon="true" showCloseButton="true" close=".onDismissChatContextNotice" visible="{chatModel>/contextNoticeVisible}" class="analysisChatContextNotice" />
+          <VBox visible="{= ${chatModel>/messages/length} === 0 &amp;&amp; !${chatModel>/isLoading} }" class="analysisChatEmptyState" alignItems="Center">
+            <Avatar src="sap-icon://discussion-2" displaySize="M" displayShape="Circle" backgroundColor="Accent6" />
+            <Text text="{i18n>chatEmpty}" textAlign="Center" wrapping="true" />
+          </VBox>
+
+          <List items="{chatModel>/messages}" showSeparators="None" showNoData="false" class="analysisChatMessages">
+            <CustomListItem class="analysisChatMessageItem">
+              <VBox width="100%">
+                <VBox visible="{chatModel>ShowSender}" class="analysisChatGroupGap" />
+                <HBox visible="{= ${chatModel>Role} === 'USER' }" justifyContent="End" class="analysisChatMessageRow analysisChatMessageUser">
+                  <VBox class="analysisChatMessageStack analysisChatMessageStackUser">
+                    <VBox class="analysisChatBubble analysisChatBubbleUser">
+                      <Text text="{chatModel>Content}" wrapping="true" renderWhitespace="true" class="analysisChatContent" />
+                    </VBox>
+                    <HBox visible="{= ${chatModel>ShowTimestamp} || ${chatModel>SendFailed} }" justifyContent="End" alignItems="Center" class="analysisChatMessageMeta">
+                      <Text text="{path: 'chatModel>CreatedAt', formatter: '.formatTime'}" visible="{chatModel>ShowTimestamp}" class="analysisChatTime" />
+                      <ObjectStatus text="{i18n>chatSendFailed}" state="Error" visible="{= !!${chatModel>SendFailed} }" class="analysisChatSendError" />
+                      <Button text="{i18n>chatResend}" type="Transparent" visible="{= !!${chatModel>SendFailed} }" press=".onRetryFailedMessage" enabled="{= !${chatModel>/isLoading} &amp;&amp; !${chatModel>/isSending} }" />
+                    </HBox>
+                  </VBox>
+                </HBox>
+
+                <HBox visible="{= ${chatModel>Role} !== 'USER' }" alignItems="Start" class="analysisChatMessageRow analysisChatMessageAssistant">
+                  <VBox class="analysisChatAvatarSlot">
+                    <Avatar visible="{chatModel>ShowSender}" displaySize="XS" displayShape="Circle" backgroundColor="Accent6" src="sap-icon://discussion-2" tooltip="{i18n>chatTitle}" />
+                  </VBox>
+                  <VBox class="analysisChatMessageStack">
+                    <VBox class="analysisChatBubble analysisChatBubbleAssistant">
+                      <Text text="{i18n>chatTitle}" visible="{chatModel>ShowSender}" class="analysisChatSender" />
+                      <Text text="{chatModel>Content}" wrapping="true" renderWhitespace="true" visible="{= !${chatModel>IsTyping} }" class="analysisChatContent" />
+                      <Text text="{i18n>chatThinking}" visible="{= !!${chatModel>IsTyping} }" class="sapUiInvisibleText" />
+                      <HBox visible="{= !!${chatModel>IsTyping} }" class="analysisChatTyping" alignItems="Center">
+                        <Text text="&#9679;" class="analysisChatTypingDot analysisChatTypingDotOne" />
+                        <Text text="&#9679;" class="analysisChatTypingDot analysisChatTypingDotTwo" />
+                        <Text text="&#9679;" class="analysisChatTypingDot analysisChatTypingDotThree" />
+                      </HBox>
+                    </VBox>
+                    <Text text="{path: 'chatModel>CreatedAt', formatter: '.formatTime'}" visible="{chatModel>ShowTimestamp}" class="analysisChatTime" />
+                  </VBox>
+                </HBox>
+              </VBox>
+            </CustomListItem>
+          </List>
+        </VBox>
+      </ScrollContainer>
+
+      <VBox class="analysisChatComposer">
+        <HBox width="100%" alignItems="End" class="analysisChatComposerShell">
+          <Label text="{i18n>chatInputLabel}" labelFor="aiChatDraft" class="sapUiInvisibleText" />
+          <TextArea id="aiChatDraft" value="{chatModel>/draftMessage}" liveChange=".onChatDraftChange" width="100%" rows="1" growing="true" growingMaxLines="5" placeholder="{i18n>chatPlaceholder}" enabled="{= !${chatModel>/isSending} &amp;&amp; !${chatModel>/isLoading} }" valueState="{= ${chatModel>/draftMessage}.length > 8000 ? 'Error' : 'None' }" valueStateText="{i18n>chatTooLong}" class="analysisChatDraft">
+            <layoutData><FlexItemData growFactor="1" shrinkFactor="1" baseSize="0%" minWidth="0" /></layoutData>
+          </TextArea>
+          <Button icon="sap-icon://paper-plane" type="Emphasized" tooltip="{i18n>chatSend}" class="analysisChatSendButton" press=".onSendAIMessage" enabled="{= !!${chatModel>/draftMessage}.trim() &amp;&amp; ${chatModel>/draftMessage}.length &lt;= 8000 &amp;&amp; !${chatModel>/isSending} &amp;&amp; !${chatModel>/isLoading} &amp;&amp; !${chatModel>/needsReload} &amp;&amp; ${chatModel>/canAsk} }">
+            <layoutData><FlexItemData shrinkFactor="0" /></layoutData>
+          </Button>
+        </HBox>
+      </VBox>
+    </VBox>
+  </VBox>
+</core:FragmentDefinition>

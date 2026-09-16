@@ -49,7 +49,9 @@ sap.ui.define([
     },
 
     getAuthenticationService: function () {
-      return this.getOwnerComponent().getAuthenticationService();
+      var oComponent = this.getOwnerComponent();
+      return oComponent && typeof oComponent.getAuthenticationService === "function" ?
+        oComponent.getAuthenticationService() : null;
     },
 
     parseError: function (oError) {
@@ -59,8 +61,9 @@ sap.ui.define([
     showError: function (oError, sFallbackKey) {
       var oParsedError = this.parseError(oError);
       var sMessage = oParsedError.message;
+      var oAuthentication = this.getAuthenticationService();
 
-      if (this.getAuthenticationService().handleHttpStatus(oParsedError.status)) {
+      if (oAuthentication && oAuthentication.handleHttpStatus(oParsedError.status)) {
         return;
       }
 

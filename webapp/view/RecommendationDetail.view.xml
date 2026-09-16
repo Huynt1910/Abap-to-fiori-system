@@ -23,7 +23,7 @@
       </uxap:ObjectPageSection>
       <uxap:ObjectPageSection id="annotationsSection" title="{i18n>annotations}">
         <uxap:subSections><uxap:ObjectPageSubSection title="{i18n>annotations}"><uxap:blocks>
-          <Table busy="{recDetail>/annotationsBusy}" items="{recDetail>/annotations}" growing="true">
+          <Table autoPopinMode="true" contextualWidth="Auto" busy="{recDetail>/annotationsBusy}" items="{recDetail>/annotations}" growing="true">
           <headerToolbar><OverflowToolbar><Title text="{i18n>annotations}" level="H3" /><ToolbarSpacer /><Button icon="sap-icon://action-settings" tooltip="{i18n>viewSettings}" press=".onOpenSimpleColumnSettings" /></OverflowToolbar></headerToolbar>
           <columns>
             <Column visible="{recDetail>/columns/annotations/targetEntity}"><Text text="{i18n>targetEntity}" /></Column><Column visible="{recDetail>/columns/annotations/targetElement}"><Text text="{i18n>targetElement}" /></Column><Column visible="{recDetail>/columns/annotations/annotationName}"><Text text="{i18n>annotationName}" /></Column><Column visible="{recDetail>/columns/annotations/annotationValue}"><Text text="{i18n>annotationValue}" /></Column><Column hAlign="End" visible="{recDetail>/columns/annotations/annotationSequence}"><Text text="{i18n>annotationSequence}" /></Column>

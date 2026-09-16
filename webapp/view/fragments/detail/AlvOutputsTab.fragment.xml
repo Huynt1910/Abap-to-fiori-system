@@ -16,8 +16,8 @@
         </customData>
       </Button>
     </OverflowToolbar>
-    <IllustratedMessage visible="{path: 'detail>/alvOutputs', formatter: '.formatter.hasNoItems'}" illustrationType="sapIllus-NoEntries" title="{i18n>noAlvOutputs}" />
-    <Table id="alvOutputsTable" visible="{path: 'detail>/alvOutputs', formatter: '.formatter.hasItems'}" growing="true" growingThreshold="20" items="{detail>/alvOutputs}" itemPress=".onAlvOutputPress">
+    <IllustratedMessage visible="{path: 'detail>/alvOutputs', formatter: '.formatter.hasNoItems'}" illustrationType="sapIllus-NoEntries" illustrationSize="Spot" title="{i18n>noAlvOutputs}" />
+    <Table autoPopinMode="true" contextualWidth="Auto" id="alvOutputsTable" visible="{path: 'detail>/alvOutputs', formatter: '.formatter.hasItems'}" growing="true" growingThreshold="20" items="{detail>/alvOutputs}" itemPress=".onAlvOutputPress">
       <columns>
         <Column width="14rem" visible="{detail>/columns/alvOutputs/outputName}"><Text text="{i18n>outputName}" /></Column>
         <Column width="10rem" visible="{detail>/columns/alvOutputs/outputKind}"><Text text="{i18n>outputKind}" /></Column>
@@ -39,7 +39,7 @@
         <Column width="8rem" visible="{detail>/columns/alvOutputs/confidence}"><Text text="{i18n>confidence}" /></Column>
       </columns>
       <items>
-        <ColumnListItem type="Active" press=".onAlvOutputPress">
+        <ColumnListItem type="Active">
           <cells>
             <Text text="{path: 'detail>OutputName', formatter: '.formatter.formatText'}" visible="{detail>/columns/alvOutputs/outputName}" />
             <Text text="{path: 'detail>OutputKind', formatter: '.formatter.formatText'}" visible="{detail>/columns/alvOutputs/outputKind}" />
@@ -74,7 +74,7 @@
       <IconTabBar expandable="false" class="sapUiNoContentPadding">
         <items>
           <IconTabFilter text="{i18n>alvColumns}" count="{detail>/alvOutputDetail/columns/length}">
-            <Table growing="true" growingThreshold="20" items="{detail>/alvOutputDetail/columns}">
+            <Table autoPopinMode="true" contextualWidth="Auto" growing="true" growingThreshold="20" items="{detail>/alvOutputDetail/columns}">
               <columns>
                 <Column><Text text="{i18n>fieldName}" /></Column>
                 <Column><Text text="{i18n>columnLabel}" /></Column>
@@ -98,19 +98,19 @@
             </Table>
           </IconTabFilter>
           <IconTabFilter text="{i18n>alvSorts}" count="{detail>/alvOutputDetail/sorts/length}">
-            <Table growing="true" items="{detail>/alvOutputDetail/sorts}">
+            <Table autoPopinMode="true" contextualWidth="Auto" growing="true" items="{detail>/alvOutputDetail/sorts}">
               <columns><Column><Text text="{i18n>fieldName}" /></Column><Column hAlign="End"><Text text="{i18n>sortPosition}" /></Column><Column><Text text="{i18n>isAscending}" /></Column><Column><Text text="{i18n>subtotal}" /></Column><Column><Text text="{i18n>confidence}" /></Column></columns>
               <items><ColumnListItem><cells><Text text="{path: 'detail>FieldName', formatter: '.formatter.formatText'}" /><ObjectNumber number="{path: 'detail>SortPosition', formatter: '.formatter.formatNumber'}" /><Text text="{path: 'detail>IsAscending', formatter: '.formatter.formatBoolean'}" /><Text text="{path: 'detail>Subtotal', formatter: '.formatter.formatBoolean'}" /><Text text="{path: 'detail>Confidence', formatter: '.formatter.formatText'}" /></cells></ColumnListItem></items>
             </Table>
           </IconTabFilter>
           <IconTabFilter text="{i18n>alvFilters}" count="{detail>/alvOutputDetail/filters/length}">
-            <Table growing="true" items="{detail>/alvOutputDetail/filters}">
+            <Table autoPopinMode="true" contextualWidth="Auto" growing="true" items="{detail>/alvOutputDetail/filters}">
               <columns><Column><Text text="{i18n>fieldName}" /></Column><Column><Text text="{i18n>filterSign}" /></Column><Column><Text text="{i18n>filterOption}" /></Column><Column><Text text="{i18n>lowValue}" /></Column><Column><Text text="{i18n>highValue}" /></Column><Column><Text text="{i18n>confidence}" /></Column></columns>
               <items><ColumnListItem><cells><Text text="{path: 'detail>FieldName', formatter: '.formatter.formatText'}" /><Text text="{path: 'detail>FilterSign', formatter: '.formatter.formatText'}" /><Text text="{path: 'detail>FilterOption', formatter: '.formatter.formatText'}" /><Text text="{path: 'detail>LowValue', formatter: '.formatter.formatText'}" /><Text text="{path: 'detail>HighValue', formatter: '.formatter.formatText'}" /><Text text="{path: 'detail>Confidence', formatter: '.formatter.formatText'}" /></cells></ColumnListItem></items>
             </Table>
           </IconTabFilter>
           <IconTabFilter text="{i18n>alvEvents}" count="{detail>/alvOutputDetail/events/length}">
-            <Table growing="true" items="{detail>/alvOutputDetail/events}">
+            <Table autoPopinMode="true" contextualWidth="Auto" growing="true" items="{detail>/alvOutputDetail/events}">
               <columns><Column><Text text="{i18n>eventName}" /></Column><Column><Text text="{i18n>handlerName}" /></Column><Column><Text text="{i18n>handlerKind}" /></Column><Column><Text text="{i18n>guiDependency}" /></Column><Column><Text text="{i18n>confidence}" /></Column></columns>
               <items><ColumnListItem><cells><Text text="{path: 'detail>EventName', formatter: '.formatter.formatText'}" /><Text text="{path: 'detail>HandlerName', formatter: '.formatter.formatText'}" /><Text text="{path: 'detail>HandlerKind', formatter: '.formatter.formatText'}" /><Text text="{path: 'detail>GuiDependency', formatter: '.formatter.formatBoolean'}" /><Text text="{path: 'detail>Confidence', formatter: '.formatter.formatText'}" /></cells></ColumnListItem></items>
             </Table>

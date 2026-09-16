@@ -13,17 +13,14 @@ sap.ui.define([
   "abap/to/fiori/system/model/AnalysisTableConfig",
   "abap/to/fiori/system/util/TablePersonalizationService",
   "abap/to/fiori/system/util/Constants",
-  "abap/to/fiori/system/util/formatter"
-], function (Fragment, MessageBox, MessageToast, Filter, FilterOperator, Sorter, BaseController, models, MailConstants, mailFormatter, ComparisonConstants, AnalysisTableConfig, TablePersonalizationService, Constants, formatter) {
+  "abap/to/fiori/system/util/formatter",
+  "abap/to/fiori/system/util/AnalysisChatBox"
+], function (Fragment, MessageBox, MessageToast, Filter, FilterOperator, Sorter, BaseController, models, MailConstants, mailFormatter, ComparisonConstants, AnalysisTableConfig, TablePersonalizationService, Constants, formatter, AnalysisChatBox) {
   "use strict";
 
   return BaseController.extend("abap.to.fiori.system.controller.AnalysisDetail", {
     formatter: formatter,
     mailFormatter: mailFormatter,
-
-    onOpenModernization: function () {
-      this.getRouter().navTo("modernization", { analysisId: encodeURIComponent(this._oViewModel.getProperty("/analysisId")) });
-    },
 
     onInit: function () {
       this._oViewModel = models.createAnalysisDetailModel();
@@ -33,6 +30,21 @@ sap.ui.define([
       this.getView().setModel(this._oMailViewModel, "mailUi");
       this.getRouter().getRoute("analysisDetail").attachPatternMatched(this._onRouteMatched, this);
       this.getRouter().getRoute("detail").attachPatternMatched(this._onRouteMatched, this);
+      this._oChatBox = new AnalysisChatBox(this);
+      ["uiFilters", "databaseObjects", "businessLogic"].forEach(function (sSection) {
+        var oScroll = this.byId(sSection + "Scroll");
+        var sLabel = this.getText(sSection);
+        oScroll.addEventDelegate({
+          onAfterRendering: function () {
+            var oDom = oScroll.getDomRef();
+            if (oDom) {
+              oDom.setAttribute("tabindex", "0");
+              oDom.setAttribute("role", "region");
+              oDom.setAttribute("aria-label", sLabel);
+            }
+          }
+        });
+      }.bind(this));
     },
 
     onBackToDashboard: function () {
@@ -40,6 +52,7 @@ sap.ui.define([
     },
 
     onExit: function () {
+      if (this._oChatBox) { this._oChatBox.destroy(); }
       this.getComparisonService().cancelPolling();
       this.getDocumentService().cancelExportPolling();
       if (this._iProgramValueHelpSearchTimer) {
@@ -263,24 +276,29 @@ sap.ui.define([
 
       this._setComparisonProgress(true, ComparisonConstants.progressState.submitting, this.getText("comparisonSubmitting"));
 
-      var iStartedAt = Date.now();
-      var aPreviousRunIds = [];
+      var aPreviousRuns = [];
 
       oComparisonService.cancelPolling();
       oComparisonService.resetCancellation();
 
-      oComparisonService.getComparisonRuns({
+      return oComparisonService.getComparisonRuns({
         top: 100,
         filters: { analysisId: sAnalysisId }
       }).then(function (aRuns) {
-        aPreviousRunIds = (aRuns || []).map(function (oRun) {
-          return oRun.CmpRunId;
-        }).filter(Boolean);
+        aPreviousRuns = (aRuns || []).map(function (oRun) {
+          return Object.assign({}, oRun);
+        });
         return oComparisonService.executeComparison(sAnalysisId);
-      }).then(function () {
+      }).then(function (oResult) {
+        if (oResult && oComparisonService.isGuid(oResult.CmpRunId)) {
+          return oResult;
+        }
         this._setComparisonProgress(true, ComparisonConstants.progressState.discoveringRun, this.getText("comparisonDiscoveringRun"));
-        return oComparisonService.discoverNewRun(sAnalysisId, aPreviousRunIds, iStartedAt);
+        return oComparisonService.discoverNewRun(sAnalysisId, aPreviousRuns);
       }.bind(this)).then(function (oRun) {
+        if (oComparisonService.isTerminalRun(oRun)) {
+          return oRun;
+        }
         this._setComparisonProgress(true, ComparisonConstants.progressState.running, this.getText("comparisonRunning"));
         return oComparisonService.pollRunStatus(oRun.CmpRunId);
       }.bind(this)).then(function (oRun) {
@@ -412,30 +430,47 @@ sap.ui.define([
       var oExport = this._oViewModel.getProperty("/export");
       var sSelectedFields = this._getSelectedExportFieldExpression();
       var sFileName = this._getExportFileName(oExport);
+      var bTechnicalDocument = oExport.fileFormat === Constants.technicalDocument.fileFormat;
+      var pDownload;
 
       if (oExport.busy) {
         return;
       }
 
-      if (!this._canPrepareSelectedExport()) {
+      if (bTechnicalDocument ? !this._canGenerateTechnicalDocument() : !this._canPrepareSelectedExport()) {
         MessageBox.error(this.getText("exportNotAvailable"));
         return;
       }
 
+      if (!bTechnicalDocument && !(oExport.availableSections || []).some(function (oSection) {
+        return oSection.selected !== false && (oSection.fields || []).some(function (oField) {
+          return oField.selected === true;
+        });
+      })) {
+        MessageBox.error(this.getText("exportSelectColumnRequired"));
+        return;
+      }
+
       this._oViewModel.setProperty("/export/busy", true);
-      this.getDocumentService().downloadSelectedExport(this._oViewModel.getProperty("/analysisId"), {
-        fileFormat: oExport.fileFormat,
-        exportSection: oExport.exportSection,
-        selectedFields: sSelectedFields,
-        pdfHeaderText: oExport.pdfHeaderText,
-        pdfFooterText: oExport.pdfFooterText,
-        paperSize: oExport.paperSize,
-        orientation: oExport.orientation,
-        fontSize: oExport.fontSize,
-        fitToPage: oExport.fitToPage,
-        splitMultiValue: oExport.splitMultiValue,
-        fileName: sFileName
-      }).then(function () {
+      pDownload = bTechnicalDocument ?
+        this.getDocumentService().downloadTechnicalDocument(this._oViewModel.getProperty("/analysisId"), {
+          fileName: sFileName
+        }) :
+        this.getDocumentService().downloadSelectedExport(this._oViewModel.getProperty("/analysisId"), {
+          fileFormat: oExport.fileFormat,
+          exportSection: oExport.exportSection,
+          selectedFields: sSelectedFields,
+          pdfHeaderText: oExport.pdfHeaderText,
+          pdfFooterText: oExport.pdfFooterText,
+          paperSize: oExport.paperSize,
+          orientation: oExport.orientation,
+          fontSize: oExport.fontSize,
+          fitToPage: oExport.fitToPage,
+          splitMultiValue: oExport.splitMultiValue,
+          fileName: sFileName
+        });
+
+      pDownload.then(function () {
         MessageToast.show(this.getText("exportSuccess"));
         this.byId("exportReportDialog").close();
         this._oViewModel.setProperty("/export/dialogOpen", false);
@@ -960,7 +995,8 @@ sap.ui.define([
       var sDefaultFileName = this.getDocumentService().getFallbackFileName({
         reportType: oExport.reportType,
         fileFormat: oExport.fileFormat,
-        exportSection: oExport.exportSection || Constants.exportSection.all
+        exportSection: oExport.fileFormat === Constants.technicalDocument.fileFormat ?
+          Constants.exportSection.all : oExport.exportSection || Constants.exportSection.all
       });
 
       this._oViewModel.setProperty("/export/defaultFileName", sDefaultFileName);
@@ -975,7 +1011,8 @@ sap.ui.define([
       return sFileName || oExport && oExport.defaultFileName || this.getDocumentService().getFallbackFileName({
         reportType: oExport && oExport.reportType,
         fileFormat: oExport && oExport.fileFormat,
-        exportSection: oExport && oExport.exportSection || Constants.exportSection.all
+        exportSection: oExport && oExport.fileFormat === Constants.technicalDocument.fileFormat ?
+          Constants.exportSection.all : oExport && oExport.exportSection || Constants.exportSection.all
       });
     },
 
@@ -1050,13 +1087,26 @@ sap.ui.define([
     _buildExportFieldSelection: function (sSection) {
       var oConfig = AnalysisTableConfig.getConfig(sSection);
       var oState = this._getPersonalizationState(sSection);
-      var aFields = oConfig ? this._oTablePersonalization.getVisibleExportableFields(oConfig, oState) : [];
+      var aVisibleFields = oConfig ? this._oTablePersonalization.getVisibleExportableFields(oConfig, oState) : [];
+      var mVisibleFields = {};
+      var mFields = {};
+      var aFields;
+
+      aVisibleFields.forEach(function (oField) {
+        mVisibleFields[oField.key] = true;
+      });
+      (oConfig && oConfig.fields || []).forEach(function (oField) {
+        mFields[oField.key] = oField;
+      });
+      aFields = (oConfig && oConfig.exportFields || []).map(function (sKey) {
+        return mFields[sKey];
+      }).filter(Boolean);
 
       return aFields.map(function (oField) {
         return {
           key: oField.key,
           label: this.getText(oField.labelKey),
-          selected: true,
+          selected: mVisibleFields[oField.key] === true,
           priority: oField.priority
         };
       }.bind(this));
@@ -1181,6 +1231,11 @@ sap.ui.define([
     _canPrepareSelectedExport: function () {
       var oControl = this._oViewModel.getProperty("/overview/__OperationControl");
       return oControl && oControl.PrepareSelectedExport === true;
+    },
+
+    _canGenerateTechnicalDocument: function () {
+      var oControl = this._oViewModel.getProperty("/overview/__OperationControl");
+      return oControl && oControl.GenerateTechnicalDocument === true;
     },
 
     _refreshExportAvailability: function () {

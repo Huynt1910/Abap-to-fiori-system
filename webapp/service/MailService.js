@@ -14,6 +14,32 @@ sap.ui.define(
       this._oModel = oMailModel;
     }
 
+    // The create/edit controllers use these helpers before opening the wizard.
+    // Keep existing values when editing; payload validation remains separate.
+    MailService.prototype.normalizeSchedule = function (oJob) {
+      var oDefaults = MailConstants.scheduleDefaults;
+      return Object.assign({
+        Frequency: MailConstants.frequency.onDemand,
+        StartDate: oDefaults.startDate,
+        StartTime: oDefaults.startTime,
+        DayOfWeek: oDefaults.dayOfWeek,
+        DayOfMonth: oDefaults.dayOfMonth,
+        JobTimeZone: oDefaults.jobTimeZone
+      }, oJob || {});
+    };
+
+    MailService.prototype.getFrequencyUiState = function (sFrequency) {
+      var bScheduled = [MailConstants.frequency.daily, MailConstants.frequency.weekly,
+        MailConstants.frequency.monthly].indexOf(sFrequency) !== -1;
+      return {
+        showStartDate: bScheduled,
+        showStartTime: bScheduled,
+        showDayOfWeek: sFrequency === MailConstants.frequency.weekly,
+        showDayOfMonth: sFrequency === MailConstants.frequency.monthly,
+        timezoneText: MailConstants.scheduleDefaults.jobTimeZone
+      };
+    };
+
     MailService.prototype.createMailJob = function (oJob) {
       var oListBinding = this._oModel.bindList(
         MailConstants.entitySet.mailJobs,

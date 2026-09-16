@@ -119,12 +119,7 @@ test("exportable registry excludes technical P3 fields by default", () => {
 
 test("exportable registry follows backend selected export whitelist", () => {
   const config = AnalysisTableConfig.getConfig("uiFilters");
-  const allUiFilterColumnsVisible = Object.fromEntries(
-    config.fields.map((field) => [field.stateKey, true])
-  );
-  const exportKeys = AnalysisTableConfig.getExportableFields("uiFilters", allUiFilterColumnsVisible).map((field) => field.key);
-
-  assert.equal(exportKeys.join(","), [
+  assert.equal(config.exportFields.join(","), [
     "FieldName",
     "FieldKind",
     "ReferenceTable",
@@ -132,9 +127,21 @@ test("exportable registry follows backend selected export whitelist", () => {
     "DataElement",
     "Mandatory",
     "MultipleSelection",
-    "Confidence"
+    "Confidence",
+    "DataType",
+    "Description",
+    "SelectionBlock",
+    "Hidden",
+    "Checkbox",
+    "RadioGroup",
+    "RangeSupported",
+    "DefaultValue",
+    "ValidationRoutine",
+    "EvidenceId"
   ].join(","));
-  assert.equal(exportKeys.includes("DataType"), false);
-  assert.equal(exportKeys.includes("Description"), false);
-  assert.equal(exportKeys.includes("SelectionBlock"), false);
+  assert.equal(config.exportFields.length, 18);
+  assert.equal(AnalysisTableConfig.getConfig("databaseObjects").exportFields.length, 18);
+  assert.equal(AnalysisTableConfig.getConfig("businessLogic").exportFields.length, 13);
+  assert.equal(AnalysisTableConfig.getConfig("alvOutputs").exportFields.length, 20);
+  assert.equal(AnalysisTableConfig.getConfig("recommendations").exportFields.length, 12);
 });

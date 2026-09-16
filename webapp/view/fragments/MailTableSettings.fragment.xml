@@ -24,11 +24,11 @@
         placeholder="{i18n>search}"
         liveChange=".onSearchMailTableSettings"
         class="sapUiSmallMarginBottom" />
-      <Toolbar>
+      <OverflowToolbar>
         <Title text="{i18n>columns}" level="H5" />
         <ToolbarSpacer />
         <Text text="{= ${mailUi>/tableSettings/selectedCount} + '/' + ${mailUi>/tableSettings/totalCount} }" />
-      </Toolbar>
+      </OverflowToolbar>
       <List
         id="mailTableSettingsList"
         mode="MultiSelect"

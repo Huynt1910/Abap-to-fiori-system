@@ -108,7 +108,7 @@
           <content>
         <VBox class="sapUiSmallMarginBottom">
           <MessageStrip text="{i18n>recipientOptionalHint}" type="Information" showIcon="true" class="sapUiSmallMarginBottom" />
-          <Toolbar visible="{= ${mailUi>/wizard/mode} !== 'edit' }">
+          <OverflowToolbar visible="{= ${mailUi>/wizard/mode} !== 'edit' }">
             <Select selectedKey="{mailUi>/wizard/newRecipient/RecipientType}" width="8rem">
               <items>
                 <core:Item key="T" text="{i18n>recipientTypeTo}" />
@@ -118,8 +118,8 @@
             </Select>
             <Input value="{mailUi>/wizard/newRecipient/SapUser}" placeholder="{i18n>sapUser}" width="14rem" />
             <Button text="{i18n>addRecipient}" icon="sap-icon://add" press=".onAddDraftRecipient" />
-          </Toolbar>
-          <Table items="{mailUi>/wizard/recipients}" inset="false">
+          </OverflowToolbar>
+          <Table autoPopinMode="true" contextualWidth="Auto" items="{mailUi>/wizard/recipients}" inset="false">
             <columns>
               <Column width="8rem"><Text text="{i18n>recipientType}" /></Column>
               <Column><Text text="{i18n>sapUser}" /></Column>
