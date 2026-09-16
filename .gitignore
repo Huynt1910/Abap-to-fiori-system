@@ -7,5 +7,6 @@ coverage/
 resources/
 test/
 doc/
-.agent/
-AGENT.md
+.agents/
+AGENTS.md
+
