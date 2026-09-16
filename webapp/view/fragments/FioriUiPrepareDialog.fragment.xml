@@ -37,6 +37,13 @@
           <List items="{detail>/fioriUi/metadataIssues}" visible="{= ${detail>/fioriUi/metadataIssues}.length &gt; 0 }">
             <StandardListItem title="{detail>message}" type="Inactive" />
           </List>
+          <Button text="{i18n>fioriUiOpenReportButton}" press=".onOpenFioriUiReport"
+            visible="{= ${detail>/fioriUi/status} === 'CONFIG_READY' }"
+            enabled="{= !${detail>/fioriUi/busy} &amp;&amp; ${detail>/fioriUi/metadataStatus} === 'VALIDATED' &amp;&amp; !!${detail>/fioriUi/metadataSignature} }"
+            class="sapUiSmallMarginTop" />
+          <MessageStrip text="{detail>/fioriUi/reportError}"
+            visible="{= !!${detail>/fioriUi/reportError} }" type="Error" showIcon="true"
+            class="sapUiSmallMarginTop" />
           <Button text="{i18n>fioriUiCreateProjectButton}" press=".onCreateFioriUiProject"
             visible="{= ${detail>/fioriUi/status} === 'CONFIG_READY' }"
             enabled="{= !${detail>/fioriUi/busy} &amp;&amp; ${detail>/fioriUi/metadataStatus} === 'VALIDATED' &amp;&amp; !!${detail>/fioriUi/metadataXml} }"

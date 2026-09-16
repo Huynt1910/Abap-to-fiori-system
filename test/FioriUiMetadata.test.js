@@ -16,6 +16,9 @@ function load(file, dependencies = {}) {
 const root = path.resolve(__dirname, "..");
 const metadata = load(path.join(root, "webapp", "util", "FioriUiMetadata.js"));
 const configParser = load(path.join(root, "webapp", "util", "FioriUiConfig.js"));
+const reportConfig = load(path.join(root, "webapp", "util", "FioriUiReportConfig.js"), {
+  "abap/to/fiori/system/util/FioriUiProject": { normalizeAnalysisId(value) { return value; } }
+});
 
 // A small DOM adapter for the controlled CSDL fixtures. Browser runtime uses DOMParser.
 function parseFixture(xml) {
@@ -178,6 +181,7 @@ function controller(metadataCheck, prepare) {
     "abap/to/fiori/system/util/TablePersonalizationService": function () {},
     "abap/to/fiori/system/util/Constants": {}, "abap/to/fiori/system/util/FioriUiConfig": configParser,
     "abap/to/fiori/system/util/FioriUiMetadata": { check: metadataCheck },
+    "abap/to/fiori/system/util/FioriUiReportConfig": reportConfig,
     "abap/to/fiori/system/util/ODataGeneration": {}, "abap/to/fiori/system/util/formatter": {}
   });
   return Object.assign({}, definition, {
@@ -217,6 +221,18 @@ test("dialog receives INVALID metadata issues separately from Prepare status", a
   assert.equal(instance._oViewModel.getProperty("/fioriUi/status"), "CONFIG_READY");
   assert.equal(instance._oViewModel.getProperty("/fioriUi/metadataStatus"), "INVALID");
   assert.equal(instance._oViewModel.getProperty("/fioriUi/metadataIssues")[0].message, "Missing UI.LineItem");
+});
+
+test("metadata validation rejects a host URL before issuing any request", async () => {
+  let requests = 0;
+  const instance = controller(() => { requests += 1; return Promise.resolve({ status: "VALIDATED", issues: [] }); },
+    () => Promise.resolve({}));
+  instance._oViewModel.setProperty("/fioriUi/config", config({ metadataUrl: "https://sap.example/$metadata" }));
+  instance.onValidateFioriUiMetadata();
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(requests, 0);
+  assert.equal(instance._oViewModel.getProperty("/fioriUi/metadataStatus"), "INVALID");
+  assert.match(instance._oViewModel.getProperty("/fioriUi/metadataIssues")[0].message, /metadataUrl/);
 });
 
 test("late metadata and Prepare responses cannot overwrite changed inputs or analysis", async () => {

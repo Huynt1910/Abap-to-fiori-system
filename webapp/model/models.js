@@ -136,6 +136,7 @@ sap.ui.define([
         metadataIssues: [],
         metadataXml: "",
         metadataSignature: "",
+        reportError: "",
         zipStatus: "",
         zipMessage: "",
         zipFileName: "",

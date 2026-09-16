@@ -16,9 +16,11 @@ sap.ui.define([
   "abap/to/fiori/system/util/FioriUiConfig",
   "abap/to/fiori/system/util/FioriUiMetadata",
   "abap/to/fiori/system/util/FioriUiProject",
+  "abap/to/fiori/system/util/FioriUiReportConfig",
+  "abap/to/fiori/system/util/FioriUiReport",
   "abap/to/fiori/system/util/ODataGeneration",
   "abap/to/fiori/system/util/formatter"
-], function (Fragment, MessageBox, MessageToast, Filter, FilterOperator, Sorter, BaseController, models, MailConstants, mailFormatter, ComparisonConstants, AnalysisTableConfig, TablePersonalizationService, Constants, FioriUiConfig, FioriUiMetadata, FioriUiProject, ODataGeneration, formatter) {
+], function (Fragment, MessageBox, MessageToast, Filter, FilterOperator, Sorter, BaseController, models, MailConstants, mailFormatter, ComparisonConstants, AnalysisTableConfig, TablePersonalizationService, Constants, FioriUiConfig, FioriUiMetadata, FioriUiProject, FioriUiReportConfig, FioriUiReport, ODataGeneration, formatter) {
   "use strict";
 
   return BaseController.extend("abap.to.fiori.system.controller.AnalysisDetail", {
@@ -41,6 +43,7 @@ sap.ui.define([
 
     onExit: function () {
       this._iFioriUiRequestVersion = (this._iFioriUiRequestVersion || 0) + 1;
+      this._closeFioriUiReport();
       this._cancelODataGenerationPolling();
       this.getComparisonService().cancelPolling();
       this.getDocumentService().cancelExportPolling();
@@ -102,6 +105,7 @@ sap.ui.define([
         return;
       }
       var sValue = oEvent.getParameter("value");
+      this._closeFioriUiReport();
       this._oViewModel.setProperty(sPath, sValue);
       this._iFioriUiRequestVersion = (this._iFioriUiRequestVersion || 0) + 1;
       this._oViewModel.setProperty("/fioriUi", Object.assign({}, this._oViewModel.getProperty("/fioriUi"), {
@@ -109,7 +113,7 @@ sap.ui.define([
         entitySet: "", issues: [], columns: [], filters: [], config: null,
         prepareAnalysisId: "", configAnalysisId: "",
         metadataStatus: "", metadataIssues: [], metadataXml: "", metadataSignature: "",
-        zipStatus: "", zipMessage: "", zipFileName: "", zipIssues: []
+        zipStatus: "", zipMessage: "", zipFileName: "", zipIssues: [], reportError: ""
       }));
     },
 
@@ -128,6 +132,7 @@ sap.ui.define([
       }
 
       iRequestVersion = (this._iFioriUiRequestVersion || 0) + 1;
+      this._closeFioriUiReport();
       this._iFioriUiRequestVersion = iRequestVersion;
       this._oViewModel.setProperty("/fioriUi/error", "");
       this._oViewModel.setProperty("/fioriUi/hasResult", false);
@@ -135,6 +140,7 @@ sap.ui.define([
       this._oViewModel.setProperty("/fioriUi/metadataIssues", []);
       this._oViewModel.setProperty("/fioriUi/metadataXml", "");
       this._oViewModel.setProperty("/fioriUi/metadataSignature", "");
+      this._oViewModel.setProperty("/fioriUi/reportError", "");
       this._oViewModel.setProperty("/fioriUi/zipStatus", "");
       this._oViewModel.setProperty("/fioriUi/zipMessage", "");
       this._oViewModel.setProperty("/fioriUi/zipFileName", "");
@@ -176,18 +182,21 @@ sap.ui.define([
         return;
       }
       var iRequestVersion = (this._iFioriUiRequestVersion || 0) + 1;
+      this._closeFioriUiReport();
       this._iFioriUiRequestVersion = iRequestVersion;
       this._oViewModel.setProperty("/fioriUi/busy", true);
       this._oViewModel.setProperty("/fioriUi/metadataStatus", "");
       this._oViewModel.setProperty("/fioriUi/metadataIssues", []);
       this._oViewModel.setProperty("/fioriUi/metadataXml", "");
       this._oViewModel.setProperty("/fioriUi/metadataSignature", "");
+      this._oViewModel.setProperty("/fioriUi/reportError", "");
       this._oViewModel.setProperty("/fioriUi/zipStatus", "");
       this._oViewModel.setProperty("/fioriUi/zipMessage", "");
       this._oViewModel.setProperty("/fioriUi/zipFileName", "");
       this._oViewModel.setProperty("/fioriUi/zipIssues", []);
       var sSignature = this._fioriUiSignature();
       Promise.resolve().then(function () {
+        FioriUiReportConfig.assertService(oState.config, oState.serviceRootUrl);
         return FioriUiMetadata.check(oState.config);
       }).then(function (oResult) {
         if (iRequestVersion === this._iFioriUiRequestVersion && sAnalysisId === this._oViewModel.getProperty("/analysisId")) {
@@ -224,6 +233,36 @@ sap.ui.define([
       });
     },
 
+    onOpenFioriUiReport: function () {
+      var oState = this._oViewModel.getProperty("/fioriUi");
+      var sSignature = this._fioriUiSignature();
+      this._closeFioriUiReport();
+      this._oViewModel.setProperty("/fioriUi/reportError", "");
+      try {
+        var sServiceUrl = FioriUiReportConfig.assertCurrent(oState,
+          this._oViewModel.getProperty("/analysisId"), this._sCurrentRouteAnalysisId, sSignature);
+        this._oFioriUiReport = FioriUiReport.open(this, sServiceUrl, oState.config, function () {
+          try {
+            FioriUiReportConfig.assertCurrent(this._oViewModel.getProperty("/fioriUi"),
+              this._oViewModel.getProperty("/analysisId"), this._sCurrentRouteAnalysisId,
+              this._fioriUiSignature());
+            return sSignature === this._fioriUiSignature();
+          } catch (oError) {
+            return false;
+          }
+        }.bind(this));
+      } catch (oError) {
+        this._oViewModel.setProperty("/fioriUi/reportError", oError.message);
+      }
+    },
+
+    _closeFioriUiReport: function () {
+      if (this._oFioriUiReport) {
+        this._oFioriUiReport.close();
+        this._oFioriUiReport = null;
+      }
+    },
+
     onCreateFioriUiProject: function () {
       var oState = this._oViewModel.getProperty("/fioriUi");
       if (oState.busy || !oState.hasResult || oState.status !== "CONFIG_READY" ||
@@ -236,6 +275,7 @@ sap.ui.define([
         return;
       }
       var iRequestVersion = (this._iFioriUiRequestVersion || 0) + 1;
+      this._closeFioriUiReport();
       this._iFioriUiRequestVersion = iRequestVersion;
       var sSignature = this._fioriUiSignature();
       this._oViewModel.setProperty("/fioriUi/busy", true);
@@ -891,6 +931,7 @@ sap.ui.define([
 
     _resetState: function (sAnalysisId) {
       this._iFioriUiRequestVersion = (this._iFioriUiRequestVersion || 0) + 1;
+      this._closeFioriUiReport();
       this._sCurrentRouteAnalysisId = sAnalysisId;
       this._cancelODataGenerationPolling();
       var oFioriUiDialog = this.byId("fioriUiPrepareDialog");
