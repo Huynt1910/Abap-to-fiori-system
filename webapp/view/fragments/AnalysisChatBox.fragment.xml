@@ -88,9 +88,9 @@
                   </VBox>
                 </HBox>
 
-                <HBox visible="{= ${chatModel>Role} !== 'USER' }" alignItems="Start" class="analysisChatMessageRow analysisChatMessageAssistant">
-                  <VBox class="analysisChatAvatarSlot">
-                    <Avatar visible="{chatModel>ShowSender}" displaySize="XS" displayShape="Circle" backgroundColor="Accent6" src="sap-icon://discussion-2" tooltip="{i18n>chatTitle}" />
+                <HBox visible="{= ${chatModel>Role} !== 'USER' }" alignItems="End" class="analysisChatMessageRow analysisChatMessageAssistant">
+                  <VBox class="analysisChatAvatarSlot" justifyContent="End">
+                    <Avatar visible="{= !!${chatModel>ShowAvatar} }" displaySize="XS" displayShape="Circle" backgroundColor="Accent6" src="sap-icon://discussion-2" tooltip="{i18n>chatTitle}" />
                   </VBox>
                   <VBox class="analysisChatMessageStack">
                     <VBox class="analysisChatBubble analysisChatBubbleAssistant">
@@ -103,9 +103,9 @@
                         <Text text="&#9679;" class="analysisChatTypingDot analysisChatTypingDotThree" />
                       </HBox>
                     </VBox>
-                    <Text text="{path: 'chatModel>CreatedAt', formatter: '.formatTime'}" visible="{chatModel>ShowTimestamp}" class="analysisChatTime" />
                   </VBox>
                 </HBox>
+                <Text text="{path: 'chatModel>CreatedAt', formatter: '.formatTime'}" visible="{= ${chatModel>Role} !== 'USER' &amp;&amp; ${chatModel>ShowTimestamp} }" class="analysisChatTime analysisChatAssistantTime" />
               </VBox>
             </CustomListItem>
           </List>

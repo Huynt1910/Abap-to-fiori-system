@@ -31,6 +31,7 @@ sap.ui.define(["sap/ui/model/json/JSONModel", "sap/base/Log"], function (JSONMod
       return Object.assign({}, oRow, {
         IsTyping: oRow.IsTyping === true,
         SendFailed: oRow.SendFailed === true,
+        ShowAvatar: sRole !== "USER" && (!sNextRole || sNextRole !== sRole),
         ShowSender: !sPreviousRole || sPreviousRole !== sRole,
         ShowTimestamp: !sNextRole || sNextRole !== sRole
       });

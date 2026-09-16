@@ -6,7 +6,7 @@
     id="mailJobWizardDialog"
     title="{= ${mailUi>/wizard/mode} === 'edit' ? ${i18n>editMailJob} : ${i18n>createMailJob} }"
     contentWidth="48rem"
-    contentHeight="27rem"
+    class="mailJobWizardDialog"
     resizable="true"
     draggable="true">
     <MessageStrip
@@ -15,8 +15,7 @@
       showIcon="true"
       visible="{mailUi>/wizard/busy}"
       class="sapUiSmallMarginBottom" />
-    <ScrollContainer height="20rem" vertical="true" focusable="false">
-      <VBox class="sapUiSmallMargin formStack">
+    <VBox class="sapUiSmallMargin formStack">
         <Panel headerText="{i18n>mailStepGeneral}" expandable="false">
           <content>
         <MessageStrip
@@ -138,8 +137,7 @@
         </VBox>
           </content>
         </Panel>
-      </VBox>
-    </ScrollContainer>
+    </VBox>
     <beginButton>
       <Button
         text="{= ${mailUi>/wizard/mode} === 'edit' ? ${i18n>save} : ${i18n>create} }"

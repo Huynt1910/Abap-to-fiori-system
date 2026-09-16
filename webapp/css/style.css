@@ -582,7 +582,9 @@ body,
 .analysisChatGroupGap { height: 0.45rem; }
 .analysisChatMessageRow { width: 100%; padding: 0.1rem 0.75rem; box-sizing: border-box; }
 .analysisChatMessageItem:last-child .analysisChatMessageRow { animation: analysisChatMessageEnter 180ms ease-out; }
-.analysisChatAvatarSlot { flex: 0 0 2rem; width: 2rem; padding-top: 0.15rem; }
+.analysisChatMessageAssistant { gap: 0.5rem; }
+.analysisChatAvatarSlot { flex: 0 0 2rem; width: 2rem; align-self: stretch; }
+.analysisChatAvatarSlot .sapFAvatar { display: block; }
 .analysisChatMessageStack { min-width: 0; max-width: 86%; }
 .analysisChatMessageStackUser { max-width: 80%; align-items: flex-end; }
 .analysisChatBubble.sapMFlexBox { min-width: 2.5rem; padding: 0.55rem 0.75rem; border-radius: 1.05rem; box-sizing: border-box; }
@@ -594,6 +596,7 @@ body,
 .analysisChatMessageMeta { min-height: 1.25rem; gap: 0.35rem; padding: 0.1rem 0.25rem 0; }
 .analysisChatTime,
 .analysisChatSessionTime { color: var(--sapContent_LabelColor); font-size: 0.7rem; }
+.analysisChatAssistantTime { margin-left: 3.25rem; }
 .analysisChatSendError .sapMObjStatusText { font-size: 0.75rem; }
 .analysisChatTyping { min-height: 1.35rem; gap: 0.28rem; padding: 0 0.15rem; }
 .analysisChatTypingDot { color: var(--sapContent_LabelColor); font-size: 0.7rem; line-height: 1; animation: analysisChatTypingDot 900ms ease-in-out infinite; }
