@@ -50,6 +50,16 @@
             press=".onRunComparisonForAnalysis" />
           <Button text="{i18n>createMailJob}" icon="sap-icon://email" press=".onCreateMailJobForAnalysis" />
           <Button
+            text="{i18n>odataGenerationOpenButton}"
+            icon="sap-icon://process"
+            enabled="{= !!${detail>/analysisId} }"
+            press=".onOpenODataGenerationDialog" />
+          <Button
+            text="{i18n>fioriUiPrepareButton}"
+            icon="sap-icon://wrench"
+            enabled="{= !!${detail>/analysisId} &amp;&amp; !${detail>/fioriUi/busy} }"
+            press=".onOpenFioriUiPrepareDialog" />
+          <Button
             text="{i18n>exportAll}"
             icon="sap-icon://download"
             type="Emphasized"

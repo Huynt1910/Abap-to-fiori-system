@@ -18,6 +18,7 @@ sap.ui.define([
       this._oViewModel = models.createMailUiModel();
       this.getView().setModel(this._oViewModel, "mailUi");
       this.getRouter().getRoute("mailJobs").attachPatternMatched(this._onRouteMatched, this);
+      this.getRouter().getRoute("mailJobsSlash").attachPatternMatched(this._onRouteMatched, this);
     },
 
     onBackToDashboard: function () {

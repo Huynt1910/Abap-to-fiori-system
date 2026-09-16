@@ -221,7 +221,7 @@ sap.ui.define(
 
       onAnalysisPress: function (oEvent) {
         var oListItem = oEvent.getParameter("listItem") || oEvent.getSource();
-        var oContext = oListItem && oListItem.getBindingContext();
+        var oContext = oListItem && oListItem.getBindingContext("odata");
         var sAnalysisId = oContext && oContext.getProperty("AnalysisId");
 
         if (!sAnalysisId) {

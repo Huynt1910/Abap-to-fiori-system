@@ -47,7 +47,11 @@ sap.ui.define([], function () {
     action: Object.freeze({
       analyzeHttpPath: "/Analyses/com.sap.gateway.srvd.zui_mig_analysis.v0001.Analyze",
       analyzeBindingPath: "/Analyses/com.sap.gateway.srvd.zui_mig_analysis.v0001.Analyze(...)",
-      prepareSelectedExportSuffix: "com.sap.gateway.srvd.zui_mig_analysis.v0001.PrepareSelectedExport(...)"
+      prepareSelectedExportSuffix: "com.sap.gateway.srvd.zui_mig_analysis.v0001.PrepareSelectedExport(...)",
+      prepareFioriUiSuffix: "com.sap.gateway.srvd.zui_mig_analysis.v0001.PrepareFioriUi(...)",
+      preflightODataSuffix: "com.sap.gateway.srvd.zui_mig_analysis.v0001.PreflightOData(...)",
+      generateODataSuffix: "com.sap.gateway.srvd.zui_mig_analysis.v0001.GenerateOData(...)",
+      getODataGenerationSuffix: "com.sap.gateway.srvd.zui_mig_analysis.v0001.GetODataGeneration(...)"
     }),
 
     fileFormat: Object.freeze({

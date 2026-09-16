@@ -177,6 +177,67 @@ sap.ui.define([
     return this._executeAction(oActionBinding);
   };
 
+  AnalysisService.prototype.prepareFioriUi = function (sAnalysisId, mParameters) {
+    var sId = String(sAnalysisId || "").trim();
+    var sTargetPackage = String(mParameters && mParameters.targetPackage || "").trim();
+    var sServiceRootUrl = String(mParameters && mParameters.serviceRootUrl || "").trim();
+    var oActionBinding;
+
+    if (!sId || !sTargetPackage || !sServiceRootUrl) {
+      return Promise.reject(new Error("AnalysisId, TargetPackage and ServiceRootUrl are required."));
+    }
+
+    oActionBinding = this._oModel.bindContext(
+      this._buildAnalysisPath(sId) + "/" + Constants.action.prepareFioriUiSuffix
+    );
+    oActionBinding.setParameter("TargetPackage", sTargetPackage);
+    oActionBinding.setParameter("ServiceRootUrl", sServiceRootUrl);
+
+    return oActionBinding.execute("$direct").then(function () {
+      var oContext = oActionBinding.getBoundContext();
+      return oContext ? oContext.requestObject() : {};
+    });
+  };
+
+  AnalysisService.prototype.preflightOData = function (sAnalysisId, oParameters) {
+    return this._executeODataGenerationAction(
+      sAnalysisId,
+      Constants.action.preflightODataSuffix,
+      oParameters,
+      ["TargetPackage", "ProviderPackage", "ProviderLanguage", "TransportRequest", "RequestId"]
+    );
+  };
+
+  AnalysisService.prototype.generateOData = function (sAnalysisId, oParameters) {
+    return this._executeODataGenerationAction(
+      sAnalysisId,
+      Constants.action.generateODataSuffix,
+      oParameters,
+      ["TargetPackage", "ProviderPackage", "ProviderLanguage", "TransportRequest", "RequestId"]
+    );
+  };
+
+  AnalysisService.prototype.getODataGeneration = function (sAnalysisId, sRequestId) {
+    return this._executeODataGenerationAction(
+      sAnalysisId,
+      Constants.action.getODataGenerationSuffix,
+      { RequestId: String(sRequestId || "").trim() },
+      ["RequestId"]
+    );
+  };
+
+  AnalysisService.prototype._executeODataGenerationAction = function (sAnalysisId, sActionSuffix, oParameters, aNames) {
+    var oActionBinding = this._oModel.bindContext(
+      this._buildAnalysisPath(sAnalysisId) + "/" + sActionSuffix
+    );
+
+    aNames.forEach(function (sName) {
+      oActionBinding.setParameter(sName, oParameters && oParameters[sName] || "");
+    });
+
+    return this._executeAction(oActionBinding);
+  };
+
   AnalysisService.prototype._readNavigationList = function (sAnalysisId, sNavigation, mOptions) {
     var mReadOptions = Object.assign({
       length: 1000
