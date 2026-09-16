@@ -189,6 +189,17 @@ test("FioriUiConfig rejects invalid or non-object ConfigJson", () => {
   assert.throws(() => FioriUiConfig.parse({ ConfigJson: "null" }), /Invalid ConfigJson/);
 });
 
+test("FioriUiConfig records outer PrepareFioriUi and ConfigJson analysis IDs separately", () => {
+  const compact = "8b95f36a4f271fe1a4a640de08121663";
+  const parsed = FioriUiConfig.parse({
+    Status: "CONFIG_READY",
+    AnalysisId: "8b95f36a-4f27-1fe1-a4a6-40de08121663",
+    ConfigJson: JSON.stringify({ analysisId: compact, entitySet: "Products" })
+  });
+  assert.equal(parsed.prepareAnalysisId, "8b95f36a-4f27-1fe1-a4a6-40de08121663");
+  assert.equal(parsed.configAnalysisId, compact);
+});
+
 function createActionService() {
   const calls = [];
   const service = new AnalysisService({

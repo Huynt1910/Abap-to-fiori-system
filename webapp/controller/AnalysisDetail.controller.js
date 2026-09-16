@@ -14,9 +14,11 @@ sap.ui.define([
   "abap/to/fiori/system/util/TablePersonalizationService",
   "abap/to/fiori/system/util/Constants",
   "abap/to/fiori/system/util/FioriUiConfig",
+  "abap/to/fiori/system/util/FioriUiMetadata",
+  "abap/to/fiori/system/util/FioriUiProject",
   "abap/to/fiori/system/util/ODataGeneration",
   "abap/to/fiori/system/util/formatter"
-], function (Fragment, MessageBox, MessageToast, Filter, FilterOperator, Sorter, BaseController, models, MailConstants, mailFormatter, ComparisonConstants, AnalysisTableConfig, TablePersonalizationService, Constants, FioriUiConfig, ODataGeneration, formatter) {
+], function (Fragment, MessageBox, MessageToast, Filter, FilterOperator, Sorter, BaseController, models, MailConstants, mailFormatter, ComparisonConstants, AnalysisTableConfig, TablePersonalizationService, Constants, FioriUiConfig, FioriUiMetadata, FioriUiProject, ODataGeneration, formatter) {
   "use strict";
 
   return BaseController.extend("abap.to.fiori.system.controller.AnalysisDetail", {
@@ -93,6 +95,24 @@ sap.ui.define([
       this.byId("fioriUiPrepareDialog").close();
     },
 
+    onFioriUiInputChange: function (oEvent) {
+      var oBinding = oEvent.getSource().getBinding("value");
+      var sPath = oBinding && oBinding.getPath();
+      if (sPath !== "/fioriUi/targetPackage" && sPath !== "/fioriUi/serviceRootUrl") {
+        return;
+      }
+      var sValue = oEvent.getParameter("value");
+      this._oViewModel.setProperty(sPath, sValue);
+      this._iFioriUiRequestVersion = (this._iFioriUiRequestVersion || 0) + 1;
+      this._oViewModel.setProperty("/fioriUi", Object.assign({}, this._oViewModel.getProperty("/fioriUi"), {
+        busy: false, error: "", hasResult: false, status: "", runtimeCheck: "", issueCount: 0,
+        entitySet: "", issues: [], columns: [], filters: [], config: null,
+        prepareAnalysisId: "", configAnalysisId: "",
+        metadataStatus: "", metadataIssues: [], metadataXml: "", metadataSignature: "",
+        zipStatus: "", zipMessage: "", zipFileName: "", zipIssues: []
+      }));
+    },
+
     onPrepareFioriUi: function () {
       if (this._oViewModel.getProperty("/fioriUi/busy")) {
         return;
@@ -100,15 +120,28 @@ sap.ui.define([
       var sAnalysisId = this._oViewModel.getProperty("/analysisId");
       var sTargetPackage = String(this._oViewModel.getProperty("/fioriUi/targetPackage") || "").trim();
       var sServiceRootUrl = String(this._oViewModel.getProperty("/fioriUi/serviceRootUrl") || "").trim();
-      var iRequestVersion = this._iFioriUiRequestVersion;
+      var iRequestVersion;
 
       if (!sAnalysisId || !sTargetPackage || !sServiceRootUrl) {
         this._oViewModel.setProperty("/fioriUi/error", this.getText("fioriUiRequiredInputs"));
         return;
       }
 
+      iRequestVersion = (this._iFioriUiRequestVersion || 0) + 1;
+      this._iFioriUiRequestVersion = iRequestVersion;
       this._oViewModel.setProperty("/fioriUi/error", "");
       this._oViewModel.setProperty("/fioriUi/hasResult", false);
+      this._oViewModel.setProperty("/fioriUi/metadataStatus", "");
+      this._oViewModel.setProperty("/fioriUi/metadataIssues", []);
+      this._oViewModel.setProperty("/fioriUi/metadataXml", "");
+      this._oViewModel.setProperty("/fioriUi/metadataSignature", "");
+      this._oViewModel.setProperty("/fioriUi/zipStatus", "");
+      this._oViewModel.setProperty("/fioriUi/zipMessage", "");
+      this._oViewModel.setProperty("/fioriUi/zipFileName", "");
+      this._oViewModel.setProperty("/fioriUi/zipIssues", []);
+      this._oViewModel.setProperty("/fioriUi/config", null);
+      this._oViewModel.setProperty("/fioriUi/prepareAnalysisId", "");
+      this._oViewModel.setProperty("/fioriUi/configAnalysisId", "");
       this._oViewModel.setProperty("/fioriUi/busy", true);
       this.getAnalysisService().prepareFioriUi(sAnalysisId, {
         targetPackage: sTargetPackage,
@@ -134,6 +167,136 @@ sap.ui.define([
           this._oViewModel.setProperty("/fioriUi/busy", false);
         }
       }.bind(this));
+    },
+
+    onValidateFioriUiMetadata: function () {
+      var oState = this._oViewModel.getProperty("/fioriUi");
+      var sAnalysisId = this._oViewModel.getProperty("/analysisId");
+      if (oState.busy || !oState.hasResult || oState.status !== "CONFIG_READY" || !oState.config) {
+        return;
+      }
+      var iRequestVersion = (this._iFioriUiRequestVersion || 0) + 1;
+      this._iFioriUiRequestVersion = iRequestVersion;
+      this._oViewModel.setProperty("/fioriUi/busy", true);
+      this._oViewModel.setProperty("/fioriUi/metadataStatus", "");
+      this._oViewModel.setProperty("/fioriUi/metadataIssues", []);
+      this._oViewModel.setProperty("/fioriUi/metadataXml", "");
+      this._oViewModel.setProperty("/fioriUi/metadataSignature", "");
+      this._oViewModel.setProperty("/fioriUi/zipStatus", "");
+      this._oViewModel.setProperty("/fioriUi/zipMessage", "");
+      this._oViewModel.setProperty("/fioriUi/zipFileName", "");
+      this._oViewModel.setProperty("/fioriUi/zipIssues", []);
+      var sSignature = this._fioriUiSignature();
+      Promise.resolve().then(function () {
+        return FioriUiMetadata.check(oState.config);
+      }).then(function (oResult) {
+        if (iRequestVersion === this._iFioriUiRequestVersion && sAnalysisId === this._oViewModel.getProperty("/analysisId")) {
+          this._oViewModel.setProperty("/fioriUi/metadataStatus", oResult.status);
+          this._oViewModel.setProperty("/fioriUi/metadataXml", oResult.status === "VALIDATED" ? oResult.xml || "" : "");
+          this._oViewModel.setProperty("/fioriUi/metadataSignature", oResult.status === "VALIDATED" ? sSignature : "");
+          this._oViewModel.setProperty("/fioriUi/metadataIssues", oResult.issues.map(function (sIssue) {
+            return { message: sIssue };
+          }));
+        }
+      }.bind(this)).catch(function (oError) {
+        if (iRequestVersion === this._iFioriUiRequestVersion && sAnalysisId === this._oViewModel.getProperty("/analysisId")) {
+          this._oViewModel.setProperty("/fioriUi/metadataStatus", "INVALID");
+          this._oViewModel.setProperty("/fioriUi/metadataIssues", [
+            { message: oError.message || this.getText("fioriUiMetadataError") }
+          ]);
+        }
+      }.bind(this)).finally(function () {
+        if (iRequestVersion === this._iFioriUiRequestVersion && sAnalysisId === this._oViewModel.getProperty("/analysisId")) {
+          this._oViewModel.setProperty("/fioriUi/busy", false);
+        }
+      }.bind(this));
+    },
+
+    _fioriUiSignature: function () {
+      return JSON.stringify({
+        routeAnalysisId: this._sCurrentRouteAnalysisId || "",
+        analysisId: this._oViewModel.getProperty("/analysisId"),
+        prepareAnalysisId: this._oViewModel.getProperty("/fioriUi/prepareAnalysisId"),
+        configAnalysisId: this._oViewModel.getProperty("/fioriUi/configAnalysisId"),
+        targetPackage: this._oViewModel.getProperty("/fioriUi/targetPackage"),
+        serviceRootUrl: this._oViewModel.getProperty("/fioriUi/serviceRootUrl"),
+        config: this._oViewModel.getProperty("/fioriUi/config")
+      });
+    },
+
+    onCreateFioriUiProject: function () {
+      var oState = this._oViewModel.getProperty("/fioriUi");
+      if (oState.busy || !oState.hasResult || oState.status !== "CONFIG_READY" ||
+          oState.metadataStatus !== "VALIDATED" || !oState.metadataXml ||
+          oState.metadataSignature !== this._fioriUiSignature()) {
+        this._oViewModel.setProperty("/fioriUi/zipStatus", "INVALID");
+        this._oViewModel.setProperty("/fioriUi/zipMessage", this.getText("fioriUiZipNeedsValidation"));
+        this._oViewModel.setProperty("/fioriUi/zipFileName", "");
+        this._oViewModel.setProperty("/fioriUi/zipIssues", []);
+        return;
+      }
+      var iRequestVersion = (this._iFioriUiRequestVersion || 0) + 1;
+      this._iFioriUiRequestVersion = iRequestVersion;
+      var sSignature = this._fioriUiSignature();
+      this._oViewModel.setProperty("/fioriUi/busy", true);
+      this._oViewModel.setProperty("/fioriUi/zipStatus", "CREATING");
+      this._oViewModel.setProperty("/fioriUi/zipMessage", this.getText("fioriUiZipCreating"));
+      this._oViewModel.setProperty("/fioriUi/zipFileName", "");
+      this._oViewModel.setProperty("/fioriUi/zipIssues", []);
+      setTimeout(function () {
+        if (iRequestVersion !== this._iFioriUiRequestVersion || sSignature !== this._fioriUiSignature()) { return; }
+        try {
+          var sOpenAnalysisId = FioriUiProject.normalizeAnalysisId(this._oViewModel.getProperty("/analysisId"));
+          var sConfigAnalysisId = FioriUiProject.normalizeAnalysisId(oState.configAnalysisId || oState.config.analysisId);
+          if (this._sCurrentRouteAnalysisId &&
+              FioriUiProject.normalizeAnalysisId(this._sCurrentRouteAnalysisId) !== sOpenAnalysisId) {
+            throw new Error("Route analysisId không khớp analysis đang mở.");
+          }
+          if (sConfigAnalysisId !== sOpenAnalysisId) {
+            throw new Error("ConfigJson.analysisId không khớp analysis đang mở.");
+          }
+          if (oState.prepareAnalysisId &&
+              FioriUiProject.normalizeAnalysisId(oState.prepareAnalysisId) !== sOpenAnalysisId) {
+            throw new Error("PrepareFioriUi.AnalysisId không khớp analysis đang mở.");
+          }
+          var oProject = FioriUiProject.build(Object.assign({}, oState.config, {
+            analysisId: sOpenAnalysisId
+          }), oState.metadataXml);
+          if (iRequestVersion !== this._iFioriUiRequestVersion || sSignature !== this._fioriUiSignature()) { return; }
+          this._downloadFioriUiProject(oProject.bytes, oProject.fileName);
+          this._oViewModel.setProperty("/fioriUi/zipStatus", "DOWNLOADED");
+          this._oViewModel.setProperty("/fioriUi/zipMessage", this.getText("fioriUiZipDownloaded"));
+          this._oViewModel.setProperty("/fioriUi/zipFileName", oProject.fileName);
+        } catch (oError) {
+          this._oViewModel.setProperty("/fioriUi/zipStatus", "INVALID");
+          this._oViewModel.setProperty("/fioriUi/zipMessage", oError.message || this.getText("fioriUiZipError"));
+          this._oViewModel.setProperty("/fioriUi/zipIssues", (oError.issues || []).map(function (sIssue) {
+            return { message: sIssue };
+          }));
+        } finally {
+          if (iRequestVersion === this._iFioriUiRequestVersion) {
+            this._oViewModel.setProperty("/fioriUi/busy", false);
+          }
+        }
+      }.bind(this), 0);
+    },
+
+    _downloadFioriUiProject: function (aBytes, sFileName) {
+      var oBlob = new Blob([aBytes], { type: "application/zip" });
+      var sUrl = window.URL.createObjectURL(oBlob);
+      var oAnchor = window.document.createElement("a");
+      try {
+        oAnchor.href = sUrl;
+        oAnchor.download = sFileName;
+        oAnchor.style.display = "none";
+        window.document.body.appendChild(oAnchor);
+        oAnchor.click();
+      } finally {
+        if (oAnchor.parentNode) {
+          oAnchor.parentNode.removeChild(oAnchor);
+        }
+        setTimeout(function () { window.URL.revokeObjectURL(sUrl); }, 1000);
+      }
     },
 
     onOpenODataGenerationDialog: function () {
@@ -728,6 +891,7 @@ sap.ui.define([
 
     _resetState: function (sAnalysisId) {
       this._iFioriUiRequestVersion = (this._iFioriUiRequestVersion || 0) + 1;
+      this._sCurrentRouteAnalysisId = sAnalysisId;
       this._cancelODataGenerationPolling();
       var oFioriUiDialog = this.byId("fioriUiPrepareDialog");
       var oODataGenerationDialog = this.byId("odataGenerationDialog");

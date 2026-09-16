@@ -127,9 +127,20 @@ sap.ui.define([
         runtimeCheck: "",
         issueCount: 0,
         entitySet: "",
+        prepareAnalysisId: "",
+        configAnalysisId: "",
         issues: [],
         columns: [],
-        filters: []
+        filters: [],
+        metadataStatus: "",
+        metadataIssues: [],
+        metadataXml: "",
+        metadataSignature: "",
+        zipStatus: "",
+        zipMessage: "",
+        zipFileName: "",
+        zipIssues: [],
+        config: null
       },
       odataGeneration: {
         dialogBusy: false,
