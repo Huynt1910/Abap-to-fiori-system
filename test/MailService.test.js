@@ -53,7 +53,7 @@ const Messaging = {
 };
 
 const MailService = loadUi5Module(path.join(root, "webapp", "service", "MailService.js"), {
-  "sap/ui/core/Messaging": Messaging,
+  "abap/to/fiori/system/util/MessagingCompat": Messaging,
   "sap/ui/model/Filter": Filter,
   "sap/ui/model/FilterOperator": { EQ: "EQ", Contains: "Contains" },
   "sap/ui/model/Sorter": Sorter,
@@ -396,6 +396,64 @@ test("recipient create uses latest UI5 technical message when createCompleted ha
   );
 
   messageData = [];
+});
+
+test("MailService selects the latest technical message through Messaging without sap.ui.getCore", () => {
+  const service = new MailService({});
+  messageData = [
+    { technical: true, code: "FIRST", message: "First technical error" },
+    { technical: true, code: "LATEST", message: "Latest technical error" },
+    { technical: false, message: "Unrelated notification" }
+  ];
+
+  const error = service._getLatestTechnicalError();
+  assert.equal(ODataErrorHandler.parse(error).message, "Latest technical error");
+  assert.doesNotMatch(fs.readFileSync(path.join(root, "webapp", "service", "MailService.js"), "utf8"), /sap\.ui\.getCore/);
+  messageData = [];
+  assert.equal(service._getLatestTechnicalError(), null);
+});
+
+test("MailService handles missing Messaging or message data safely", () => {
+  const missingMessagingService = loadUi5Module(path.join(root, "webapp", "service", "MailService.js"), {
+    "sap/ui/model/Filter": Filter,
+    "sap/ui/model/FilterOperator": { EQ: "EQ" },
+    "sap/ui/model/Sorter": Sorter,
+    "abap/to/fiori/system/model/mailConstants": MailConstants,
+    "abap/to/fiori/system/util/ODataErrorHandler": ODataErrorHandler
+  });
+  assert.equal(new missingMessagingService({})._getLatestTechnicalError(), null);
+
+  messageData = null;
+  assert.equal(new MailService({})._getLatestTechnicalError(), null);
+  messageData = [];
+});
+
+test("Messaging compatibility adapter reads the shared message model through Core", () => {
+  const model = { getData: () => [{ technical: true, message: "Backend error" }] };
+  const compat = loadUi5Module(path.join(root, "webapp", "util", "MessagingCompat.js"), {
+    "sap/ui/core/Core": { getMessageManager: () => ({ getMessageModel: () => model }) }
+  });
+  assert.equal(compat.getMessageModel(), model);
+
+  const withoutManager = loadUi5Module(path.join(root, "webapp", "util", "MessagingCompat.js"), {
+    "sap/ui/core/Core": { getMessageManager: () => null }
+  });
+  assert.equal(withoutManager.getMessageModel(), null);
+});
+
+test("MailService safely ignores a missing message model or getData method", () => {
+  const servicePath = path.join(root, "webapp", "service", "MailService.js");
+  [null, {}].forEach((model) => {
+    const Service = loadUi5Module(servicePath, {
+      "abap/to/fiori/system/util/MessagingCompat": { getMessageModel: () => model },
+      "sap/ui/model/Filter": Filter,
+      "sap/ui/model/FilterOperator": { EQ: "EQ" },
+      "sap/ui/model/Sorter": Sorter,
+      "abap/to/fiori/system/model/mailConstants": MailConstants,
+      "abap/to/fiori/system/util/ODataErrorHandler": ODataErrorHandler
+    });
+    assert.equal(new Service({})._getLatestTechnicalError(), null);
+  });
 });
 
 test("sendNow executes the bound action once using direct group", async () => {

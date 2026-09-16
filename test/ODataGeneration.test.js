@@ -45,3 +45,31 @@ test("UUID fallback creates an RFC 4122 version 4 Edm.Guid", () => {
   const uuid = helper.createUuid();
   assert.match(uuid, /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
 });
+
+test("zero UUID is never a usable active RequestId", () => {
+  const helper = loadUtility();
+  assert.equal(helper.isZeroUuid(" 00000000-0000-0000-0000-000000000000 "), true);
+  assert.equal(helper.isUsableRequestId(helper.ZERO_UUID), false);
+  assert.equal(helper.isUsableRequestId(""), false);
+  assert.equal(helper.isUsableRequestId("aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee"), true);
+});
+
+test("CLOUD sends no ProviderPackage and ignores its stale value in the signature", () => {
+  const helper = loadUtility();
+  const state = { targetPackage: " z_target ", providerLanguage: "cloud", providerPackage: "Z_OLD", transportRequest: " devk900001 " };
+  const parameters = helper.normalizeParameters(state, helper.ZERO_UUID);
+
+  assert.equal(parameters.ProviderPackage, "");
+  assert.equal(parameters.ProviderLanguage, "CLOUD");
+  assert.equal(helper.signature(state), helper.signature({ ...state, providerPackage: "Z_ANOTHER" }));
+  assert.notEqual(helper.signature(state), helper.signature({ ...state, providerLanguage: "STANDARD" }));
+});
+
+test("active generation status is independent from polling state", () => {
+  const helper = loadUtility();
+  assert.equal(helper.isGenerationActive("QUEUED"), true);
+  assert.equal(helper.isGenerationActive("RUNNING"), true);
+  ["READY", "GENERATED", "BLOCKED", "FAILED"].forEach((status) => {
+    assert.equal(helper.isGenerationActive(status), false);
+  });
+});

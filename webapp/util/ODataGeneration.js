@@ -7,11 +7,24 @@ sap.ui.define([], function () {
     return String(vValue || "").trim().toUpperCase();
   }
 
+  function isZeroUuid(vValue) {
+    return String(vValue || "").trim().toLowerCase() === ZERO_UUID;
+  }
+
+  function isUsableRequestId(vValue) {
+    return !!String(vValue || "").trim() && !isZeroUuid(vValue);
+  }
+
+  function isGenerationActive(sStatus) {
+    return sStatus === "QUEUED" || sStatus === "RUNNING";
+  }
+
   function normalizeParameters(oState, sRequestId) {
+    var sProviderLanguage = normalizeUpper(oState && oState.providerLanguage) || "STANDARD";
     return {
       TargetPackage: normalizeUpper(oState && oState.targetPackage),
-      ProviderPackage: normalizeUpper(oState && oState.providerPackage),
-      ProviderLanguage: normalizeUpper(oState && oState.providerLanguage) || "STANDARD",
+      ProviderPackage: sProviderLanguage === "CLOUD" ? "" : normalizeUpper(oState && oState.providerPackage),
+      ProviderLanguage: sProviderLanguage,
       TransportRequest: normalizeUpper(oState && oState.transportRequest),
       RequestId: sRequestId || ZERO_UUID
     };
@@ -82,6 +95,9 @@ sap.ui.define([], function () {
   return Object.freeze({
     ZERO_UUID: ZERO_UUID,
     normalizeUpper: normalizeUpper,
+    isZeroUuid: isZeroUuid,
+    isUsableRequestId: isUsableRequestId,
+    isGenerationActive: isGenerationActive,
     normalizeParameters: normalizeParameters,
     signature: signature,
     parseResponse: parseResponse,

@@ -150,3 +150,122 @@ test("invalid ResultJson does not crash and route/exit cancellation clears polli
   assert.equal(controller._iODataGenerationTimer, null);
   assert.equal(controller._oViewModel.getProperty("/odataGeneration/polling"), false);
 });
+
+test("preflight zero UUID cannot overwrite a real RequestId, while a generate UUID can", () => {
+  const oldId = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee";
+  const newId = "bbbbbbbb-cccc-4ddd-8eee-ffffffffffff";
+  const controller = createController({ requestId: oldId });
+
+  controller._applyODataGenerationResponse({ RequestId: ODataGeneration.ZERO_UUID, Status: "READY", ResultJson: "{}" });
+  assert.equal(controller._oViewModel.getProperty("/odataGeneration/requestId"), oldId);
+
+  controller._applyODataGenerationResponse({ RequestId: newId, Status: "QUEUED", ResultJson: "{}" });
+  assert.equal(controller._oViewModel.getProperty("/odataGeneration/requestId"), newId);
+});
+
+test("QUEUED and RUNNING reject input edits, preflight and generate even when polling stopped", () => {
+  const requestId = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee";
+  const xml = fs.readFileSync(path.join(root, "webapp", "view", "fragments", "ODataGenerationDialog.fragment.xml"), "utf8");
+  const calls = [];
+
+  ["QUEUED", "RUNNING"].forEach((status) => {
+    const controller = createController({
+      status, requestId, polling: false, preflightReady: true,
+      preflightSignature: ODataGeneration.signature({ targetPackage: "Z_TARGET", providerPackage: "Z_PROVIDER", providerLanguage: "STANDARD", transportRequest: "DEVK900001" }),
+      canGenerate: true
+    });
+    controller.getAnalysisService = () => ({
+      preflightOData() { calls.push("preflight"); },
+      generateOData() { calls.push("generate"); }
+    });
+    controller.onODataGenerationInputChange({ getSource() {
+      return { getBinding() { return { getPath() { return "/odataGeneration/targetPackage"; } }; }, getValue() { return "Z_CHANGED"; } };
+    } });
+    controller.onPreflightOData();
+    controller.onGenerateOData();
+
+    assert.equal(controller._oViewModel.getProperty("/odataGeneration/targetPackage"), "Z_TARGET");
+    assert.equal(controller._oViewModel.getProperty("/odataGeneration/requestId"), requestId);
+    assert.equal(controller._oViewModel.getProperty("/odataGeneration/preflightReady"), true);
+  });
+
+  assert.deepEqual(calls, []);
+  assert.equal((xml.match(/status} !== 'QUEUED'/g) || []).length, 6);
+  assert.equal((xml.match(/status} !== 'RUNNING'/g) || []).length, 6);
+});
+
+test("after poll timeout, QUEUED remains locked but manual refresh uses the real RequestId", async () => {
+  const requestId = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee";
+  const controller = createController({ requestId, status: "QUEUED", polling: true });
+  const calls = [];
+  controller._iODataGenerationPollCount = 11;
+  controller.getAnalysisService = () => ({
+    getODataGeneration(analysisId, currentRequestId) {
+      calls.push([analysisId, currentRequestId]);
+      return Promise.resolve({ RequestId: currentRequestId, Status: "QUEUED", ResultJson: "{}" });
+    },
+    preflightOData() { calls.push("preflight"); }
+  });
+
+  controller._pollODataGeneration(false);
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(controller._oViewModel.getProperty("/odataGeneration/polling"), false);
+  assert.equal(controller._oViewModel.getProperty("/odataGeneration/status"), "QUEUED");
+  assert.equal(controller._oViewModel.getProperty("/odataGeneration/requestId"), requestId);
+
+  controller.onPreflightOData();
+  controller.onRefreshODataGeneration();
+  await new Promise((resolve) => setImmediate(resolve));
+
+  assert.equal(calls.length, 2);
+  assert.equal(calls[1][1], requestId);
+  assert.equal(controller._oViewModel.getProperty("/odataGeneration/requestId"), requestId);
+});
+
+test("a new preflight after GENERATED waits until Generate to create a new UUID", async () => {
+  const oldId = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee";
+  const controller = createController({ status: "GENERATED", requestId: oldId });
+  const calls = [];
+  controller._scheduleODataGenerationPoll = () => {};
+  controller.getAnalysisService = () => ({
+    preflightOData(analysisId, parameters) {
+      calls.push(["preflight", parameters.RequestId]);
+      return Promise.resolve({ RequestId: ODataGeneration.ZERO_UUID, Status: "READY", ResultJson: "{}" });
+    },
+    generateOData(analysisId, parameters) {
+      calls.push(["generate", parameters.RequestId]);
+      return Promise.resolve({ RequestId: parameters.RequestId, Status: "QUEUED", ResultJson: "{}" });
+    }
+  });
+
+  controller.onPreflightOData();
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(controller._oViewModel.getProperty("/odataGeneration/requestId"), "");
+  assert.equal(controller._oViewModel.getProperty("/odataGeneration/preflightReady"), true);
+  assert.equal(calls[0][1], ODataGeneration.ZERO_UUID);
+
+  controller.onGenerateOData();
+  await new Promise((resolve) => setImmediate(resolve));
+  const newId = controller._oViewModel.getProperty("/odataGeneration/requestId");
+  assert.match(newId, /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+  assert.notEqual(newId, oldId);
+  assert.equal(calls[1][1], newId);
+});
+
+test("CLOUD preflight clears the old STANDARD provider package in the backend payload and UI state", async () => {
+  const controller = createController({ providerLanguage: "CLOUD", providerPackage: "Z_OLD" });
+  let payload;
+  controller.getAnalysisService = () => ({
+    preflightOData(analysisId, parameters) {
+      payload = parameters;
+      return Promise.resolve({ RequestId: ODataGeneration.ZERO_UUID, Status: "READY", ResultJson: "{}" });
+    }
+  });
+
+  controller.onPreflightOData();
+  await new Promise((resolve) => setImmediate(resolve));
+
+  assert.equal(payload.ProviderPackage, "");
+  assert.equal(controller._oViewModel.getProperty("/odataGeneration/providerPackage"), "");
+  assert.equal(controller._oViewModel.getProperty("/odataGeneration/preflightSignature"), ODataGeneration.signature(controller._oViewModel.getProperty("/odataGeneration")));
+});

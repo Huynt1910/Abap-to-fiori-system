@@ -11,9 +11,13 @@
       <VBox class="sapUiMediumMargin">
         <f:SimpleForm editable="true" layout="ResponsiveGridLayout">
           <Label text="{i18n>odataGenerationTargetPackage}" required="true" />
-          <Input value="{detail>/odataGeneration/targetPackage}" liveChange=".onODataGenerationInputChange" />
+          <Input value="{detail>/odataGeneration/targetPackage}"
+            enabled="{= !${detail>/odataGeneration/dialogBusy} &amp;&amp; ${detail>/odataGeneration/status} !== 'QUEUED' &amp;&amp; ${detail>/odataGeneration/status} !== 'RUNNING' }"
+            liveChange=".onODataGenerationInputChange" />
           <Label text="{i18n>odataGenerationProviderLanguage}" required="true" />
-          <Select selectedKey="{detail>/odataGeneration/providerLanguage}" change=".onODataGenerationInputChange">
+          <Select selectedKey="{detail>/odataGeneration/providerLanguage}"
+            enabled="{= !${detail>/odataGeneration/dialogBusy} &amp;&amp; ${detail>/odataGeneration/status} !== 'QUEUED' &amp;&amp; ${detail>/odataGeneration/status} !== 'RUNNING' }"
+            change=".onODataGenerationInputChange">
             <core:Item key="STANDARD" text="{i18n>odataGenerationLanguageStandard}" />
             <core:Item key="CLOUD" text="{i18n>odataGenerationLanguageCloud}" />
           </Select>
@@ -22,10 +26,12 @@
             required="{= ${detail>/odataGeneration/providerLanguage} === 'STANDARD' }" />
           <Input
             value="{detail>/odataGeneration/providerPackage}"
-            enabled="{= ${detail>/odataGeneration/providerLanguage} === 'STANDARD' }"
+            enabled="{= ${detail>/odataGeneration/providerLanguage} === 'STANDARD' &amp;&amp; !${detail>/odataGeneration/dialogBusy} &amp;&amp; ${detail>/odataGeneration/status} !== 'QUEUED' &amp;&amp; ${detail>/odataGeneration/status} !== 'RUNNING' }"
             liveChange=".onODataGenerationInputChange" />
           <Label text="{i18n>odataGenerationTransportRequest}" />
-          <Input value="{detail>/odataGeneration/transportRequest}" liveChange=".onODataGenerationInputChange" />
+          <Input value="{detail>/odataGeneration/transportRequest}"
+            enabled="{= !${detail>/odataGeneration/dialogBusy} &amp;&amp; ${detail>/odataGeneration/status} !== 'QUEUED' &amp;&amp; ${detail>/odataGeneration/status} !== 'RUNNING' }"
+            liveChange=".onODataGenerationInputChange" />
         </f:SimpleForm>
 
         <MessageStrip
@@ -73,15 +79,17 @@
       </VBox>
     </content>
     <buttons>
-      <Button text="{i18n>odataGenerationPreflightButton}" enabled="{= !${detail>/odataGeneration/dialogBusy} }" press=".onPreflightOData" />
+      <Button text="{i18n>odataGenerationPreflightButton}"
+        enabled="{= !${detail>/odataGeneration/dialogBusy} &amp;&amp; ${detail>/odataGeneration/status} !== 'QUEUED' &amp;&amp; ${detail>/odataGeneration/status} !== 'RUNNING' }"
+        press=".onPreflightOData" />
       <Button
         text="{i18n>odataGenerationGenerateButton}"
         type="Emphasized"
-        enabled="{= ${detail>/odataGeneration/canGenerate} &amp;&amp; !${detail>/odataGeneration/dialogBusy} }"
+        enabled="{= ${detail>/odataGeneration/canGenerate} &amp;&amp; !${detail>/odataGeneration/dialogBusy} &amp;&amp; ${detail>/odataGeneration/status} !== 'QUEUED' &amp;&amp; ${detail>/odataGeneration/status} !== 'RUNNING' }"
         press=".onGenerateOData" />
       <Button
         text="{i18n>odataGenerationRefreshButton}"
-        enabled="{= !!${detail>/odataGeneration/requestId} &amp;&amp; !${detail>/odataGeneration/dialogBusy} }"
+        enabled="{= !!${detail>/odataGeneration/requestId} &amp;&amp; ${detail>/odataGeneration/requestId} !== '00000000-0000-0000-0000-000000000000' &amp;&amp; !${detail>/odataGeneration/dialogBusy} }"
         press=".onRefreshODataGeneration" />
       <Button text="{i18n>close}" press=".onCloseODataGenerationDialog" />
     </buttons>
