@@ -13,7 +13,9 @@
           <Text text="{chatModel>/activeTitle}" wrapping="false" maxLines="1" class="analysisChatHeaderSubtitle" />
         </VBox>
         <ToolbarSpacer />
-        <Button icon="sap-icon://add" type="Transparent" tooltip="{i18n>chatNew}" press=".onCreateChatSession" enabled="{= !${chatModel>/isLoading} &amp;&amp; !${chatModel>/isSending} }" />
+        <Button id="aiChatNewSession" icon="sap-icon://add" type="Transparent" tooltip="{i18n>chatNew}" press=".onCreateChatSession" enabled="{= !${chatModel>/isLoading} &amp;&amp; !${chatModel>/isSending} }">
+          <layoutData><OverflowToolbarLayoutData priority="NeverOverflow" /></layoutData>
+        </Button>
         <Button icon="sap-icon://history" type="Transparent" tooltip="{i18n>chatHistory}" press=".onOpenChatHistory" enabled="{= !${chatModel>/isLoading} &amp;&amp; !${chatModel>/isSending} }">
           <layoutData><OverflowToolbarLayoutData priority="NeverOverflow" /></layoutData>
         </Button>

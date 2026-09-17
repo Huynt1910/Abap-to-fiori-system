@@ -73,6 +73,9 @@ sap.ui.define([], function () {
       if (sValue === "C") {
         return "CSV";
       }
+      if (sValue === "M") {
+        return "Markdown";
+      }
       return sValue || "-";
     },
 

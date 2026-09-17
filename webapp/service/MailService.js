@@ -18,7 +18,7 @@ sap.ui.define(
     // Keep existing values when editing; payload validation remains separate.
     MailService.prototype.normalizeSchedule = function (oJob) {
       var oDefaults = MailConstants.scheduleDefaults;
-      return Object.assign({
+      var oNormalized = Object.assign({
         Frequency: MailConstants.frequency.onDemand,
         StartDate: oDefaults.startDate,
         StartTime: oDefaults.startTime,
@@ -26,6 +26,11 @@ sap.ui.define(
         DayOfMonth: oDefaults.dayOfMonth,
         JobTimeZone: oDefaults.jobTimeZone
       }, oJob || {});
+
+      oNormalized.JobTimeZone = String(
+        oNormalized.JobTimeZone || oDefaults.jobTimeZone
+      ).trim();
+      return oNormalized;
     };
 
     MailService.prototype.getFrequencyUiState = function (sFrequency) {
@@ -203,23 +208,74 @@ sap.ui.define(
 
       if (!oJob.StartDate) {
         aErrors.push("Start date is required.");
+      } else if (!/^\d{4}-\d{2}-\d{2}$/.test(String(oJob.StartDate))) {
+        aErrors.push("Start date must use YYYY-MM-DD format.");
       } else if (bCreate && this._isPastDate(oJob.StartDate)) {
         aErrors.push("Start date cannot be earlier than today.");
       }
 
       if (!oJob.StartTime) {
         aErrors.push("Start time is required.");
+      } else if (
+        !/^(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d$/.test(
+          String(oJob.StartTime),
+        )
+      ) {
+        aErrors.push("Start time must use HH:mm:ss format.");
       }
 
-      if (sFrequency === MailConstants.frequency.weekly && !oJob.DayOfWeek) {
-        aErrors.push("Day of week is required.");
+      if (!String(oJob.JobTimeZone || "").trim()) {
+        aErrors.push("Time zone is required.");
       }
 
-      if (sFrequency === MailConstants.frequency.monthly && !oJob.DayOfMonth) {
-        aErrors.push("Day of month is required.");
+      if (sFrequency === MailConstants.frequency.weekly) {
+        if (!oJob.DayOfWeek) {
+          aErrors.push("Day of week is required.");
+        } else if (!/^[1-7]$/.test(String(oJob.DayOfWeek))) {
+          aErrors.push("Day of week is invalid.");
+        }
+      }
+
+      if (sFrequency === MailConstants.frequency.monthly) {
+        if (!oJob.DayOfMonth) {
+          aErrors.push("Day of month is required.");
+        } else if (
+          Number(oJob.DayOfMonth) < 1 ||
+          Number(oJob.DayOfMonth) > 31
+        ) {
+          aErrors.push("Day of month must be from 1 to 31.");
+        }
       }
 
       return aErrors;
+    };
+
+    MailService.prototype.buildSchedulePayload = function (oJob) {
+      var oSchedule = this.normalizeSchedule(oJob);
+      var oDefaults = MailConstants.scheduleDefaults;
+      var sFrequency = String(oSchedule.Frequency || "").toUpperCase();
+      var oPayload = {
+        Frequency: sFrequency,
+        StartTime: oSchedule.StartTime || oDefaults.startTime,
+        JobTimeZone: oSchedule.JobTimeZone || oDefaults.jobTimeZone,
+        DayOfWeek: oDefaults.dayOfWeek,
+        DayOfMonth: String(oDefaults.dayOfMonth)
+      };
+
+      if (
+        sFrequency !== MailConstants.frequency.onDemand &&
+        oSchedule.StartDate
+      ) {
+        oPayload.StartDate = oSchedule.StartDate;
+      }
+      if (sFrequency === MailConstants.frequency.weekly) {
+        oPayload.DayOfWeek = String(oSchedule.DayOfWeek || oDefaults.dayOfWeek);
+      }
+      if (sFrequency === MailConstants.frequency.monthly) {
+        oPayload.DayOfMonth = this._formatDayOfMonth(oSchedule.DayOfMonth);
+      }
+
+      return oPayload;
     };
 
     MailService.prototype.toFriendlyError = function (oError) {
@@ -408,7 +464,6 @@ sap.ui.define(
         "Status",
       ];
       var oPayload;
-      var sFrequency = String((oJob && oJob.Frequency) || "").toUpperCase();
 
       if (bPatch) {
         aFields = aFields.filter(function (sField) {
@@ -417,38 +472,7 @@ sap.ui.define(
       }
 
       oPayload = this._pick(oJob, aFields, bPatch);
-
-      if (sFrequency === MailConstants.frequency.onDemand) {
-        oPayload.StartDate =
-          (oJob && oJob.StartDate) || MailConstants.scheduleDefaults.startDate;
-        oPayload.StartTime =
-          (oJob && oJob.StartTime) || MailConstants.scheduleDefaults.startTime;
-        oPayload.DayOfWeek =
-          (oJob && oJob.DayOfWeek) || MailConstants.scheduleDefaults.dayOfWeek;
-        oPayload.DayOfMonth = this._formatDayOfMonth(
-          (oJob && oJob.DayOfMonth) ||
-            MailConstants.scheduleDefaults.dayOfMonth,
-        );
-      } else if (
-        sFrequency === MailConstants.frequency.daily ||
-        sFrequency === MailConstants.frequency.weekly ||
-        sFrequency === MailConstants.frequency.monthly
-      ) {
-        this._assignIfFilled(oPayload, oJob, "StartDate");
-        this._assignIfFilled(oPayload, oJob, "StartTime");
-      }
-
-      if (sFrequency === MailConstants.frequency.weekly) {
-        this._assignIfFilled(oPayload, oJob, "DayOfWeek");
-      }
-
-      if (sFrequency === MailConstants.frequency.monthly) {
-        if (oJob && oJob.DayOfMonth) {
-          oPayload.DayOfMonth = this._formatDayOfMonth(oJob.DayOfMonth);
-        }
-      }
-
-      return oPayload;
+      return Object.assign(oPayload, this.buildSchedulePayload(oJob));
     };
 
     MailService.prototype._buildRecipientPayload = function (
@@ -492,25 +516,8 @@ sap.ui.define(
       });
     };
 
-    MailService.prototype._assignIfFilled = function (
-      oPayload,
-      oSource,
-      sField,
-    ) {
-      var vValue = oSource && oSource[sField];
-      if (
-        vValue !== null &&
-        vValue !== undefined &&
-        String(vValue).trim() !== ""
-      ) {
-        oPayload[sField] = vValue;
-      }
-    };
-
     MailService.prototype._formatDayOfMonth = function (vValue) {
-      return String(
-        vValue || MailConstants.scheduleDefaults.dayOfMonth,
-      ).padStart(2, "0");
+      return String(vValue || MailConstants.scheduleDefaults.dayOfMonth);
     };
 
     MailService.prototype._readList = function (sPath, mOptions) {

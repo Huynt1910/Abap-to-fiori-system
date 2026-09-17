@@ -115,6 +115,10 @@
                                     key="C"
                                     text="{i18n>exportFormatCsv}"
                                 />
+                                <core:Item
+                                    key="M"
+                                    text="{i18n>exportFormatMarkdown}"
+                                />
                             </items>
                         </Select>
                     </VBox>

@@ -75,7 +75,8 @@ sap.ui.define([], function () {
     fileFormat: Object.freeze({
       excel: "X",
       pdf: "P",
-      csv: "C"
+      csv: "C",
+      markdown: "M"
     }),
 
     field: Object.freeze({

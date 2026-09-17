@@ -37,6 +37,7 @@
               <core:Item key="X" text="{i18n>exportFormatExcel}" />
               <core:Item key="P" text="{i18n>exportFormatPdf}" />
               <core:Item key="C" text="{i18n>exportFormatCsv}" />
+              <core:Item key="M" text="{i18n>exportFormatMarkdown}" />
             </items>
           </Select>
           <Label text="{i18n>mailSubject}" required="true" />
@@ -78,12 +79,6 @@
           <DatePicker id="mailScheduleStartDate" value="{mailUi>/wizard/job/StartDate}" valueFormat="yyyy-MM-dd" displayFormat="medium" visible="{mailUi>/wizard/schedule/showStartDate}" />
           <Label text="{i18n>startTime}" required="{mailUi>/wizard/schedule/showStartTime}" visible="{mailUi>/wizard/schedule/showStartTime}" />
           <TimePicker id="mailScheduleStartTime" value="{mailUi>/wizard/job/StartTime}" valueFormat="HH:mm:ss" displayFormat="HH:mm:ss" visible="{mailUi>/wizard/schedule/showStartTime}" />
-          <Label text="{i18n>scheduleTimezone}" required="{mailUi>/wizard/schedule/showStartTime}" visible="false" />
-          <Select id="mailScheduleJobTimeZone" selectedKey="{mailUi>/wizard/job/JobTimeZone}" visible="false">
-            <items>
-              <core:Item key="UTC+7" text="UTC+7" />
-            </items>
-          </Select>
           <Label text="{i18n>dayOfWeek}" required="{mailUi>/wizard/schedule/showDayOfWeek}" visible="{mailUi>/wizard/schedule/showDayOfWeek}" />
           <Select id="mailScheduleDayOfWeek" selectedKey="{mailUi>/wizard/job/DayOfWeek}" visible="{mailUi>/wizard/schedule/showDayOfWeek}">
             <items>
