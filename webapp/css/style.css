@@ -431,11 +431,72 @@ body,
 }
 
 .sourceCodeObjectPane {
-  flex: 0 0 24rem;
+  flex: 0 0 clamp(18.75rem, 25vw, 23.75rem);
   min-width: 0;
   max-height: var(--source-code-pane-height);
   overflow: auto;
   scrollbar-gutter: stable;
+}
+
+.sourceObjectTree {
+  width: 100%;
+}
+
+.sourceObjectTree .sourceObjectTreeItem {
+  min-height: 3rem;
+}
+
+.sourceObjectTreeItemContent {
+  box-sizing: border-box;
+  gap: 0.5rem;
+  min-width: 0;
+  padding-block: 0.25rem;
+  width: 100%;
+}
+
+.sourceObjectTreeIdentity,
+.sourceObjectTreeText {
+  min-width: 0;
+}
+
+.sourceObjectTreeIdentity {
+  flex: 1 1 auto;
+  gap: 0.5rem;
+}
+
+.sourceObjectTreeIcon {
+  color: var(--sapContent_IconColor);
+  flex: 0 0 auto;
+}
+
+.sourceObjectTreeName,
+.sourceObjectTreeType {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sourceObjectTreeName {
+  color: var(--sapTextColor);
+  font-weight: 600;
+}
+
+.sourceObjectTreeType {
+  color: var(--sapContent_LabelColor);
+  font-size: 0.75rem;
+}
+
+.sourceObjectTreeLineCount {
+  flex: 0 0 auto;
+  min-width: 3rem;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.sourceCodeBackButton {
+  align-self: flex-start;
 }
 
 .sourceCodeViewerPane {

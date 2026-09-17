@@ -167,31 +167,13 @@
         </uxap:headerContent>
         <uxap:sections>
             <uxap:ObjectPageSection
-                id="sourceObjectsSection"
-                title="{i18n>sourceObjects}"
-            >
-                <uxap:subSections>
-                    <uxap:ObjectPageSubSection
-                        id="sourceObjectsSubSection"
-                        title="{i18n>sourceObjects}"
-                    >
-                        <uxap:blocks>
-                            <core:Fragment
-                                fragmentName="abap.to.fiori.system.view.fragments.detail.SourceObjectsTab"
-                                type="XML"
-                            />
-                        </uxap:blocks>
-                    </uxap:ObjectPageSubSection>
-                </uxap:subSections>
-            </uxap:ObjectPageSection>
-            <uxap:ObjectPageSection
-                id="sourceCodeSection"
-                title="{i18n>sourceCode}"
+                id="sourceStructureSection"
+                title="{i18n>sourceStructure}"
             >
                 <uxap:subSections>
                     <uxap:ObjectPageSubSection
                         id="sourceCodeSubSection"
-                        title="{i18n>sourceCode}"
+                        title="{i18n>sourceStructure}"
                     >
                         <uxap:blocks>
                             <core:Fragment

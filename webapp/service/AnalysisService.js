@@ -101,6 +101,16 @@ sap.ui.define([
     return oContext.delete(sGroupId || "$auto");
   };
 
+  AnalysisService.prototype.deleteAnalysisContext = function (oContext, sGroupId) {
+    if (!oContext || typeof oContext.delete !== "function") {
+      return Promise.reject(new Error("Analysis delete context is not available."));
+    }
+
+    return Promise.resolve().then(function () {
+      return oContext.delete(sGroupId || "$direct");
+    });
+  };
+
   AnalysisService.prototype.getUiFilters = function (sAnalysisId) {
     return this._readNavigationList(sAnalysisId, Constants.navigation.uiFilters, {
       parameters: { $select: Constants.field.uiFilters.join(",") }

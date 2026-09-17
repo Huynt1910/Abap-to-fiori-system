@@ -171,6 +171,9 @@ sap.ui.define([
       columns: AnalysisTableConfig.getAllColumnDefaults(),
       tableSettingsState: {},
       selectedSourceObject: null,
+      sourceObjectTree: [],
+      sourceObjectNarrow: false,
+      sourceCodeMobileDetail: false,
       sourceCodeDetail: {
         loading: false,
         error: null,

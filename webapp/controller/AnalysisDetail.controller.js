@@ -14,8 +14,11 @@ sap.ui.define([
   "abap/to/fiori/system/util/TablePersonalizationService",
   "abap/to/fiori/system/util/Constants",
   "abap/to/fiori/system/util/formatter",
-  "abap/to/fiori/system/util/AnalysisChatBox"
-], function (Fragment, MessageBox, MessageToast, Filter, FilterOperator, Sorter, BaseController, models, MailConstants, mailFormatter, ComparisonConstants, AnalysisTableConfig, TablePersonalizationService, Constants, formatter, AnalysisChatBox) {
+  "abap/to/fiori/system/util/AnalysisChatBox",
+  "abap/to/fiori/system/util/SourceObjectTree",
+  "sap/ui/Device",
+  "sap/base/Log"
+], function (Fragment, MessageBox, MessageToast, Filter, FilterOperator, Sorter, BaseController, models, MailConstants, mailFormatter, ComparisonConstants, AnalysisTableConfig, TablePersonalizationService, Constants, formatter, AnalysisChatBox, SourceObjectTree, Device, Log) {
   "use strict";
 
     return BaseController.extend(
@@ -30,6 +33,10 @@ sap.ui.define([
       this.getView().setModel(this._oViewModel, "detail");
       this._oMailViewModel = models.createMailUiModel();
       this.getView().setModel(this._oMailViewModel, "mailUi");
+      this._mSourceCodeCache = Object.create(null);
+      this._mExpandedSourceObjectKeys = Object.create(null);
+      this._onSourceObjectResize();
+      Device.resize.attachHandler(this._onSourceObjectResize, this);
       this.getRouter().getRoute("analysisDetail").attachPatternMatched(this._onRouteMatched, this);
       this.getRouter().getRoute("detail").attachPatternMatched(this._onRouteMatched, this);
       this._oChatBox = new AnalysisChatBox(this);
@@ -55,6 +62,7 @@ sap.ui.define([
 
     onExit: function () {
       if (this._oChatBox) { this._oChatBox.destroy(); }
+      Device.resize.detachHandler(this._onSourceObjectResize, this);
       this.getComparisonService().cancelPolling();
       this.getDocumentService().cancelExportPolling();
       if (this._iProgramValueHelpSearchTimer) {
@@ -570,24 +578,68 @@ sap.ui.define([
 
     onSourceObjectPress: function (oEvent) {
       var oContext = this._getDetailRowContext(oEvent);
-      var oSourceObject = oContext && oContext.getObject();
+      var oTreeNode = oContext && oContext.getObject();
+      var oSourceObject = oTreeNode && (oTreeNode.originalData || oTreeNode);
 
       if (oSourceObject) {
+        this._sSelectedSourceObjectKey = oTreeNode.key || SourceObjectTree.getStableKey(oSourceObject);
         this._selectSourceObject(oSourceObject);
+        if (this._oViewModel.getProperty("/sourceObjectNarrow")) {
+          this._oViewModel.setProperty("/sourceCodeMobileDetail", true);
+        }
         this._showSourceCodeSection();
       }
     },
 
-    onRefreshSourceCode: function () {
-      var oSourceObject = this._oViewModel.getProperty("/selectedSourceObject");
+    onSourceObjectTreeUpdateFinished: function () {
+      var oTree = this.byId("sourceObjectTree");
+      var aItems = oTree && oTree.getItems ? oTree.getItems() : [];
 
-      if (oSourceObject && !this._oViewModel.getProperty("/sourceCodeDetail/loading")) {
-        this._selectSourceObject(oSourceObject);
+      if (!oTree) {
+        return;
+      }
+
+      if (!this._bSourceObjectTreeInitialized) {
+        oTree.expandToLevel(2);
+        this._bSourceObjectTreeInitialized = true;
+      } else {
+        aItems.forEach(function (oItem, iIndex) {
+          var oContext = oItem.getBindingContext("detail");
+          var oNode = oContext && oContext.getObject();
+          if (oNode && this._mExpandedSourceObjectKeys[oNode.key]) {
+            oTree.expand(iIndex);
+          }
+        }.bind(this));
+      }
+
+      aItems.some(function (oItem) {
+        var oContext = oItem.getBindingContext("detail");
+        var oNode = oContext && oContext.getObject();
+        if (oNode && oNode.key === this._sSelectedSourceObjectKey) {
+          oTree.setSelectedItem(oItem, true);
+          return true;
+        }
+        return false;
+      }.bind(this));
+    },
+
+    onSourceObjectToggleOpenState: function (oEvent) {
+      var oTree = oEvent.getSource();
+      var oItem = oTree.getItems()[oEvent.getParameter("itemIndex")];
+      var oContext = oItem && oItem.getBindingContext("detail");
+      var oNode = oContext && oContext.getObject();
+
+      if (oNode) {
+        if (oEvent.getParameter("expanded")) {
+          this._mExpandedSourceObjectKeys[oNode.key] = true;
+        } else {
+          delete this._mExpandedSourceObjectKeys[oNode.key];
+        }
       }
     },
 
-    onCloseSourceCode: function () {
-      this._resetSourceCodeDetail();
+    onBackToSourceObjectTree: function () {
+      this._oViewModel.setProperty("/sourceCodeMobileDetail", false);
     },
 
     onBusinessLogicPress: function (oEvent) {
@@ -705,8 +757,13 @@ sap.ui.define([
 
     _resetState: function (sAnalysisId) {
       this._iSourceCodeRequestToken = (this._iSourceCodeRequestToken || 0) + 1;
+      this._mSourceCodeCache = Object.create(null);
+      this._mExpandedSourceObjectKeys = Object.create(null);
+      this._sSelectedSourceObjectKey = null;
+      this._bSourceObjectTreeInitialized = false;
       this._oViewModel.setData(models.createAnalysisDetailModel().getData());
       this._oViewModel.setProperty("/analysisId", sAnalysisId);
+      this._onSourceObjectResize();
       this._loadPersistedPersonalizationStates();
       this._refreshExportAvailability();
     },
@@ -863,7 +920,11 @@ sap.ui.define([
                   aRows.length,
                 );
                 this._oViewModel.setProperty("/loaded/" + sStateKey, true);
-                this._applyTablePersonalization(sStateKey);
+                if (sStateKey === "sourceObjects") {
+                  this._updateSourceObjectTree(aRows);
+                } else {
+                  this._applyTablePersonalization(sStateKey);
+                }
               }.bind(this),
             )
             .catch(
@@ -906,13 +967,58 @@ sap.ui.define([
       return null;
     },
 
+    _buildSourceObjectTree: function (aSourceObjects) {
+      var oResult = SourceObjectTree.build(aSourceObjects);
+
+      oResult.warnings.forEach(function (sWarning) {
+        Log.warning(sWarning, null, "abap.to.fiori.system.util.SourceObjectTree");
+      });
+      return oResult.roots;
+    },
+
+    _updateSourceObjectTree: function (aSourceObjects) {
+      var aTree = this._buildSourceObjectTree(aSourceObjects);
+      var oSelectedNode;
+
+      this._oViewModel.setProperty("/sourceObjectTree", aTree);
+
+      if (this._sSelectedSourceObjectKey) {
+        (function findSelected(aNodes) {
+          aNodes.some(function (oNode) {
+            if (oNode.key === this._sSelectedSourceObjectKey) {
+              oSelectedNode = oNode;
+              return true;
+            }
+            return findSelected.call(this, oNode.children || []);
+          }.bind(this));
+          return !!oSelectedNode;
+        }.call(this, aTree));
+      }
+
+      if (oSelectedNode) {
+        this._selectSourceObject(oSelectedNode.originalData);
+      }
+    },
+
     _selectSourceObject: function (oSourceObject) {
       var sAnalysisId = oSourceObject && oSourceObject.AnalysisId;
       var sSourceItemId = oSourceObject && oSourceObject.ItemId;
       var iRequestedLength = Math.max(Number(oSourceObject && oSourceObject.LineCount) || 0, 10000);
+      var sCacheKey = SourceObjectTree.getStableKey(oSourceObject);
+      var aEmbeddedLines = oSourceObject && (oSourceObject.SourceLines || oSourceObject._SourceLines);
+      var aCachedLines = Array.isArray(aEmbeddedLines) ? this._normalizeSourceLines(aEmbeddedLines) : this._mSourceCodeCache[sCacheKey];
       var iToken;
 
       this._oViewModel.setProperty("/selectedSourceObject", oSourceObject || null);
+      if (aCachedLines) {
+        this._oViewModel.setProperty("/sourceCodeDetail", {
+          loading: false,
+          error: null,
+          lines: aCachedLines,
+          lineCount: aCachedLines.length
+        });
+        return;
+      }
       this._oViewModel.setProperty("/sourceCodeDetail", {
         loading: true,
         error: null,
@@ -942,6 +1048,7 @@ sap.ui.define([
           }
 
           aLines = this._normalizeSourceLines(aRows);
+          this._mSourceCodeCache[sCacheKey] = aLines;
           this._oViewModel.setProperty("/sourceCodeDetail/lines", aLines);
           this._oViewModel.setProperty("/sourceCodeDetail/lineCount", aLines.length);
         }.bind(this))
@@ -982,11 +1089,16 @@ sap.ui.define([
 
     _showSourceCodeSection: function () {
       var oPage = this.byId("analysisDetailPage");
-      var oSection = this.byId("sourceCodeSection");
+      var oSubSection = this.byId("sourceCodeSubSection");
 
-      if (oPage && oSection && typeof oPage.setSelectedSection === "function") {
-        oPage.setSelectedSection(oSection.getId());
+      if (oPage && oSubSection && typeof oPage.scrollToSection === "function") {
+        oPage.scrollToSection(oSubSection.getId());
       }
+    },
+
+    _onSourceObjectResize: function (oEvent) {
+      var iWidth = oEvent && oEvent.size && oEvent.size.width || Device.resize.width;
+      this._oViewModel.setProperty("/sourceObjectNarrow", iWidth <= 900);
     },
 
     _selectBusinessLogic: function (oRow) {
@@ -2307,7 +2419,7 @@ sap.ui.define([
           var mSectionIds = {};
 
           mSectionIds[Constants.section.uiFilters] = "uiFiltersSection";
-          mSectionIds[Constants.section.sourceObjects] = "sourceObjectsSection";
+          mSectionIds[Constants.section.sourceObjects] = "sourceStructureSection";
           mSectionIds[Constants.section.databaseObjects] =
             "databaseObjectsSection";
           mSectionIds[Constants.section.businessLogic] = "businessLogicSection";

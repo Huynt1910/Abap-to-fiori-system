@@ -1,34 +1,42 @@
 <core:FragmentDefinition xmlns:core="sap.ui.core" xmlns="sap.m">
-  <VBox class="tabSurface sourceCodeSurface">
-    <MessageStrip visible="{path: 'detail>/errors/sourceObjects', formatter: '.formatter.hasValue'}" text="{detail>/errors/sourceObjects}" type="Error" showIcon="true" class="sapUiSmallMarginBottom" />
+  <VBox id="sourceCodeSurface" class="tabSurface sourceCodeSurface" busy="{detail>/loading/sourceObjects}" busyIndicatorDelay="0">
+    <MessageStrip id="sourceObjectsErrorStrip" visible="{path: 'detail>/errors/sourceObjects', formatter: '.formatter.hasValue'}" text="{detail>/errors/sourceObjects}" type="Error" showIcon="true" class="sapUiSmallMarginBottom" />
     <OverflowToolbar class="sectionToolbar">
-      <Title text="{i18n>sourceCode}" level="H3" />
-      <ObjectStatus text="{path: 'detail>/sourceCodeDetail/lineCount', formatter: '.formatter.formatCountText'}" visible="{= !!${detail>/selectedSourceObject} }" />
-      <ToolbarSpacer />
-      <Button icon="sap-icon://refresh" tooltip="{i18n>refreshSourceCode}" enabled="{= !!${detail>/selectedSourceObject} }" busy="{detail>/sourceCodeDetail/loading}" press=".onRefreshSourceCode" />
-      <Button icon="sap-icon://decline" tooltip="{i18n>closeSourceCode}" visible="{= !!${detail>/selectedSourceObject} }" press=".onCloseSourceCode" />
+      <Title text="{i18n>sourceObject}" level="H3" />
+      <ObjectStatus text="{path: 'detail>/counts/sourceObjects', formatter: '.formatter.formatCountText'}" />
     </OverflowToolbar>
     <FlexBox class="sourceCodeWorkspace" direction="Row" renderType="Div">
-      <VBox class="sourceCodeObjectPane">
-        <Title text="{i18n>sourceObjectList}" level="H4" class="sapUiSmallMarginBottom" />
-        <IllustratedMessage visible="{path: 'detail>/sourceObjects', formatter: '.formatter.hasNoItems'}" illustrationType="sapIllus-NoEntries" illustrationSize="Spot" title="{i18n>noSourceObjects}" />
-        <Table autoPopinMode="true" contextualWidth="Auto" id="sourceCodeObjectsTable" showSeparators="None" sticky="ColumnHeaders" mode="SingleSelectMaster" visible="{path: 'detail>/sourceObjects', formatter: '.formatter.hasItems'}" items="{detail>/sourceObjects}" growing="true" growingThreshold="20" selectionChange=".onSourceObjectPress">
-          <columns>
-            <Column width="14rem"><Text text="{i18n>objectName}" /></Column>
-            <Column width="7rem" hAlign="End"><Text text="{i18n>lineCount}" /></Column>
-          </columns>
-          <items>
-            <ColumnListItem>
-              <cells>
-                <ObjectIdentifier title="{path: 'detail>ObjectName', formatter: '.formatter.formatText'}" text="{path: 'detail>ObjectType', formatter: '.formatter.formatText'}" />
-                <ObjectNumber number="{path: 'detail>LineCount', formatter: '.formatter.formatNumber'}" />
-              </cells>
-            </ColumnListItem>
-          </items>
-        </Table>
+      <VBox class="sourceCodeObjectPane" visible="{= !${detail>/sourceObjectNarrow} || !${detail>/sourceCodeMobileDetail} }">
+        <IllustratedMessage id="sourceObjectsEmptyMessage" visible="{= !${detail>/loading/sourceObjects} &amp;&amp; ${detail>/sourceObjects/length} === 0 }" illustrationType="sapIllus-NoEntries" illustrationSize="Spot" title="{i18n>noSourceObjects}" />
+        <Tree
+          id="sourceObjectTree"
+          class="sourceObjectTree"
+          mode="SingleSelectMaster"
+          includeItemInSelection="true"
+          visible="{= ${detail>/sourceObjects/length} > 0 }"
+          noDataText="{i18n>noSourceObjects}"
+          selectionChange=".onSourceObjectPress"
+          toggleOpenState=".onSourceObjectToggleOpenState"
+          updateFinished=".onSourceObjectTreeUpdateFinished"
+          items="{path: 'detail>/sourceObjectTree', parameters: {arrayNames: ['children']}}"
+        >
+          <CustomTreeItem class="sourceObjectTreeItem">
+            <HBox class="sourceObjectTreeItemContent" alignItems="Center" justifyContent="SpaceBetween">
+              <HBox class="sourceObjectTreeIdentity" alignItems="Center">
+                <core:Icon class="sourceObjectTreeIcon" src="{detail>icon}" decorative="true" />
+                <VBox class="sourceObjectTreeText">
+                  <Text class="sourceObjectTreeName" text="{detail>objectName}" tooltip="{detail>objectName}" wrapping="false" />
+                  <Text class="sourceObjectTreeType" text="{detail>objectType}" tooltip="{detail>objectType}" wrapping="false" />
+                </VBox>
+              </HBox>
+              <ObjectNumber class="sourceObjectTreeLineCount" number="{detail>lineCount}" tooltip="{= ${i18n>lineCount} + ': ' + ${detail>lineCount} }" />
+            </HBox>
+          </CustomTreeItem>
+        </Tree>
       </VBox>
-      <VBox class="sourceCodeViewerPane" busy="{detail>/sourceCodeDetail/loading}" busyIndicatorDelay="0">
-        <MessageStrip visible="{path: 'detail>/sourceCodeDetail/error', formatter: '.formatter.hasValue'}" text="{detail>/sourceCodeDetail/error}" type="Error" showIcon="true" class="sapUiSmallMarginBottom" />
+      <VBox class="sourceCodeViewerPane" visible="{= !${detail>/sourceObjectNarrow} || ${detail>/sourceCodeMobileDetail} }" busy="{detail>/sourceCodeDetail/loading}" busyIndicatorDelay="0">
+        <Button id="sourceCodeBackButton" class="sourceCodeBackButton sapUiTinyMarginBottom" icon="sap-icon://nav-back" text="{i18n>backToSourceObjects}" tooltip="{i18n>backToSourceObjects}" visible="{detail>/sourceObjectNarrow}" press=".onBackToSourceObjectTree" />
+        <MessageStrip id="sourceCodeErrorStrip" visible="{path: 'detail>/sourceCodeDetail/error', formatter: '.formatter.hasValue'}" text="{detail>/sourceCodeDetail/error}" type="Error" showIcon="true" class="sapUiSmallMarginBottom" />
         <IllustratedMessage visible="{= !${detail>/selectedSourceObject} }" illustrationType="sapIllus-SearchFolder" title="{i18n>selectSourceObject}" description="{i18n>selectSourceObjectDescription}" />
         <VBox visible="{= !!${detail>/selectedSourceObject} }">
           <ObjectIdentifier title="{path: 'detail>/selectedSourceObject/ObjectName', formatter: '.formatter.formatText'}" text="{path: 'detail>/selectedSourceObject/ObjectType', formatter: '.formatter.formatText'}" class="sapUiTinyMarginBottom" />
