@@ -8,3 +8,4 @@ resources/
 doc/
 .agents/
 AGENTS.md
+test/
