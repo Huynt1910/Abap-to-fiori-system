@@ -58,6 +58,28 @@ sap.ui.define([
       return ODataErrorHandler.parse(oError);
     },
 
+    showErrorMessage: function (sMessage) {
+      var fnText = function (sKey, sDefault) {
+        try {
+          return this.getText(sKey) || sDefault;
+        } catch (oError) {
+          return sDefault;
+        }
+      }.bind(this);
+      var sClose = fnText("close", "Close");
+      var sTitle = fnText("errorTitle", "Error");
+      var sFallback = fnText("errorGeneric", "Unexpected error.");
+
+      return MessageBox.error(String(sMessage || sFallback), {
+        title: sTitle,
+        actions: [sClose],
+        emphasizedAction: sClose,
+        initialFocus: sClose,
+        contentWidth: "34rem",
+        styleClass: "migrationAnalyzerErrorMessageBox"
+      });
+    },
+
     showError: function (oError, sFallbackKey) {
       var oParsedError = this.parseError(oError);
       var sMessage = oParsedError.message;
@@ -71,7 +93,7 @@ sap.ui.define([
         sMessage = this.getText(sFallbackKey || "errorGeneric");
       }
 
-      MessageBox.error(sMessage);
+      this.showErrorMessage(sMessage);
     }
   });
 });

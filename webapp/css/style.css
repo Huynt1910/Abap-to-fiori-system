@@ -724,3 +724,18 @@ body,
   .analysisChatRoot.sapMFlexBox { bottom: 0; }
   .analysisChatPanel.sapMFlexBox { height: 100vh; height: 100dvh; max-height: 100vh; max-height: 100dvh; }
 }
+.migrationAnalyzerErrorMessageBox.sapMDialog {
+  max-width: calc(100vw - 2rem) !important;
+}
+
+.migrationAnalyzerErrorMessageBox .sapMDialogScrollCont,
+.migrationAnalyzerErrorMessageBox .sapMMsgBoxText {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.migrationAnalyzerErrorMessageBox .sapMMsgBoxText {
+  white-space: pre-wrap !important;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}

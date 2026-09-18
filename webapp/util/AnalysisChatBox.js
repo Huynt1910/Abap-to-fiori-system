@@ -8,6 +8,7 @@ sap.ui.define([
     this.view = oController.getView();
     this.router = oController.getRouter();
     this.text = oController.getText.bind(oController);
+    this.showErrorMessage = oController.showErrorMessage.bind(oController);
     this.followLatest = true;
     this.state = new ChatState(new ChatService(oController.getODataModel(), function () {
       var oAuth = oController.getOwnerComponent().getModel("auth");
@@ -47,7 +48,7 @@ sap.ui.define([
       }.bind(this) };
       this.view.byId("aiChatScroll").addEventDelegate(this._scrollDelegate);
     }.bind(this)).catch(function () {
-      if (!this.destroyed) { MessageBox.error(this.text("chatUiFailed")); }
+      if (!this.destroyed) { this.showErrorMessage(this.text("chatUiFailed")); }
     }.bind(this));
   }
 

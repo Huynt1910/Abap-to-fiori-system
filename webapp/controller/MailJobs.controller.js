@@ -170,7 +170,7 @@ sap.ui.define([
 
       if (aErrors.length) {
         this._oViewModel.setProperty("/wizard/errorMessage", aErrors.join("\n"));
-        MessageBox.error(aErrors.join("\n"));
+        this.showErrorMessage(aErrors.join("\n"));
         return;
       }
 
@@ -736,7 +736,7 @@ sap.ui.define([
 
       this._sLastMailErrorMessage = sMessage;
       this._iLastMailErrorAt = iNow;
-      MessageBox.error(sMessage);
+      this.showErrorMessage(sMessage);
     }
   });
 });

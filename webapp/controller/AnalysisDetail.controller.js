@@ -261,7 +261,7 @@ sap.ui.define([
           var oState = this._buildDetailSettingsStateFromDialog(sSection);
 
           if (!this._validateDetailSettingsState(oState)) {
-            MessageBox.error(this.getText("personalizationAtLeastOneColumn"));
+            this.showErrorMessage(this.getText("personalizationAtLeastOneColumn"));
             return;
           }
 
@@ -318,7 +318,7 @@ sap.ui.define([
           }
 
           if (!oComparisonService.isGuid(sAnalysisId)) {
-            MessageBox.error(this.getText("comparisonAnalysisIdRequired"));
+            this.showErrorMessage(this.getText("comparisonAnalysisIdRequired"));
             return;
           }
 
@@ -369,7 +369,7 @@ sap.ui.define([
                 );
 
                 if (bFailed) {
-                  MessageBox.error(sMessage);
+                  this.showErrorMessage(sMessage);
                 } else {
                   MessageToast.show(sMessage);
                 }
@@ -389,7 +389,7 @@ sap.ui.define([
                   (oError && oError.message) ||
                     this.getText("comparisonRunError"),
                 );
-                MessageBox.error(
+                this.showErrorMessage(
                   (oError && oError.message) ||
                     this.getText("comparisonRunError"),
                 );
@@ -469,7 +469,7 @@ sap.ui.define([
               "/wizard/errorMessage",
               aErrors.join("\n"),
             );
-            MessageBox.error(aErrors.join("\n"));
+            this.showErrorMessage(aErrors.join("\n"));
             return;
           }
 
@@ -525,7 +525,7 @@ sap.ui.define([
           }
 
       if (bTechnicalDocument ? !this._canGenerateTechnicalDocument() : !this._canPrepareSelectedExport()) {
-        MessageBox.error(this.getText("exportNotAvailable"));
+        this.showErrorMessage(this.getText("exportNotAvailable"));
         return;
       }
 
@@ -534,7 +534,7 @@ sap.ui.define([
           return oField.selected === true;
         });
       })) {
-        MessageBox.error(this.getText("exportSelectColumnRequired"));
+        this.showErrorMessage(this.getText("exportSelectColumnRequired"));
         return;
       }
 
@@ -562,7 +562,7 @@ sap.ui.define([
         this.byId("exportReportDialog").close();
         this._oViewModel.setProperty("/export/dialogOpen", false);
       }.bind(this)).catch(function (oError) {
-        MessageBox.error(oError && oError.message || this.getText("exportError"));
+        this.showErrorMessage(oError && oError.message || this.getText("exportError"));
       }.bind(this)).finally(function () {
         this._oViewModel.setProperty("/export/busy", false);
       }.bind(this));
@@ -2396,7 +2396,7 @@ sap.ui.define([
           var sMessage = this.getMailService().toFriendlyError(oError).message;
           this._oMailViewModel.setProperty("/wizard/busy", false);
           this._oMailViewModel.setProperty("/wizard/errorMessage", sMessage);
-          MessageBox.error(sMessage);
+          this.showErrorMessage(sMessage);
         },
 
         _withMailRequestTimeout: function (pRequest) {

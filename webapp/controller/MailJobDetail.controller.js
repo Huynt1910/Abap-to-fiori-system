@@ -313,7 +313,7 @@ sap.ui.define([
 
       this._sLastMailErrorMessage = sMessage;
       this._iLastMailErrorAt = iNow;
-      MessageBox.error(sMessage);
+      this.showErrorMessage(sMessage);
     },
 
     _buildMailJobPath: function (sJobId) {

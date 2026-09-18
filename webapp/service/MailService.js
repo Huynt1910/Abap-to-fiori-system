@@ -150,7 +150,13 @@ sap.ui.define(
     };
 
     MailService.prototype.deleteMailJob = function (oContext) {
-      return oContext.delete("$auto");
+      var pRefresh = oContext && typeof oContext.requestRefresh === "function"
+        ? oContext.requestRefresh("$direct")
+        : Promise.resolve();
+
+      return pRefresh.then(function () {
+        return oContext.delete("$direct");
+      });
     };
 
     MailService.prototype.addRecipient = function (vJob, oRecipient) {
