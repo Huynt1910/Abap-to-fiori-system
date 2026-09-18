@@ -93,8 +93,6 @@
           </Select>
           <Label text="{i18n>dayOfMonth}" required="{mailUi>/wizard/schedule/showDayOfMonth}" visible="{mailUi>/wizard/schedule/showDayOfMonth}" />
           <StepInput id="mailScheduleDayOfMonth" value="{mailUi>/wizard/job/DayOfMonth}" min="1" max="31" step="1" visible="{mailUi>/wizard/schedule/showDayOfMonth}" />
-          <Label text="{i18n>nextRunAt}" visible="{= ${mailUi>/wizard/mode} === 'edit' }" />
-          <Text text="{path: 'mailUi>/wizard/job/NextRunAt', formatter: '.mailFormatter.formatDateTime'}" visible="{= ${mailUi>/wizard/mode} === 'edit' }" />
         </f:SimpleForm>
           </content>
         </Panel>

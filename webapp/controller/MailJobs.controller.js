@@ -97,7 +97,7 @@ sap.ui.define([
 
       this._oViewModel.setProperty("/listBusy", true);
 
-      Promise.resolve(oContext.requestObject ? oContext.requestObject() : oContext.getObject())
+      this._requestLatestMailJob(oContext)
         .then(function (oJob) {
           if (!oJob) {
             return;
@@ -651,6 +651,36 @@ sap.ui.define([
       return oEvent.getSource().getBindingContext("mail");
     },
 
+    _requestLatestMailJob: function (oContext) {
+      var pRefresh = oContext && typeof oContext.requestRefresh === "function"
+        ? oContext.requestRefresh("$direct")
+        : Promise.resolve();
+
+      return pRefresh.then(function () {
+        return oContext && typeof oContext.requestObject === "function"
+          ? oContext.requestObject()
+          : oContext && oContext.getObject();
+      });
+    },
+
+    _reloadWizardAfterConflict: function () {
+      var oContext = this._oWizardContext;
+      var aRecipients = (this._oViewModel.getProperty("/wizard/recipients") || []).slice();
+
+      if (!oContext) {
+        return Promise.resolve();
+      }
+
+      return this._requestLatestMailJob(oContext).then(function (oJob) {
+        if (!oJob) {
+          return;
+        }
+        this._resetWizard("edit", oJob);
+        this._oViewModel.setProperty("/wizard/recipients", aRecipients);
+        this._oWizardContext = oContext;
+      }.bind(this));
+    },
+
     _clearBusyStates: function () {
       this._oViewModel.setProperty("/busy", false);
       this._oViewModel.setProperty("/listBusy", false);
@@ -668,13 +698,22 @@ sap.ui.define([
     },
 
     _showWizardMailError: function (oError) {
-      var sMessage = this.getMailService().toFriendlyError(oError).message;
+      var oParsedError = this.getMailService().toFriendlyError(oError);
+      var sMessage = oParsedError.message;
+      var pReload = oParsedError.status === 412
+        ? this._reloadWizardAfterConflict()
+        : Promise.resolve();
+
       this._clearBusyStates();
-      if (!sMessage) {
-        return;
-      }
-      this._oViewModel.setProperty("/wizard/errorMessage", sMessage);
-      this._showDedupedError(sMessage);
+      return pReload.catch(function () {
+        return null;
+      }).then(function () {
+        if (!sMessage) {
+          return;
+        }
+        this._oViewModel.setProperty("/wizard/errorMessage", sMessage);
+        this._showDedupedError(sMessage);
+      }.bind(this));
     },
 
     _withRequestTimeout: function (pRequest) {

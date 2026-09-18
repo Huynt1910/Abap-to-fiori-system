@@ -104,18 +104,46 @@ sap.ui.define(
     };
 
     MailService.prototype.updateMailJob = function (oContext, oJob) {
-      return this.updateContext(oContext, this._buildJobPayload(oJob, true));
+      var oPayload = this._buildJobPayload(oJob, true);
+      var bScheduled = oPayload.Frequency !== MailConstants.frequency.onDemand;
+      var aRequiredScheduleProperties = bScheduled
+        ? ["StartDate", "StartTime", "JobTimeZone", "DayOfWeek", "DayOfMonth"]
+        : [];
+
+      return this.updateContext(oContext, oPayload, aRequiredScheduleProperties);
     };
 
-    MailService.prototype.updateContext = function (oContext, oPayload) {
+    MailService.prototype.updateContext = function (
+      oContext,
+      oPayload,
+      aRequiredProperties,
+    ) {
       var aProperties = this._getChangedProperties(oContext, oPayload);
+      var aUpdatePromises;
+      var pSubmit;
 
-      return aProperties
-        .reduce(function (pChain, sProperty) {
-          return pChain.then(function () {
-            return oContext.setProperty(sProperty, oPayload[sProperty]);
-          });
-        }, Promise.resolve())
+      (aRequiredProperties || []).forEach(function (sProperty) {
+        if (
+          Object.prototype.hasOwnProperty.call(oPayload || {}, sProperty) &&
+          aProperties.indexOf(sProperty) === -1
+        ) {
+          aProperties.push(sProperty);
+        }
+      });
+
+      if (!aProperties.length) {
+        return oContext.requestObject();
+      }
+
+      aUpdatePromises = aProperties.map(function (sProperty) {
+        return oContext.setProperty(sProperty, oPayload[sProperty], "$auto");
+      });
+
+      pSubmit = this._oModel && typeof this._oModel.submitBatch === "function"
+        ? this._oModel.submitBatch("$auto")
+        : Promise.resolve();
+
+      return Promise.all([pSubmit].concat(aUpdatePromises))
         .then(function () {
           return oContext.requestObject();
         });
@@ -467,7 +495,7 @@ sap.ui.define(
 
       if (bPatch) {
         aFields = aFields.filter(function (sField) {
-          return sField !== "AnalysisId";
+          return sField !== "AnalysisId" && sField !== "Status";
         });
       }
 
