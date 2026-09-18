@@ -1474,7 +1474,10 @@ sap.ui.define([
           var aSections =
             this._oViewModel.getProperty("/export/availableSections") || [];
 
-          if (oExport.exportSection === Constants.exportSection.all) {
+          if (
+            oExport.exportSection === Constants.exportSection.all ||
+            String(oExport.exportSection || "").indexOf(",") !== -1
+          ) {
             return aSections
               .filter(function (oSection) {
                 return oSection && oSection.selected !== false;
@@ -1521,7 +1524,20 @@ sap.ui.define([
           var aSections =
             this._oViewModel.getProperty("/export/availableSections") || [];
           var aFields = this._flattenExportSections(aSections);
+          var aSelectedSections = aSections.filter(function (oSection) {
+            return oSection && oSection.selected !== false;
+          });
+          var aSelectedSectionCodes = aSelectedSections
+            .map(function (oSection) {
+              return oSection.exportSection;
+            })
+            .filter(Boolean);
+          var sExportSection = aSelectedSections.length > 1 &&
+            aSelectedSections.length === aSections.length
+              ? Constants.exportSection.all
+              : aSelectedSectionCodes.join(",");
 
+          this._oViewModel.setProperty("/export/exportSection", sExportSection || Constants.exportSection.all);
           this._oViewModel.setProperty("/export/availableFields", aFields);
           this._oViewModel.setProperty(
             "/export/selectedFields",

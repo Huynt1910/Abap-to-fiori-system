@@ -378,9 +378,15 @@ sap.ui.define([
       throw new Error("Unsupported export file format.");
     }
 
-    if (aSections.indexOf(mParameters.exportSection) === -1) {
+    if (!this._isSupportedExportSectionValue(mParameters.exportSection, aSections)) {
       throw new Error("Unsupported export section.");
     }
+  };
+
+  DocumentService.prototype._isSupportedExportSectionValue = function (sExportSection, aSections) {
+    return String(sExportSection || "").split(",").every(function (sSection) {
+      return aSections.indexOf(sSection.trim()) !== -1;
+    });
   };
 
   DocumentService.prototype._validateSelectedExportParameters = function (mParameters) {
@@ -392,8 +398,8 @@ sap.ui.define([
       throw new Error("FileFormat must not exceed 1 character.");
     }
 
-    if (String(mParameters.exportSection || "").length > 20) {
-      throw new Error("ExportSection must not exceed 20 characters.");
+    if (String(mParameters.exportSection || "").length > 100) {
+      throw new Error("ExportSection must not exceed 100 characters.");
     }
 
     if (mParameters.selectedFields !== undefined && typeof mParameters.selectedFields !== "string" && !Array.isArray(mParameters.selectedFields)) {
