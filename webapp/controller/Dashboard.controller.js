@@ -168,6 +168,16 @@ sap.ui.define(
           )
           .catch(
             function (oError) {
+              var sMessage = this._getRunAnalysisErrorMessage(
+                oError,
+                sProgramName,
+              );
+
+              if (sMessage) {
+                this.showErrorMessage(sMessage);
+                return;
+              }
+
               this.showError(oError, "runAnalysisError");
             }.bind(this),
           )
@@ -176,6 +186,24 @@ sap.ui.define(
               this._oViewModel.setProperty("/newAnalysis/busy", false);
             }.bind(this),
           );
+      },
+
+      _getRunAnalysisErrorMessage: function (oError, sProgramName) {
+        var sBackendMessage = this.parseError(oError).message || "";
+        var sExpectedMessage = this.getText("sourceProgramNotFound", [
+          sProgramName,
+        ]);
+
+        if (
+          sBackendMessage &&
+          sExpectedMessage.toLowerCase().indexOf(
+            sBackendMessage.toLowerCase(),
+          ) === 0
+        ) {
+          return sExpectedMessage;
+        }
+
+        return "";
       },
 
       onProgramNameChange: function (oEvent) {
