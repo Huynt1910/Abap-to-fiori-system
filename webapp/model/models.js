@@ -114,8 +114,35 @@ sap.ui.define([
       },
       comparison: {
         busy: false,
-        state: "IDLE",
-        message: ""
+        requestId: "",
+        captureStatus: "",
+        captureMessage: "",
+        captureCount: null,
+        odataCount: null,
+        comparedColumnCount: null,
+        scopeMessage: "",
+        status: "INCONCLUSIVE",
+        reason: "",
+        selectionJson: "[]",
+        filterMappingJson: "{}",
+        columnMappingJson: "{}",
+        manualColumnMappingJson: "{}",
+        keyColumnsJson: "[]",
+        serviceRootUrl: "",
+        entitySet: "",
+        mappingLog: [],
+        mappingLogReady: false,
+        runLog: [],
+        runLogText: "",
+        differences: [],
+        ready: false,
+        historyMode: false
+      },
+      requestHistory: {
+        scope: "ANALYSIS",
+        busy: false,
+        error: "",
+        items: []
       },
       fioriUi: {
         busy: false,

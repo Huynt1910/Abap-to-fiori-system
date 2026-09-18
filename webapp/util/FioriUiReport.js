@@ -31,8 +31,8 @@ sap.ui.define([
     var vStatus = oError && (oError.status || oError.statusCode) ||
       oResponse && (oResponse.status || oResponse.statusCode);
     var aStatus = !vStatus && /\b([1-5][0-9]{2})\b/.exec(sMessage);
-    return new Error("HTTP " + (vStatus || aStatus && aStatus[1] || "không có phản hồi") +
-      " tại " + sUrl + ": " + sMessage);
+    return new Error("HTTP " + (vStatus || aStatus && aStatus[1] || "no response") +
+      " at " + sUrl + ": " + sMessage);
   }
 
   function open(oOwner, sServiceUrl, oConfig, fnIsCurrent) {
@@ -113,7 +113,8 @@ sap.ui.define([
         if (!oFilter.supported) { return; }
         var oInput = new Input({ width: "12rem", placeholder: oFilter.property });
         oFilters.addItem(new VBox({
-          items: [new Label({ text: oFilter.label + " (" + oFilter.property + ")", labelFor: oInput }), oInput]
+          items: [new Label({ text: oFilter.label + " (" + oFilter.property + ") — " +
+            t("fioriUiReportExactMatch"), labelFor: oInput }), oInput]
         }).addStyleClass("sapUiSmallMarginEnd sapUiSmallMarginBottom"));
         aInputs.push({ property: oFilter.property, input: oInput });
       });

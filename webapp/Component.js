@@ -7,6 +7,7 @@ sap.ui.define(
     "abap/to/fiori/system/service/ComparisonService",
     "abap/to/fiori/system/service/DocumentService",
     "abap/to/fiori/system/service/MailService",
+    "abap/to/fiori/system/service/RequestHistoryService",
     "sap/ui/model/odata/v4/ODataModel",
   ],
   function (
@@ -17,6 +18,7 @@ sap.ui.define(
     ComparisonService,
     DocumentService,
     MailService,
+    RequestHistoryService,
   ) {
     "use strict";
 
@@ -39,6 +41,9 @@ sap.ui.define(
         );
         this._oDocumentService = new DocumentService(this.getModel());
         this._oMailService = new MailService(this.getModel("mail"));
+        this._oRequestHistoryService = new RequestHistoryService(
+          this.getModel(), this.getManifest()["sap.app"].dataSources.mainService.uri
+        );
         this.getRouter().initialize();
       },
 
@@ -60,6 +65,10 @@ sap.ui.define(
 
       getMailService: function () {
         return this._oMailService;
+      },
+
+      getRequestHistoryService: function () {
+        return this._oRequestHistoryService;
       },
 
       setPendingCreatedMailJobId: function (sJobId) {

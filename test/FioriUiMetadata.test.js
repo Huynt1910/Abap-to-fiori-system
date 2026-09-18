@@ -105,7 +105,7 @@ test("valid OData V4 entity and its annotations are VALIDATED", () => {
 test("missing entity set, entity type, key and property report specific issues", () => {
   assert.match(result(xml, config({ entitySet: "Missing" })).issues[0], /EntitySet 'Missing'/);
   assert.match(result(xml.replace('EntityType="Demo.Service.ReportItem"', 'EntityType="Demo.Service.Missing"')).issues[0], /EntityType/);
-  assert.match(result(xml.replace('<Key><PropertyRef Name="ID"/></Key>', "")).issues.join(" "), /thiếu Key/);
+  assert.match(result(xml.replace('<Key><PropertyRef Name="ID"/></Key>', "")).issues.join(" "), /has no Key/);
   assert.match(result(xml, config({ filters: [{ property: "Absent" }] })).issues.join(" "), /Filter 'Absent'/);
   assert.match(result(xml, config({ defaultSort: [{ property: "Absent" }] })).issues.join(" "), /DefaultSort 'Absent'/);
   assert.match(result(xml, config({ columns: [{ property: "Absent", edmType: "Edm.String", isKey: true }] })).issues.join(" "), /Column 'Absent'/);
@@ -116,10 +116,10 @@ test("missing entity set, entity type, key and property report specific issues",
 test("wrong EDM type and key mapping are INVALID", () => {
   const wrongType = config();
   wrongType.columns[1].edmType = "Edm.String";
-  assert.match(result(xml, wrongType).issues.join(" "), /sai EDM type.*Edm.String.*Edm.Decimal/);
+  assert.match(result(xml, wrongType).issues.join(" "), /mismatched EDM type.*Edm.String.*Edm.Decimal/);
   const wrongKey = config();
   wrongKey.columns[0].isKey = false;
-  assert.match(result(xml, wrongKey).issues.join(" "), /chưa được đánh dấu isKey/);
+  assert.match(result(xml, wrongKey).issues.join(" "), /not marked isKey/);
 });
 
 test("annotations on another entity do not satisfy the checked entity", () => {

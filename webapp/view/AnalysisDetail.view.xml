@@ -43,11 +43,10 @@
         <uxap:actions>
           <Button icon="sap-icon://refresh" tooltip="{i18n>refresh}" press=".onRefresh" />
           <Button
-            text="{i18n>runComparison}"
+            text="{i18n>legacyCompareOpen}"
             icon="sap-icon://compare"
             type="Transparent"
-            busy="{detail>/comparison/busy}"
-            press=".onRunComparisonForAnalysis" />
+            press=".onOpenLegacyComparison" />
           <Button text="{i18n>createMailJob}" icon="sap-icon://email" press=".onCreateMailJobForAnalysis" />
           <Button
             text="{i18n>odataGenerationOpenButton}"
@@ -130,6 +129,9 @@
       </l:Grid>
     </uxap:headerContent>
     <uxap:sections>
+      <uxap:ObjectPageSection id="requestHistorySection" title="{i18n>requestHistoryTitle}">
+        <uxap:subSections><uxap:ObjectPageSubSection id="requestHistorySubSection" title="{i18n>requestHistoryTitle}"><uxap:blocks><core:Fragment fragmentName="abap.to.fiori.system.view.fragments.detail.RequestHistoryTab" type="XML" /></uxap:blocks></uxap:ObjectPageSubSection></uxap:subSections>
+      </uxap:ObjectPageSection>
       <uxap:ObjectPageSection id="sourceObjectsSection" title="{i18n>sourceObjects}">
         <uxap:subSections><uxap:ObjectPageSubSection id="sourceObjectsSubSection" title="{i18n>sourceObjects}"><uxap:blocks><core:Fragment fragmentName="abap.to.fiori.system.view.fragments.detail.SourceObjectsTab" type="XML" /></uxap:blocks></uxap:ObjectPageSubSection></uxap:subSections>
       </uxap:ObjectPageSection>

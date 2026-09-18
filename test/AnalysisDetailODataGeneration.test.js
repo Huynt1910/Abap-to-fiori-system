@@ -19,6 +19,8 @@ function loadUi5Module(filePath, dependencies = {}, contextAdditions = {}) {
 }
 
 const ODataGeneration = loadUi5Module(path.join(root, "webapp", "util", "ODataGeneration.js"));
+const RequestHistory = loadUi5Module(path.join(root, "webapp", "util", "RequestHistory.js"));
+const LegacyComparison = loadUi5Module(path.join(root, "webapp", "util", "LegacyComparison.js"));
 const toastMessages = [];
 const ControllerDefinition = loadUi5Module(path.join(root, "webapp", "controller", "AnalysisDetail.controller.js"), {
   "sap/ui/core/Fragment": {},
@@ -37,6 +39,8 @@ const ControllerDefinition = loadUi5Module(path.join(root, "webapp", "controller
   "abap/to/fiori/system/util/Constants": {},
   "abap/to/fiori/system/util/FioriUiConfig": {},
   "abap/to/fiori/system/util/ODataGeneration": ODataGeneration,
+  "abap/to/fiori/system/util/RequestHistory": RequestHistory,
+  "abap/to/fiori/system/util/LegacyComparison": LegacyComparison,
   "abap/to/fiori/system/util/formatter": {}
 });
 
@@ -62,7 +66,11 @@ function createController(generationOverrides = {}) {
     error: "", hasResult: false
   }, generationOverrides);
   const controller = Object.assign({}, ControllerDefinition, {
-    _oViewModel: new Model({ analysisId: "8b95f36a-4f27-1fe1-a4a6-40de08121663", odataGeneration: generation }),
+    _oViewModel: new Model({ analysisId: "8b95f36a-4f27-1fe1-a4a6-40de08121663", odataGeneration: generation,
+      requestHistory: { scope: "ANALYSIS", busy: false, error: "", items: [] },
+      comparison: { busy: false, requestId: "", captureStatus: "", captureCount: null, ready: false,
+        historyMode: false, runLog: [], runLogText: "", mappingLog: [], mappingLogReady: false,
+        status: "INCONCLUSIVE", reason: "", differences: [] } }),
     getText(key) { return key; },
     parseError(error) { return { message: error.message || "Unexpected error." }; }
   });
@@ -105,10 +113,12 @@ test("QUEUED starts polling while GENERATED, BLOCKED and FAILED stop it", () => 
   });
 });
 
-test("poll timeout preserves QUEUED and RequestId and shows the worker hint", async () => {
+test("QUEUED generation keeps polling past the two-minute job cycle", async () => {
   const requestId = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee";
   const controller = createController({ requestId, polling: true });
-  controller._iODataGenerationPollCount = 11;
+  controller._bODataGenerationDialogOpen = true;
+  let scheduled = 0;
+  controller._scheduleODataGenerationPoll = () => { scheduled += 1; };
   controller.getAnalysisService = () => ({
     getODataGeneration() { return Promise.resolve({ RequestId: requestId, Status: "QUEUED", ResultJson: "{}" }); }
   });
@@ -118,8 +128,8 @@ test("poll timeout preserves QUEUED and RequestId and shows the worker hint", as
 
   assert.equal(controller._oViewModel.getProperty("/odataGeneration/status"), "QUEUED");
   assert.equal(controller._oViewModel.getProperty("/odataGeneration/requestId"), requestId);
-  assert.equal(controller._oViewModel.getProperty("/odataGeneration/polling"), false);
-  assert.equal(controller._oViewModel.getProperty("/odataGeneration/message"), "odataGenerationWorkerHint");
+  assert.equal(controller._oViewModel.getProperty("/odataGeneration/polling"), true);
+  assert.equal(scheduled, 1);
 });
 
 test("manual refresh polls once with the existing RequestId", async () => {
@@ -163,12 +173,12 @@ test("preflight zero UUID cannot overwrite a real RequestId, while a generate UU
   assert.equal(controller._oViewModel.getProperty("/odataGeneration/requestId"), newId);
 });
 
-test("QUEUED and RUNNING reject input edits, preflight and generate even when polling stopped", () => {
+test("active generation statuses reject input edits, preflight and generate even when polling stopped", () => {
   const requestId = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee";
   const xml = fs.readFileSync(path.join(root, "webapp", "view", "fragments", "ODataGenerationDialog.fragment.xml"), "utf8");
   const calls = [];
 
-  ["QUEUED", "RUNNING"].forEach((status) => {
+  ["QUEUED", "DISPATCHING", "SCHEDULED", "RUNNING"].forEach((status) => {
     const controller = createController({
       status, requestId, polling: false, preflightReady: true,
       preflightSignature: ODataGeneration.signature({ targetPackage: "Z_TARGET", providerPackage: "Z_PROVIDER", providerLanguage: "STANDARD", transportRequest: "DEVK900001" }),
@@ -194,11 +204,149 @@ test("QUEUED and RUNNING reject input edits, preflight and generate even when po
   assert.equal((xml.match(/status} !== 'RUNNING'/g) || []).length, 6);
 });
 
-test("after poll timeout, QUEUED remains locked but manual refresh uses the real RequestId", async () => {
+test("request history loads both kinds, scopes to the current analysis and stops polling after terminal states", async () => {
+  const controller = createController();
+  const analysisId = controller._oViewModel.getProperty("/analysisId");
+  let rows = {
+    captures: [{ RequestId: "c1", AnalysisId: analysisId, CreatedAt: "2026-09-17T10:00:00Z",
+      Status: "QUEUED", CountRow: 0 }],
+    generations: [{ RequestId: "g1", AnalysisId: "other-analysis", CreatedAt: "2026-09-18T10:00:00Z",
+      Status: "GENERATED" }]
+  };
+  controller._bRequestHistoryActive = true;
+  controller.getRequestHistoryService = () => ({ readMyRequests: () => Promise.resolve(rows) });
+  await controller._loadRequestHistory();
+  assert.deepEqual(Array.from(controller._oViewModel.getProperty("/requestHistory/items"), (row) => row.requestId), ["c1"]);
+  assert.ok(controller._iRequestHistoryTimer);
+
+  controller.onRequestHistoryScopeChange({ getSource: () => ({ getSelectedKey: () => "ALL" }) });
+  assert.deepEqual(Array.from(controller._oViewModel.getProperty("/requestHistory/items"), (row) => row.requestId), ["g1", "c1"]);
+  rows = { captures: [{ RequestId: "c1", AnalysisId: analysisId, CreatedAt: "2026-09-17T10:00:00Z",
+    Status: "CAPTURED", CountRow: 4 }], generations: rows.generations };
+  await controller._loadRequestHistory();
+  assert.equal(controller._iRequestHistoryTimer, null);
+  assert.equal(controller._oViewModel.getProperty("/requestHistory/items")[1].rowCountText, "4");
+  controller._stopRequestHistory();
+});
+
+test("request history prevents duplicate reads and ignores an in-flight response after leaving", async () => {
+  const controller = createController();
+  let finish;
+  let reads = 0;
+  controller._bRequestHistoryActive = true;
+  controller.getRequestHistoryService = () => ({ readMyRequests() {
+    reads += 1;
+    return new Promise((resolve) => { finish = resolve; });
+  } });
+  const first = controller._loadRequestHistory();
+  const second = controller._loadRequestHistory();
+  assert.equal(first, second);
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(reads, 1);
+  controller._stopRequestHistory();
+  finish({ captures: [{ RequestId: "stale", AnalysisId: controller._oViewModel.getProperty("/analysisId") }],
+    generations: [] });
+  await first;
+  assert.deepEqual(controller._oViewModel.getProperty("/requestHistory/items"), []);
+});
+
+test("leaving the analysis route cancels request history polling", () => {
+  const controller = createController();
+  controller._bRequestHistoryActive = true;
+  controller._oViewModel.setProperty("/requestHistory/items", [{ status: "SCHEDULED" }]);
+  controller._scheduleRequestHistoryPoll();
+  assert.ok(controller._iRequestHistoryTimer);
+  controller._onAnyRouteMatched({ getParameter: () => "dashboard" });
+  assert.equal(controller._iRequestHistoryTimer, null);
+  assert.equal(controller._bRequestHistoryActive, false);
+});
+
+test("request history exposes a load error and leaves an empty list usable", async () => {
+  const controller = createController();
+  controller._bRequestHistoryActive = true;
+  controller.getRequestHistoryService = () => ({ readMyRequests: () => Promise.reject(new Error("HTTP 503")) });
+  await controller._loadRequestHistory();
+  assert.equal(controller._oViewModel.getProperty("/requestHistory/busy"), false);
+  assert.equal(controller._oViewModel.getProperty("/requestHistory/error"), "HTTP 503");
+  assert.deepEqual(controller._oViewModel.getProperty("/requestHistory/items"), []);
+  controller._stopRequestHistory();
+});
+
+test("successful submission appears as QUEUED immediately and history click reads generation serviceUrl", async () => {
+  const controller = createController();
+  const analysisId = controller._oViewModel.getProperty("/analysisId");
+  const requestId = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee";
+  controller._bRequestHistoryActive = true;
+  controller._loadRequestHistory = () => Promise.resolve();
+  controller._recordSubmittedRequest("GENERATION", analysisId, requestId, { Status: "QUEUED" });
+  assert.equal(controller._oViewModel.getProperty("/requestHistory/items")[0].status, "QUEUED");
+  let called;
+  controller._openODataGenerationDialog = () => {};
+  controller.getAnalysisService = () => ({ getODataGeneration(id, request) {
+    called = [id, request];
+    return Promise.resolve({ AnalysisId: id, RequestId: request, Status: "GENERATED",
+      ResultJson: JSON.stringify({ serviceUrl: "/sap/opu/odata4/generated/" }) });
+  } });
+  controller.onRequestHistoryPress({ getSource() { return { getBindingContext() {
+    return { getObject: () => controller._oViewModel.getProperty("/requestHistory/items")[0] };
+  } }; } });
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.deepEqual(called, [analysisId, requestId]);
+  assert.equal(controller._oViewModel.getProperty("/odataGeneration/result/serviceUrl"), "/sap/opu/odata4/generated/");
+  controller._stopRequestHistory();
+});
+
+test("history selection navigates to the owning analysis before opening the detail action", async () => {
+  const controller = createController();
+  const row = { kind: "GENERATION", analysisId: "other-analysis", requestId: "request" };
+  const navigations = [];
+  const opened = [];
+  controller.getRouter = () => ({ navTo(name, args) { navigations.push([name, args.analysisId]); } });
+  controller.onRequestHistoryPress({ getSource() { return { getBindingContext() {
+    return { getObject: () => row };
+  } }; } });
+  assert.deepEqual(navigations, [["analysisDetail", "other-analysis"]]);
+  assert.deepEqual(opened, []);
+  controller._resetState = (analysisId) => controller._oViewModel.setProperty("/analysisId", analysisId);
+  controller._loadRequestHistory = () => Promise.resolve();
+  controller._loadHeader = () => Promise.resolve();
+  controller._loadAllTabData = () => Promise.resolve();
+  controller._openRequestHistoryDetail = (selected) => opened.push(selected);
+  controller._onRouteMatched({ getParameter: () => ({ analysisId: "other-analysis" }) });
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(opened[0], row);
+});
+
+test("capture history opens the existing dialog and reads the selected RequestId without enabling comparison", async () => {
+  const controller = createController();
+  const analysisId = controller._oViewModel.getProperty("/analysisId");
+  const requestId = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee";
+  let called;
+  controller._bRequestHistoryActive = true;
+  controller.onOpenLegacyComparison = () => {};
+  controller._oLegacyComparisonService = { getLegacyCapture(id, request) {
+    called = [id, request];
+    return Promise.resolve({ AnalysisId: id, RequestId: request, Status: "CAPTURED",
+      CountRow: 2, RowsJson: '[{"ID":1},{"ID":2}]', Message: "Done" });
+  } };
+  controller._openRequestHistoryDetail({ kind: "CAPTURE", analysisId, requestId,
+    status: "CAPTURED", rowCount: 2, message: "Done" });
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.deepEqual(called, [analysisId, requestId]);
+  assert.equal(controller._oViewModel.getProperty("/comparison/captureStatus"), "CAPTURED");
+  assert.equal(controller._oViewModel.getProperty("/comparison/captureCount"), 2);
+  assert.equal(controller._oViewModel.getProperty("/comparison/captureMessage"), "Done");
+  assert.equal(controller._oViewModel.getProperty("/comparison/ready"), false);
+  controller._stopRequestHistory();
+});
+
+test("manual refresh during a queued job keeps the request locked and resumes polling", async () => {
   const requestId = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee";
   const controller = createController({ requestId, status: "QUEUED", polling: true });
   const calls = [];
-  controller._iODataGenerationPollCount = 11;
+  controller._bODataGenerationDialogOpen = true;
+  let scheduled = 0;
+  controller._scheduleODataGenerationPoll = () => { scheduled += 1; };
   controller.getAnalysisService = () => ({
     getODataGeneration(analysisId, currentRequestId) {
       calls.push([analysisId, currentRequestId]);
@@ -209,7 +357,7 @@ test("after poll timeout, QUEUED remains locked but manual refresh uses the real
 
   controller._pollODataGeneration(false);
   await new Promise((resolve) => setImmediate(resolve));
-  assert.equal(controller._oViewModel.getProperty("/odataGeneration/polling"), false);
+  assert.equal(controller._oViewModel.getProperty("/odataGeneration/polling"), true);
   assert.equal(controller._oViewModel.getProperty("/odataGeneration/status"), "QUEUED");
   assert.equal(controller._oViewModel.getProperty("/odataGeneration/requestId"), requestId);
 
@@ -220,6 +368,49 @@ test("after poll timeout, QUEUED remains locked but manual refresh uses the real
   assert.equal(calls.length, 2);
   assert.equal(calls[1][1], requestId);
   assert.equal(controller._oViewModel.getProperty("/odataGeneration/requestId"), requestId);
+  assert.equal(controller._oViewModel.getProperty("/odataGeneration/polling"), true);
+  assert.equal(scheduled, 2);
+});
+
+test("reopening generation resumes polling the same request without resubmitting", async () => {
+  const requestId = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee";
+  const controller = createController({ requestId, status: "QUEUED" });
+  let scheduled = 0;
+  let submitted = 0;
+  controller._pODataGenerationDialog = Promise.resolve({ open() {}, close() {} });
+  controller.byId = () => ({ close() {} });
+  controller._scheduleODataGenerationPoll = () => { scheduled += 1; };
+  controller.getAnalysisService = () => ({ generateOData() { submitted += 1; } });
+
+  controller.onOpenODataGenerationDialog();
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(controller._oViewModel.getProperty("/odataGeneration/polling"), true);
+  assert.equal(scheduled, 1);
+  controller.onCloseODataGenerationDialog();
+  assert.equal(controller._oViewModel.getProperty("/odataGeneration/polling"), false);
+
+  controller.onOpenODataGenerationDialog();
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(controller._oViewModel.getProperty("/odataGeneration/requestId"), requestId);
+  assert.equal(controller._oViewModel.getProperty("/odataGeneration/polling"), true);
+  assert.equal(scheduled, 2);
+  assert.equal(submitted, 0);
+  controller.onCloseODataGenerationDialog();
+});
+
+test("a temporary generation status read error retries while the dialog stays open", async () => {
+  const requestId = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee";
+  const controller = createController({ requestId, status: "QUEUED", polling: true });
+  controller._bODataGenerationDialogOpen = true;
+  let scheduled = 0;
+  controller._scheduleODataGenerationPoll = () => { scheduled += 1; };
+  controller.getAnalysisService = () => ({ getODataGeneration() { return Promise.reject(new Error("Temporary outage")); } });
+
+  controller._pollODataGeneration(false);
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(controller._oViewModel.getProperty("/odataGeneration/error"), "Temporary outage");
+  assert.equal(controller._oViewModel.getProperty("/odataGeneration/polling"), true);
+  assert.equal(scheduled, 1);
 });
 
 test("a new preflight after GENERATED waits until Generate to create a new UUID", async () => {

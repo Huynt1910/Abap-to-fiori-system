@@ -51,6 +51,15 @@ sap.ui.define([], function () {
   }
 
   return {
+    formatRequestStatusState: function (sStatus) {
+      var sValue = normalize(sStatus).toUpperCase();
+      if (sValue === "CAPTURED" || sValue === "GENERATED") { return "Success"; }
+      if (sValue === "FAILED" || sValue === "DISPATCH_FAILED") { return "Error"; }
+      if (sValue === "QUEUED" || sValue === "DISPATCHING" || sValue === "SCHEDULED" || sValue === "RUNNING") {
+        return "Information";
+      }
+      return "None";
+    },
     hasItems: function (aItems) {
       return Array.isArray(aItems) && aItems.length > 0;
     },

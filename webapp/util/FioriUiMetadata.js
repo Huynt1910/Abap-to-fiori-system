@@ -61,7 +61,7 @@ sap.ui.define([], function () {
       return sExplicit;
     }
     if (!sRoot) {
-      throw new Error("ConfigJson thiếu metadataUrl và serviceRootUrl.");
+      throw new Error("ConfigJson is missing metadataUrl and serviceRootUrl.");
     }
     iQuery = sRoot.search(/[?#]/);
     if (iQuery < 0) {
@@ -96,14 +96,14 @@ sap.ui.define([], function () {
     try {
       oDocument = fnParser ? fnParser(sXml) : new DOMParser().parseFromString(sXml, "application/xml");
     } catch (oError) {
-      return { status: "INVALID", issues: ["XML metadata không hợp lệ: " + oError.message] };
+      return { status: "INVALID", issues: ["Invalid XML metadata: " + oError.message] };
     }
     var oRoot = oDocument && oDocument.documentElement;
     if (!oRoot || oRoot.localName !== "Edmx" || oRoot.namespaceURI !== EDMX_NS ||
         !/^4(?:\.\d+)?$/.test(oRoot.getAttribute("Version") || "") ||
         descendants(oDocument, "parsererror", "http://www.mozilla.org/newlayout/xml/parsererror.xml").length ||
         oDocument.getElementsByTagName("parsererror").length) {
-      return { status: "INVALID", issues: ["XML metadata không hợp lệ hoặc không phải OData V4 CSDL."] };
+      return { status: "INVALID", issues: ["Invalid XML metadata or unsupported OData V4 CSDL."] };
     }
 
     var aSchemas = descendants(oRoot, "Schema", EDM_NS);
@@ -119,7 +119,7 @@ sap.ui.define([], function () {
       }
     });
     if (!aSchemas.length) {
-      return { status: "INVALID", issues: ["XML metadata không có Schema OData V4."] };
+      return { status: "INVALID", issues: ["XML metadata has no OData V4 Schema."] };
     }
 
     var sEntitySet = value(oConfig, ["entitySet", "entitySetName"]);
@@ -138,7 +138,7 @@ sap.ui.define([], function () {
       });
     });
     if (!sEntitySet || !oSet) {
-      return { status: "INVALID", issues: ["Không tìm thấy EntitySet '" + sEntitySet + "' trong metadata."] };
+      return { status: "INVALID", issues: ["EntitySet '" + sEntitySet + "' was not found in metadata."] };
     }
 
     var sType = qualifiedName(oSet.getAttribute("EntityType"), oContainerSchema, mAliases);
@@ -151,7 +151,7 @@ sap.ui.define([], function () {
       return !!oType;
     });
     if (!oType) {
-      return { status: "INVALID", issues: ["EntitySet '" + sEntitySet + "' tham chiếu EntityType '" + sType + "' không tồn tại."] };
+      return { status: "INVALID", issues: ["EntitySet '" + sEntitySet + "' references missing EntityType '" + sType + "'."] };
     }
 
     var aProperties = children(oType, "Property", EDM_NS);
@@ -161,24 +161,24 @@ sap.ui.define([], function () {
       }));
     }, []);
     if (!aKeys.length) {
-      aIssues.push("EntityType '" + sType + "' thiếu Key.");
+      aIssues.push("EntityType '" + sType + "' has no Key.");
     }
     aKeys.forEach(function (sKey) {
       if (!named(aProperties, sKey)) {
-        aIssues.push("Key '" + sKey + "' không có Property tương ứng.");
+        aIssues.push("Key '" + sKey + "' has no matching Property.");
       }
     });
 
     function checkProperty(sName, sContext, sExpectedType) {
       if (!sName) {
-        aIssues.push(sContext + " thiếu tên property.");
+        aIssues.push(sContext + " is missing a property name.");
         return;
       }
       var oProperty = named(aProperties, sName);
       if (!oProperty) {
-        aIssues.push(sContext + " '" + sName + "' không tồn tại trong EntityType '" + sType + "'.");
+        aIssues.push(sContext + " '" + sName + "' does not exist in EntityType '" + sType + "'.");
       } else if (sExpectedType && oProperty.getAttribute("Type") !== sExpectedType) {
-        aIssues.push(sContext + " '" + sName + "' sai EDM type: ConfigJson=" + sExpectedType +
+        aIssues.push(sContext + " '" + sName + "' has a mismatched EDM type: ConfigJson=" + sExpectedType +
           ", metadata=" + oProperty.getAttribute("Type") + ".");
       }
     }
@@ -191,19 +191,19 @@ sap.ui.define([], function () {
       if (read(oColumn, ["isKey"]) === true) {
         aConfigKeys.push(sName);
         if (aKeys.indexOf(sName) < 0) {
-          aIssues.push("Column '" + sName + "' được đánh dấu isKey nhưng không thuộc Key trong metadata.");
+          aIssues.push("Column '" + sName + "' is marked isKey but is not a metadata Key.");
         }
       }
       ["currencyProperty", "unitProperty"].forEach(function (sLink) {
         var sProperty = value(oColumn, [sLink]);
         if (sProperty) {
-          checkProperty(sProperty, "Property " + sLink + " của column '" + sName + "'");
+          checkProperty(sProperty, "Property " + sLink + " of column '" + sName + "'");
         }
       });
     });
     aKeys.forEach(function (sKey) {
       if (aConfigKeys.indexOf(sKey) < 0) {
-        aIssues.push("Key '" + sKey + "' trong metadata chưa được đánh dấu isKey trong columns.");
+        aIssues.push("Metadata Key '" + sKey + "' is not marked isKey in columns.");
       }
     });
     items(read(oConfig, ["filters"])).forEach(function (oFilter) {
@@ -233,14 +233,14 @@ sap.ui.define([], function () {
       });
     }
     if (read(oConfig, ["tableSupported"]) === true && !hasAnnotation("LineItem")) {
-      aIssues.push("EntityType '" + sType + "' thiếu UI.LineItem.");
+      aIssues.push("EntityType '" + sType + "' has no UI.LineItem.");
     }
     if (read(oConfig, ["filterSupported"]) === true && items(read(oConfig, ["filters"])).length &&
         !hasAnnotation("SelectionFields")) {
-      aIssues.push("EntityType '" + sType + "' thiếu UI.SelectionFields.");
+      aIssues.push("EntityType '" + sType + "' has no UI.SelectionFields.");
     }
     if (read(oConfig, ["chartSupported"]) === true && !hasAnnotation("Chart")) {
-      aIssues.push("EntityType '" + sType + "' thiếu UI.Chart.");
+      aIssues.push("EntityType '" + sType + "' has no UI.Chart.");
     }
     return { status: aIssues.length ? "INVALID" : "VALIDATED", issues: aIssues };
   }
@@ -267,7 +267,7 @@ sap.ui.define([], function () {
       }
       return oResult;
     }).catch(function (oError) {
-      return { status: "INVALID", issues: ["Không thể kiểm tra metadata tại " + sUrl + ": " + oError.message] };
+      return { status: "INVALID", issues: ["Could not validate metadata at " + sUrl + ": " + oError.message] };
     });
   }
 

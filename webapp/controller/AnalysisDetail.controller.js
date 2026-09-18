@@ -9,7 +9,8 @@ sap.ui.define([
   "abap/to/fiori/system/model/models",
   "abap/to/fiori/system/model/mailConstants",
   "abap/to/fiori/system/model/mailFormatter",
-  "abap/to/fiori/system/model/ComparisonConstants",
+  "abap/to/fiori/system/service/LegacyComparisonService",
+  "abap/to/fiori/system/util/LegacyComparison",
   "abap/to/fiori/system/model/AnalysisTableConfig",
   "abap/to/fiori/system/util/TablePersonalizationService",
   "abap/to/fiori/system/util/Constants",
@@ -19,9 +20,12 @@ sap.ui.define([
   "abap/to/fiori/system/util/FioriUiReportConfig",
   "abap/to/fiori/system/util/FioriUiReport",
   "abap/to/fiori/system/util/ODataGeneration",
+  "abap/to/fiori/system/util/RequestHistory",
   "abap/to/fiori/system/util/formatter"
-], function (Fragment, MessageBox, MessageToast, Filter, FilterOperator, Sorter, BaseController, models, MailConstants, mailFormatter, ComparisonConstants, AnalysisTableConfig, TablePersonalizationService, Constants, FioriUiConfig, FioriUiMetadata, FioriUiProject, FioriUiReportConfig, FioriUiReport, ODataGeneration, formatter) {
+], function (Fragment, MessageBox, MessageToast, Filter, FilterOperator, Sorter, BaseController, models, MailConstants, mailFormatter, LegacyComparisonService, LegacyComparison, AnalysisTableConfig, TablePersonalizationService, Constants, FioriUiConfig, FioriUiMetadata, FioriUiProject, FioriUiReportConfig, FioriUiReport, ODataGeneration, RequestHistory, formatter) {
   "use strict";
+
+  var REQUEST_POLL_INTERVAL_MS = 20000;
 
   return BaseController.extend("abap.to.fiori.system.controller.AnalysisDetail", {
     formatter: formatter,
@@ -29,12 +33,14 @@ sap.ui.define([
 
     onInit: function () {
       this._oViewModel = models.createAnalysisDetailModel();
+      this._oLegacyComparisonService = new LegacyComparisonService(this.getODataModel());
       this._oTablePersonalization = new TablePersonalizationService();
       this.getView().setModel(this._oViewModel, "detail");
       this._oMailViewModel = models.createMailUiModel();
       this.getView().setModel(this._oMailViewModel, "mailUi");
       this.getRouter().getRoute("analysisDetail").attachPatternMatched(this._onRouteMatched, this);
       this.getRouter().getRoute("detail").attachPatternMatched(this._onRouteMatched, this);
+      this.getRouter().attachRouteMatched(this._onAnyRouteMatched, this);
     },
 
     onBackToDashboard: function () {
@@ -44,8 +50,12 @@ sap.ui.define([
     onExit: function () {
       this._iFioriUiRequestVersion = (this._iFioriUiRequestVersion || 0) + 1;
       this._closeFioriUiReport();
+      this._bODataGenerationDialogOpen = false;
       this._cancelODataGenerationPolling();
-      this.getComparisonService().cancelPolling();
+      this._stopRequestHistory();
+      this._stopLegacyComparison();
+      this.getRouter().detachRouteMatched(this._onAnyRouteMatched, this);
+      this._iLegacyComparisonVersion = (this._iLegacyComparisonVersion || 0) + 1;
       this.getDocumentService().cancelExportPolling();
       if (this._iProgramValueHelpSearchTimer) {
         clearTimeout(this._iProgramValueHelpSearchTimer);
@@ -64,8 +74,196 @@ sap.ui.define([
 
     onRefresh: function () {
       this._resetLoadedState();
+      this._loadRequestHistory();
       this._loadHeader().then(function () {
         return this._loadAllTabData();
+      }.bind(this));
+    },
+
+    onRequestHistoryScopeChange: function (oEvent) {
+      this._oViewModel.setProperty("/requestHistory/scope", oEvent.getSource().getSelectedKey());
+      this._updateRequestHistoryItems();
+      this._scheduleRequestHistoryPoll();
+    },
+
+    onRefreshRequestHistory: function () {
+      this._clearRequestHistoryTimer();
+      return this._loadRequestHistory();
+    },
+
+    onRequestHistoryPress: function (oEvent) {
+      var oContext = oEvent.getSource().getBindingContext("detail");
+      var oRow = oContext && oContext.getObject();
+      if (!oRow || !oRow.analysisId || !oRow.requestId) { return; }
+      if (!RequestHistory.sameId(oRow.analysisId, this._oViewModel.getProperty("/analysisId"))) {
+        this._oPendingHistoryRequest = oRow;
+        this.getRouter().navTo("analysisDetail", { analysisId: oRow.analysisId });
+        return;
+      }
+      this._openRequestHistoryDetail(oRow);
+    },
+
+    _onAnyRouteMatched: function (oEvent) {
+      var sName = oEvent.getParameter("name");
+      if (sName !== "analysisDetail" && sName !== "detail") {
+        this._oPendingHistoryRequest = null;
+        this._stopRequestHistory();
+        this._stopLegacyComparison();
+        this._bODataGenerationDialogOpen = false;
+        this._cancelODataGenerationPolling();
+        var oGenerationDialog = this.byId && this.byId("odataGenerationDialog");
+        if (oGenerationDialog && oGenerationDialog.isOpen && oGenerationDialog.isOpen()) {
+          oGenerationDialog.close();
+        }
+      }
+    },
+
+    _clearRequestHistoryTimer: function () {
+      if (this._iRequestHistoryTimer) {
+        clearTimeout(this._iRequestHistoryTimer);
+        this._iRequestHistoryTimer = null;
+      }
+    },
+
+    _stopRequestHistory: function () {
+      this._bRequestHistoryActive = false;
+      this._iRequestHistoryVersion = (this._iRequestHistoryVersion || 0) + 1;
+      this._iRequestHistoryDetailVersion = (this._iRequestHistoryDetailVersion || 0) + 1;
+      this._pRequestHistoryLoad = null;
+      this._clearRequestHistoryTimer();
+    },
+
+    _updateRequestHistoryItems: function () {
+      var oState = this._oViewModel.getProperty("/requestHistory");
+      var aRows = RequestHistory.merge(this._aRequestHistoryServerRows || [],
+        this._aRequestHistoryOptimisticRows || []);
+      this._oViewModel.setProperty("/requestHistory/items", RequestHistory.visible(aRows,
+        this._oViewModel.getProperty("/analysisId"), oState.scope));
+    },
+
+    _scheduleRequestHistoryPoll: function () {
+      this._clearRequestHistoryTimer();
+      if (!this._bRequestHistoryActive || this._pRequestHistoryLoad ||
+          !(this._oViewModel.getProperty("/requestHistory/items") || []).some(function (oRow) {
+            return RequestHistory.isActive(oRow.status);
+          })) { return; }
+      this._iRequestHistoryTimer = setTimeout(function () {
+        this._iRequestHistoryTimer = null;
+        this._loadRequestHistory();
+      }.bind(this), REQUEST_POLL_INTERVAL_MS);
+    },
+
+    _loadRequestHistory: function () {
+      if (!this._bRequestHistoryActive) { return Promise.resolve(); }
+      if (this._pRequestHistoryLoad) { return this._pRequestHistoryLoad; }
+      var iVersion = this._iRequestHistoryVersion;
+      this._oViewModel.setProperty("/requestHistory/busy", true);
+      this._oViewModel.setProperty("/requestHistory/error", "");
+      this._pRequestHistoryLoad = Promise.resolve().then(function () {
+        return this.getRequestHistoryService().readMyRequests();
+      }.bind(this)).then(function (oResult) {
+        if (!this._bRequestHistoryActive || iVersion !== this._iRequestHistoryVersion) { return; }
+        var aServer = oResult.captures.map(function (oRow) {
+          return RequestHistory.normalize(oRow, "CAPTURE");
+        }).concat(oResult.generations.map(function (oRow) {
+          return RequestHistory.normalize(oRow, "GENERATION");
+        }));
+        var mFound = {};
+        aServer.forEach(function (oRow) { mFound[RequestHistory.key(oRow)] = true; });
+        this._aRequestHistoryOptimisticRows = (this._aRequestHistoryOptimisticRows || []).filter(function (oRow) {
+          return !mFound[RequestHistory.key(oRow)] && Date.now() - oRow._addedAt < 600000;
+        });
+        this._aRequestHistoryServerRows = aServer;
+        this._updateRequestHistoryItems();
+      }.bind(this)).catch(function (oError) {
+        if (this._bRequestHistoryActive && iVersion === this._iRequestHistoryVersion) {
+          var sMessage = this.parseError(oError).message;
+          this._oViewModel.setProperty("/requestHistory/error", sMessage && sMessage !== "Unexpected error." ?
+            sMessage : this.getText("requestHistoryLoadError"));
+        }
+      }.bind(this)).finally(function () {
+        if (this._bRequestHistoryActive && iVersion === this._iRequestHistoryVersion) {
+          this._pRequestHistoryLoad = null;
+          this._oViewModel.setProperty("/requestHistory/busy", false);
+          this._scheduleRequestHistoryPoll();
+        }
+      }.bind(this));
+      return this._pRequestHistoryLoad;
+    },
+
+    _recordSubmittedRequest: function (sKind, sAnalysisId, sRequestId, oResponse) {
+      if (!this._bRequestHistoryActive || !sRequestId ||
+          !RequestHistory.sameId(sAnalysisId, this._oViewModel.getProperty("/analysisId"))) { return; }
+      var oRow = RequestHistory.normalize({
+        RequestId: sRequestId,
+        AnalysisId: sAnalysisId,
+        CreatedAt: new Date().toISOString(),
+        Status: oResponse && oResponse.Status || "QUEUED",
+        Message: oResponse && oResponse.Message || "",
+        CountRow: oResponse && oResponse.CountRow
+      }, sKind);
+      oRow._addedAt = Date.now();
+      this._aRequestHistoryOptimisticRows = (this._aRequestHistoryOptimisticRows || []).filter(function (oExisting) {
+        return RequestHistory.key(oExisting) !== RequestHistory.key(oRow);
+      });
+      this._aRequestHistoryOptimisticRows.push(oRow);
+      this._updateRequestHistoryItems();
+      this._clearRequestHistoryTimer();
+      this._loadRequestHistory();
+    },
+
+    _openRequestHistoryDetail: function (oRow) {
+      var sAnalysisId = oRow.analysisId;
+      var sRequestId = oRow.requestId;
+      var iVersion = (this._iRequestHistoryDetailVersion || 0) + 1;
+      this._iRequestHistoryDetailVersion = iVersion;
+      this._iLegacyComparisonVersion = (this._iLegacyComparisonVersion || 0) + 1;
+      if (oRow.kind === "CAPTURE") {
+        this._stopLegacyComparison();
+        this._aLegacyCapturedRows = null;
+        this._sLegacySelectionJson = "";
+        this._oViewModel.setProperty("/comparison/historyMode", true);
+        this._oViewModel.setProperty("/comparison/requestId", sRequestId);
+        this._oViewModel.setProperty("/comparison/captureStatus", oRow.status);
+        this._oViewModel.setProperty("/comparison/captureMessage", oRow.message);
+        this._oViewModel.setProperty("/comparison/captureCount", oRow.rowCount);
+        this._oViewModel.setProperty("/comparison/ready", false);
+        this._oViewModel.setProperty("/comparison/reason", oRow.message || "");
+        this.onOpenLegacyComparison();
+        this.onCheckLegacyCapture();
+        return;
+      }
+      this._cancelODataGenerationPolling();
+      this._oViewModel.setProperty("/odataGeneration/requestId", sRequestId);
+      this._oViewModel.setProperty("/odataGeneration/status", oRow.status);
+      this._oViewModel.setProperty("/odataGeneration/message", oRow.message);
+      this._oViewModel.setProperty("/odataGeneration/result", {});
+      this._oViewModel.setProperty("/odataGeneration/hasResult", true);
+      this._oViewModel.setProperty("/odataGeneration/preflightReady", false);
+      this._oViewModel.setProperty("/odataGeneration/canGenerate", false);
+      this._oViewModel.setProperty("/odataGeneration/error", "");
+      this._openODataGenerationDialog(sAnalysisId);
+      this._setODataGenerationBusy(true);
+      this.getAnalysisService().getODataGeneration(sAnalysisId, sRequestId).then(function (oResponse) {
+        if (iVersion !== this._iRequestHistoryDetailVersion || !this._bRequestHistoryActive ||
+            !RequestHistory.sameId(sAnalysisId, this._oViewModel.getProperty("/analysisId"))) { return; }
+        if (oResponse && ((oResponse.RequestId && !RequestHistory.sameId(oResponse.RequestId, sRequestId)) ||
+            (oResponse.AnalysisId && !RequestHistory.sameId(oResponse.AnalysisId, sAnalysisId)))) {
+          throw new Error("Generation response does not match AnalysisId and RequestId.");
+        }
+        var oParsed = this._applyODataGenerationResponse(oResponse);
+        if (oParsed.status === "FAILED" || oParsed.status === "DISPATCH_FAILED" || oParsed.status === "BLOCKED") {
+          this._oViewModel.setProperty("/odataGeneration/error", oParsed.message || this.getText("odataGenerationFailed"));
+        }
+      }.bind(this)).catch(function (oError) {
+        if (iVersion === this._iRequestHistoryDetailVersion && this._bRequestHistoryActive) {
+          this._showODataGenerationError(oError, "requestHistoryDetailError");
+        }
+      }.bind(this)).finally(function () {
+        if (iVersion === this._iRequestHistoryDetailVersion && this._bRequestHistoryActive) {
+          this._setODataGenerationBusy(false);
+          this._resumeODataGenerationPolling();
+        }
       }.bind(this));
     },
 
@@ -290,14 +488,14 @@ sap.ui.define([
           var sConfigAnalysisId = FioriUiProject.normalizeAnalysisId(oState.configAnalysisId || oState.config.analysisId);
           if (this._sCurrentRouteAnalysisId &&
               FioriUiProject.normalizeAnalysisId(this._sCurrentRouteAnalysisId) !== sOpenAnalysisId) {
-            throw new Error("Route analysisId không khớp analysis đang mở.");
+            throw new Error("Route analysisId does not match the open analysis.");
           }
           if (sConfigAnalysisId !== sOpenAnalysisId) {
-            throw new Error("ConfigJson.analysisId không khớp analysis đang mở.");
+            throw new Error("ConfigJson.analysisId does not match the open analysis.");
           }
           if (oState.prepareAnalysisId &&
               FioriUiProject.normalizeAnalysisId(oState.prepareAnalysisId) !== sOpenAnalysisId) {
-            throw new Error("PrepareFioriUi.AnalysisId không khớp analysis đang mở.");
+            throw new Error("PrepareFioriUi.AnalysisId does not match the open analysis.");
           }
           var oProject = FioriUiProject.build(Object.assign({}, oState.config, {
             analysisId: sOpenAnalysisId
@@ -351,6 +549,8 @@ sap.ui.define([
     },
 
     onCloseODataGenerationDialog: function () {
+      this._iRequestHistoryDetailVersion = (this._iRequestHistoryDetailVersion || 0) + 1;
+      this._bODataGenerationDialogOpen = false;
       this._cancelODataGenerationPolling();
       var oDialog = this.byId("odataGenerationDialog");
       if (oDialog) {
@@ -359,6 +559,8 @@ sap.ui.define([
     },
 
     onAfterCloseODataGenerationDialog: function () {
+      this._iRequestHistoryDetailVersion = (this._iRequestHistoryDetailVersion || 0) + 1;
+      this._bODataGenerationDialogOpen = false;
       this._cancelODataGenerationPolling();
     },
 
@@ -470,6 +672,7 @@ sap.ui.define([
         if (iRequestVersion === this._iODataGenerationRequestVersion &&
             sAnalysisId === this._oViewModel.getProperty("/analysisId")) {
           this._handleODataGenerationStatus(this._applyODataGenerationResponse(oResponse), true);
+          this._recordSubmittedRequest("GENERATION", sAnalysisId, sRequestId, oResponse);
         }
       }.bind(this)).catch(function (oError) {
         if (iRequestVersion === this._iODataGenerationRequestVersion) {
@@ -659,65 +862,452 @@ sap.ui.define([
       }
     },
 
-    onRunComparisonForAnalysis: function () {
+    onOpenLegacyComparison: function () {
+      var oState = this._oViewModel.getProperty("/comparison");
+      var oPrepared = this._oViewModel.getProperty("/fioriUi") || {};
+      var oGenerated = this._oViewModel.getProperty("/odataGeneration/result") || {};
+      var sGeneratedRoot = oGenerated.serviceUrl || "";
+      var oManifest = this.getOwnerComponent && this.getOwnerComponent().getManifest();
+      var sMainRoot = oManifest && oManifest["sap.app"] &&
+        oManifest["sap.app"].dataSources && oManifest["sap.app"].dataSources.mainService.uri || "";
+      var aClient = /[?&]sap-client=([0-9]{1,3})/.exec(sMainRoot);
+      if (sGeneratedRoot && aClient && !/[?&]sap-client=/.test(sGeneratedRoot)) {
+        sGeneratedRoot += (sGeneratedRoot.indexOf("?") < 0 ? "?" : "&") + "sap-client=" + aClient[1];
+      }
+      if (!oState.serviceRootUrl) {
+        this._oViewModel.setProperty("/comparison/serviceRootUrl",
+          oPrepared.metadataStatus === "VALIDATED" && oPrepared.serviceRootUrl || sGeneratedRoot);
+      }
+      if (!oState.entitySet) {
+        this._oViewModel.setProperty("/comparison/entitySet",
+          oPrepared.metadataStatus === "VALIDATED" && oPrepared.entitySet || oGenerated.entityName || "");
+      }
+      if (!this._pLegacyComparisonDialog) {
+        this._pLegacyComparisonDialog = Fragment.load({
+          id: this.getView().getId(),
+          name: "abap.to.fiori.system.view.fragments.LegacyComparisonDialog",
+          controller: this
+        }).then(function (oDialog) {
+          this.getView().addDependent(oDialog);
+          return oDialog;
+        }.bind(this));
+      }
       var sAnalysisId = this._oViewModel.getProperty("/analysisId");
-      var oComparisonService = this.getComparisonService();
-
-      if (this._oViewModel.getProperty("/comparison/busy")) {
-        return;
-      }
-
-      if (!oComparisonService.isGuid(sAnalysisId)) {
-        MessageBox.error(this.getText("comparisonAnalysisIdRequired"));
-        return;
-      }
-
-      this._setComparisonProgress(true, ComparisonConstants.progressState.submitting, this.getText("comparisonSubmitting"));
-
-      var iStartedAt = Date.now();
-      var aPreviousRunIds = [];
-
-      oComparisonService.cancelPolling();
-      oComparisonService.resetCancellation();
-
-      oComparisonService.getComparisonRuns({
-        top: 100,
-        filters: { analysisId: sAnalysisId }
-      }).then(function (aRuns) {
-        aPreviousRunIds = (aRuns || []).map(function (oRun) {
-          return oRun.CmpRunId;
-        }).filter(Boolean);
-        return oComparisonService.executeComparison(sAnalysisId);
-      }).then(function () {
-        this._setComparisonProgress(true, ComparisonConstants.progressState.discoveringRun, this.getText("comparisonDiscoveringRun"));
-        return oComparisonService.discoverNewRun(sAnalysisId, aPreviousRunIds, iStartedAt);
-      }.bind(this)).then(function (oRun) {
-        this._setComparisonProgress(true, ComparisonConstants.progressState.running, this.getText("comparisonRunning"));
-        return oComparisonService.pollRunStatus(oRun.CmpRunId);
-      }.bind(this)).then(function (oRun) {
-        var sRunId = oRun && oRun.CmpRunId;
-        var bFailed = oComparisonService.isFailedStatus(oRun && oRun.RunStatus);
-        var sMessage = bFailed ?
-          (oRun.ErrorMessage || this.getText("comparisonFailed")) :
-          this.getText("comparisonCompleted");
-
-        this._setComparisonProgress(false, bFailed ? ComparisonConstants.progressState.failed : ComparisonConstants.progressState.completed, sMessage);
-
-        if (bFailed) {
-          MessageBox.error(sMessage);
-        } else {
-          MessageToast.show(sMessage);
-        }
-
-        if (sRunId) {
-          this.getRouter().navTo(ComparisonConstants.route.detail, {
-            cmpRunId: encodeURIComponent(sRunId)
-          });
+      this._pLegacyComparisonDialog.then(function (oDialog) {
+        if (sAnalysisId === this._oViewModel.getProperty("/analysisId")) {
+          oDialog.open();
+          this._bLegacyComparisonOpen = true;
+          var oCurrent = this._oViewModel.getProperty("/comparison");
+          if (!oCurrent.historyMode && oCurrent.requestId && this._sLegacySelectionJson === "[]" &&
+              RequestHistory.isActive(oCurrent.captureStatus)) {
+            this._bLegacyAutoCompare = true;
+          }
+          this._scheduleLegacyComparisonPoll();
         }
       }.bind(this)).catch(function (oError) {
-        this._setComparisonProgress(false, ComparisonConstants.progressState.failed, oError && oError.message || this.getText("comparisonRunError"));
-        MessageBox.error(oError && oError.message || this.getText("comparisonRunError"));
+        this._pLegacyComparisonDialog = null;
+        this._oViewModel.setProperty("/comparison/reason", oError.message);
       }.bind(this));
+    },
+
+    onCloseLegacyComparison: function () {
+      this._stopLegacyComparison();
+      this._oViewModel.setProperty("/comparison/busy", false);
+      this.byId("legacyComparisonDialog").close();
+    },
+
+    _clearLegacyComparisonTimer: function () {
+      if (this._iLegacyComparisonTimer) {
+        clearTimeout(this._iLegacyComparisonTimer);
+        this._iLegacyComparisonTimer = null;
+      }
+    },
+
+    _stopLegacyComparison: function () {
+      this._clearLegacyComparisonTimer();
+      this._bLegacyAutoCompare = false;
+      this._bLegacyComparisonOpen = false;
+      this._iLegacyComparisonVersion = (this._iLegacyComparisonVersion || 0) + 1;
+    },
+
+    _scheduleLegacyComparisonPoll: function () {
+      this._clearLegacyComparisonTimer();
+      var oState = this._oViewModel.getProperty("/comparison");
+      if (!this._bLegacyComparisonOpen || !this._bLegacyAutoCompare || oState.busy ||
+          !oState.requestId || !RequestHistory.isActive(oState.captureStatus)) { return; }
+      this._iLegacyComparisonTimer = setTimeout(function () {
+        this._iLegacyComparisonTimer = null;
+        this.onCheckLegacyCapture();
+      }.bind(this), REQUEST_POLL_INTERVAL_MS);
+    },
+
+    _clearLegacyMappingLog: function () {
+      this._oViewModel.setProperty("/comparison/mappingLog", []);
+      this._oViewModel.setProperty("/comparison/mappingLogReady", false);
+    },
+
+    _resetLegacyRunLog: function () {
+      this._oViewModel.setProperty("/comparison/runLog", []);
+      this._oViewModel.setProperty("/comparison/runLogText", "");
+    },
+
+    _appendLegacyRunLog: function (sLevel, sStep, sMessage) {
+      var aLog = this._oViewModel.getProperty("/comparison/runLog") || [];
+      var oEntry = { timestamp: new Date().toISOString(), level: sLevel, step: sStep,
+        message: String(sMessage).replace(/[\r\n]+/g, " ") };
+      aLog.push(oEntry);
+      this._oViewModel.setProperty("/comparison/runLog", aLog);
+      var sPrevious = this._oViewModel.getProperty("/comparison/runLogText") || "";
+      this._oViewModel.setProperty("/comparison/runLogText", (sPrevious ? sPrevious + "\n" : "") +
+        "[" + oEntry.timestamp + "] [" + oEntry.level + "] [" + oEntry.step + "] " + oEntry.message);
+    },
+
+    onLegacyComparisonInputChange: function (oEvent) {
+      var oBinding = oEvent.getSource().getBinding("value");
+      var sPath = oBinding && oBinding.getPath();
+      if (sPath) { this._oViewModel.setProperty(sPath, oEvent.getParameter("value")); }
+      this._oViewModel.setProperty("/comparison/manualColumnMappingJson", "{}");
+      this._iLegacyComparisonVersion = (this._iLegacyComparisonVersion || 0) + 1;
+      this._clearLegacyComparisonTimer();
+      this._bLegacyAutoCompare = false;
+      this._oViewModel.setProperty("/comparison/busy", false);
+      this._resetLegacyRunLog();
+      this._aLegacyCapturedRows = null;
+      this._oViewModel.setProperty("/comparison/requestId", "");
+      this._oViewModel.setProperty("/comparison/captureStatus", "");
+      this._oViewModel.setProperty("/comparison/captureMessage", "");
+      this._oViewModel.setProperty("/comparison/captureCount", null);
+      this._oViewModel.setProperty("/comparison/ready", false);
+      this._oViewModel.setProperty("/comparison/status", "INCONCLUSIVE");
+      this._oViewModel.setProperty("/comparison/reason", this.getText("legacyCompareInputsChanged"));
+      this._oViewModel.setProperty("/comparison/differences", []);
+      this._clearLegacyMappingLog();
+      this._oViewModel.setProperty("/comparison/odataCount", null);
+      this._oViewModel.setProperty("/comparison/comparedColumnCount", null);
+      this._oViewModel.setProperty("/comparison/scopeMessage", "");
+      this._appendLegacyRunLog("WARN", "INPUT", "Comparison input changed: " + (sPath || "unknown") + ". Previous result invalidated.");
+    },
+
+    onLegacyComparisonMappingChange: function (oEvent) {
+      this._oViewModel.setProperty("/comparison/manualColumnMappingJson", oEvent.getParameter("value"));
+      this._iLegacyComparisonVersion = (this._iLegacyComparisonVersion || 0) + 1;
+      this._oViewModel.setProperty("/comparison/status", "INCONCLUSIVE");
+      this._oViewModel.setProperty("/comparison/reason", this.getText("legacyCompareInputsChanged"));
+      this._oViewModel.setProperty("/comparison/differences", []);
+      this._oViewModel.setProperty("/comparison/odataCount", null);
+      this._oViewModel.setProperty("/comparison/comparedColumnCount", null);
+      this._oViewModel.setProperty("/comparison/scopeMessage", "");
+      this._clearLegacyMappingLog();
+      this._appendLegacyRunLog("INFO", "MAPPING", "Manual column mapping changed; retry comparison with the current capture.");
+    },
+
+    onRequestLegacyCapture: function () {
+      var oState = this._oViewModel.getProperty("/comparison");
+      var sAnalysisId = this._oViewModel.getProperty("/analysisId");
+      if (oState.busy || RequestHistory.isActive(oState.captureStatus)) { return; }
+      if (!oState.serviceRootUrl || !oState.entitySet) {
+        this._resetLegacyRunLog();
+        this._legacyInconclusive(new Error(this.getText("legacyCompareTargetRequired")), "CAPTURE");
+        return;
+      }
+      try {
+        FioriUiReportConfig.serviceUrl(oState.serviceRootUrl);
+        if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(oState.entitySet)) {
+          throw new Error("Invalid generated OData entity set name.");
+        }
+      } catch (oError) {
+        this._resetLegacyRunLog();
+        this._legacyInconclusive(oError, "CAPTURE");
+        return;
+      }
+      var sSelectionJson = "[]";
+      var sRequestId = ODataGeneration.createUuid();
+      var bSubmitted = false;
+      var iVersion = (this._iLegacyComparisonVersion || 0) + 1;
+      this._iLegacyComparisonVersion = iVersion;
+      this._clearLegacyComparisonTimer();
+      this._bLegacyAutoCompare = true;
+      this._oViewModel.setProperty("/comparison/historyMode", false);
+      this._oViewModel.setProperty("/comparison/selectionJson", sSelectionJson);
+      this._aLegacyCapturedRows = null;
+      this._sLegacySelectionJson = sSelectionJson;
+      this._oViewModel.setProperty("/comparison/requestId", sRequestId);
+      this._oViewModel.setProperty("/comparison/captureStatus", "");
+      this._oViewModel.setProperty("/comparison/captureMessage", "");
+      this._oViewModel.setProperty("/comparison/captureCount", null);
+      this._oViewModel.setProperty("/comparison/odataCount", null);
+      this._oViewModel.setProperty("/comparison/comparedColumnCount", null);
+      this._oViewModel.setProperty("/comparison/scopeMessage", "");
+      this._oViewModel.setProperty("/comparison/differences", []);
+      this._clearLegacyMappingLog();
+      this._oViewModel.setProperty("/comparison/ready", false);
+      this._oViewModel.setProperty("/comparison/busy", true);
+      this._oViewModel.setProperty("/comparison/status", "INCONCLUSIVE");
+      this._oViewModel.setProperty("/comparison/reason", this.getText("legacyCompareSubmitting"));
+      this._resetLegacyRunLog();
+      this._appendLegacyRunLog("INFO", "CAPTURE", "Submitting AnalysisId=" + sAnalysisId +
+        " RequestId=" + sRequestId + " SelectionJson=" + sSelectionJson + ".");
+      return Promise.resolve().then(function () {
+        return this._oLegacyComparisonService.captureLegacyRows(sAnalysisId, sRequestId, sSelectionJson);
+      }.bind(this)).then(function (oResponse) {
+        if (iVersion !== this._iLegacyComparisonVersion || sAnalysisId !== this._oViewModel.getProperty("/analysisId")) { return; }
+        if (oResponse && oResponse.RequestId &&
+            String(oResponse.RequestId).toLowerCase() !== sRequestId.toLowerCase()) {
+          throw new Error("CaptureLegacyRows returned a different RequestId.");
+        }
+        bSubmitted = true;
+        this._recordSubmittedRequest("CAPTURE", sAnalysisId, sRequestId, oResponse);
+        return oResponse && oResponse.Status ? oResponse :
+          this._oLegacyComparisonService.getLegacyCapture(sAnalysisId, sRequestId);
+      }.bind(this)).then(function (oResponse) {
+        if (iVersion !== this._iLegacyComparisonVersion || sAnalysisId !== this._oViewModel.getProperty("/analysisId")) { return; }
+        if (!oResponse || !oResponse.Status) {
+          throw new Error("Capture request was sent, but SAP did not return its Status.");
+        }
+        this._oViewModel.setProperty("/comparison/captureStatus", oResponse.Status);
+        this._oViewModel.setProperty("/comparison/captureMessage", oResponse.Message || "");
+        this._oViewModel.setProperty("/comparison/reason", oResponse.Status === "CAPTURED" ?
+          this.getText("legacyCompareReady") : RequestHistory.isActive(oResponse.Status) ?
+            this.getText("legacyCompareWorkerHint") : oResponse.Message || oResponse.Status);
+        this._appendLegacyRunLog("INFO", "CAPTURE", "RequestId=" + sRequestId + " Status=" + oResponse.Status + ".");
+        if (RequestHistory.isActive(oResponse.Status)) {
+          this._appendLegacyRunLog("INFO", "WORKER", "Capture is pending; the scheduled SAP background job runs about every 2 minutes and status refreshes automatically.");
+        }
+      }.bind(this)).catch(function (oError) {
+        if (iVersion === this._iLegacyComparisonVersion) {
+          this._legacyInconclusive(oError, "CAPTURE");
+          if (!bSubmitted) {
+            this._oViewModel.setProperty("/comparison/requestId", "");
+          } else if (!this._oViewModel.getProperty("/comparison/captureStatus")) {
+            this._oViewModel.setProperty("/comparison/captureStatus", "UNKNOWN");
+          }
+        }
+      }.bind(this)).finally(function () {
+        if (iVersion === this._iLegacyComparisonVersion) {
+          this._oViewModel.setProperty("/comparison/busy", false);
+          if (bSubmitted && this._oViewModel.getProperty("/comparison/captureStatus") === "CAPTURED") {
+            return this.onCheckLegacyCapture();
+          }
+          this._scheduleLegacyComparisonPoll();
+        }
+      }.bind(this));
+    },
+
+    onCheckLegacyCapture: function () {
+      var oState = this._oViewModel.getProperty("/comparison");
+      var sAnalysisId = this._oViewModel.getProperty("/analysisId");
+      var sRequestId = oState.requestId;
+      if (oState.busy || !sRequestId) { return; }
+      this._clearLegacyComparisonTimer();
+      var iVersion = (this._iLegacyComparisonVersion || 0) + 1;
+      this._iLegacyComparisonVersion = iVersion;
+      this._aLegacyCapturedRows = null;
+      this._oViewModel.setProperty("/comparison/ready", false);
+      this._oViewModel.setProperty("/comparison/captureCount", null);
+      this._oViewModel.setProperty("/comparison/odataCount", null);
+      this._oViewModel.setProperty("/comparison/comparedColumnCount", null);
+      this._oViewModel.setProperty("/comparison/scopeMessage", "");
+      this._oViewModel.setProperty("/comparison/busy", true);
+      this._oViewModel.setProperty("/comparison/status", "INCONCLUSIVE");
+      this._oViewModel.setProperty("/comparison/differences", []);
+      this._clearLegacyMappingLog();
+      this._appendLegacyRunLog("INFO", "CAPTURE_CHECK", "Reading AnalysisId=" + sAnalysisId +
+        " RequestId=" + sRequestId + ".");
+      var bCaptured = false;
+      return Promise.resolve().then(function () {
+        return this._oLegacyComparisonService.getLegacyCapture(sAnalysisId, sRequestId);
+      }.bind(this)).then(function (oResponse) {
+        if (iVersion !== this._iLegacyComparisonVersion || sAnalysisId !== this._oViewModel.getProperty("/analysisId")) { return; }
+        this._oViewModel.setProperty("/comparison/captureStatus", oResponse && oResponse.Status || "");
+        this._oViewModel.setProperty("/comparison/captureMessage", oResponse && oResponse.Message || "");
+        this._appendLegacyRunLog("INFO", "CAPTURE_CHECK", "Status=" + (oResponse && oResponse.Status || "unknown") + ".");
+        var oCapture = LegacyComparison.capture(oResponse, sAnalysisId, sRequestId);
+        bCaptured = true;
+        this._aLegacyCapturedRows = oCapture.rows;
+        this._oViewModel.setProperty("/comparison/captureCount", oCapture.count);
+        this._oViewModel.setProperty("/comparison/ready", !oState.historyMode);
+        this._oViewModel.setProperty("/comparison/reason",
+          this.getText(oState.historyMode ? "legacyCompareHistoryReady" : "legacyCompareReady"));
+        this._appendLegacyRunLog("INFO", "CAPTURE_CHECK", "CAPTURED CountRow=" + oCapture.count +
+          "; RowsJson contains " + oCapture.rows.length + " rows.");
+      }.bind(this)).catch(function (oError) {
+        if (iVersion === this._iLegacyComparisonVersion) { this._legacyInconclusive(oError, "CAPTURE_CHECK"); }
+      }.bind(this)).finally(function () {
+        if (iVersion === this._iLegacyComparisonVersion) {
+          this._oViewModel.setProperty("/comparison/busy", false);
+          if (bCaptured && this._bLegacyAutoCompare && !oState.historyMode) {
+            this._bLegacyAutoCompare = false;
+            return this.onCompareLegacyRows();
+          }
+          this._scheduleLegacyComparisonPoll();
+        }
+      }.bind(this));
+    },
+
+    _legacyAutomaticColumns: function (oState) {
+      var oPrepared = this._oViewModel.getProperty("/fioriUi") || {};
+      var oColumns = {};
+      if (oPrepared.metadataStatus !== "VALIDATED" || !oPrepared.config ||
+          oPrepared.serviceRootUrl !== oState.serviceRootUrl || oPrepared.entitySet !== oState.entitySet) {
+        return oColumns;
+      }
+      (oPrepared.config.columns || oPrepared.config.Columns || []).forEach(function (oColumn) {
+        var sAlv = oColumn && (oColumn.alvField || oColumn.AlvField ||
+          oColumn.sourceField || oColumn.SourceField || oColumn.sourceColumn || oColumn.SourceColumn);
+        var sTarget = oColumn && (oColumn.property || oColumn.Property ||
+          oColumn.propertyName || oColumn.PropertyName);
+        if (sAlv && sTarget) { oColumns[sAlv] = sTarget; }
+      });
+      return oColumns;
+    },
+
+    onCompareLegacyRows: function () {
+      var oState = this._oViewModel.getProperty("/comparison");
+      var sAnalysisId = this._oViewModel.getProperty("/analysisId");
+      if (oState.busy || oState.historyMode || !oState.ready || !this._aLegacyCapturedRows) { return; }
+      if (this._sLegacySelectionJson !== "[]") {
+        this._clearLegacyMappingLog();
+        this._legacyInconclusive(new Error("The capture was not created for all rows. Start a new comparison."), "COMPARE");
+        return;
+      }
+      var oParameters = {}, oFilters = {}, oColumns, aKeys, oProjection;
+      var bEmptyCapture = this._aLegacyCapturedRows.length === 0;
+      var iVersion = (this._iLegacyComparisonVersion || 0) + 1;
+      this._iLegacyComparisonVersion = iVersion;
+      this._oViewModel.setProperty("/comparison/busy", true);
+      this._oViewModel.setProperty("/comparison/status", "INCONCLUSIVE");
+      this._oViewModel.setProperty("/comparison/reason", this.getText("legacyCompareLoading"));
+      this._oViewModel.setProperty("/comparison/differences", []);
+      this._clearLegacyMappingLog();
+      this._oViewModel.setProperty("/comparison/odataCount", null);
+      this._oViewModel.setProperty("/comparison/comparedColumnCount", null);
+      this._oViewModel.setProperty("/comparison/scopeMessage", "");
+      this._appendLegacyRunLog("INFO", "COMPARE", "Starting AnalysisId=" + sAnalysisId +
+        " RequestId=" + oState.requestId + " CaptureStatus=" + oState.captureStatus +
+        " CountRow=" + this._aLegacyCapturedRows.length + " EntitySet=" + oState.entitySet +
+        " SelectionJson=[].");
+      return Promise.resolve().then(function () {
+        return this._oLegacyComparisonService.getEntityMetadata(oState.serviceRootUrl, oState.entitySet);
+      }.bind(this)).then(function (oMetadata) {
+        if (iVersion !== this._iLegacyComparisonVersion || sAnalysisId !== this._oViewModel.getProperty("/analysisId")) { return; }
+        var oTypes = oMetadata.types;
+        this._appendLegacyRunLog("INFO", "METADATA", "Resolved " + Object.keys(oTypes).length +
+          " OData properties: " + Object.keys(oTypes).join(", ") + ".");
+        if (bEmptyCapture) {
+          var sProbe = oMetadata.keys[0] || Object.keys(oTypes)[0];
+          if (!sProbe) { throw new Error("The OData entity has no property to read for an empty capture."); }
+          oColumns = {};
+          oColumns[sProbe] = sProbe;
+          aKeys = [];
+          this._appendLegacyRunLog("INFO", "MAPPING", "Empty ALV capture; checking every OData page for extra rows.");
+        } else {
+          var oManual = LegacyComparison.mapping(oState.manualColumnMappingJson || "{}",
+            "ALV-to-OData mapping");
+          var aCapturedFields = Array.from(new Set(this._aLegacyCapturedRows.reduce(function (aNames, oRow) {
+            return aNames.concat(Object.keys(oRow));
+          }, [])));
+          Object.keys(oManual).forEach(function (sAlv) {
+            if (aCapturedFields.indexOf(sAlv) < 0) {
+              throw new Error("Manual mapping refers to ALV column " + sAlv +
+                ", which is absent from this capture.");
+            }
+            if (!Object.prototype.hasOwnProperty.call(oTypes, oManual[sAlv])) {
+              throw new Error("Manual mapping for " + sAlv + " refers to missing OData property " +
+                oManual[sAlv] + ". Entity properties: " + Object.keys(oTypes).join(", ") + ".");
+            }
+          });
+          oProjection = LegacyComparison.projectedColumns(this._aLegacyCapturedRows,
+            Object.assign({}, this._legacyAutomaticColumns(oState), oManual), oTypes);
+          oColumns = oProjection.columns;
+          aKeys = LegacyComparison.metadataKeys(oColumns, oMetadata.keys);
+          if (oProjection.omittedColumns.length || oProjection.unmatchedProperties.length) {
+            var sScope = "Comparing " + Object.keys(oColumns).length +
+              " generated OData properties across all captured rows.";
+            if (oProjection.omittedColumns.length) {
+              sScope += " Additional ALV fields outside this OData service are ignored: " +
+                oProjection.omittedColumns.join(", ") + ".";
+            }
+            if (oProjection.unmatchedProperties.length) {
+              sScope += " OData properties missing from the ALV capture: " +
+                oProjection.unmatchedProperties.join(", ") + ".";
+            }
+            this._oViewModel.setProperty("/comparison/scopeMessage", sScope);
+            this._appendLegacyRunLog("INFO", "SCOPE", sScope);
+          }
+        }
+        this._oViewModel.setProperty("/comparison/columnMappingJson", JSON.stringify(oColumns, null, 2));
+        this._oViewModel.setProperty("/comparison/keyColumnsJson", JSON.stringify(aKeys));
+        var pRows = this._oLegacyComparisonService.readAllRows(oState.serviceRootUrl, oState.entitySet,
+          oParameters, oFilters, oColumns, oTypes, function (oPage) {
+            if (iVersion === this._iLegacyComparisonVersion && sAnalysisId === this._oViewModel.getProperty("/analysisId")) {
+              this._appendLegacyRunLog("INFO", "ODATA_PAGE", "Page " + oPage.page + ": " + oPage.rows +
+                " rows; total=" + oPage.totalRows + "; nextLink=" + (oPage.hasNext ? "yes" : "no") + ".");
+            }
+          }.bind(this));
+        LegacyComparison.mappingLog(oColumns, aKeys, oFilters, oParameters).forEach(function (oMapping) {
+          this._appendLegacyRunLog("INFO", "MAPPING", oMapping.kind === "NO_FILTER" ?
+            "No OData filter (SelectionJson=[])." : oMapping.kind === "FILTER" ?
+              "Filter " + oMapping.source + " -> " + oMapping.target + "." :
+              "Column " + oMapping.source + " -> " + oMapping.target +
+                (oMapping.isKey ? " (business key)." : "."));
+        }.bind(this));
+        if (!aKeys.length) {
+          this._appendLegacyRunLog("INFO", "MAPPING", "No mapped entity keys; comparing complete rows with duplicate counts.");
+        }
+        return pRows.then(function (aOData) {
+          if (iVersion !== this._iLegacyComparisonVersion || sAnalysisId !== this._oViewModel.getProperty("/analysisId")) { return; }
+          this._oViewModel.setProperty("/comparison/mappingLog",
+            LegacyComparison.mappingLog(oColumns, aKeys, oFilters, oParameters));
+          this._oViewModel.setProperty("/comparison/mappingLogReady", true);
+          this._appendLegacyRunLog("INFO", "COMPARE", "Comparing ALV rows=" + this._aLegacyCapturedRows.length +
+            " with OData rows=" + aOData.length + " across " + Object.keys(oColumns).length + " columns.");
+          if (bEmptyCapture) {
+            return { status: aOData.length ? "FAIL" : "PASS", alvCount: 0, odataCount: aOData.length,
+              differences: aOData.map(function (oRow, iIndex) {
+                return { kind: "EXTRA", key: "#" + (iIndex + 1) + " (" + sProbe + "=" + String(oRow[sProbe]) + ")",
+                  column: "", alv: "row missing", odata: "row present" };
+              }) };
+          }
+          var oCompared = LegacyComparison.compare(this._aLegacyCapturedRows, aOData,
+            oColumns, aKeys, oTypes);
+          var aSchemaDifferences = LegacyComparison.schemaDifferences(oProjection);
+          oCompared.differences = aSchemaDifferences.concat(oCompared.differences);
+          if (aSchemaDifferences.length) { oCompared.status = "FAIL"; }
+          return oCompared;
+        }.bind(this));
+      }.bind(this)).then(function (oResult) {
+        if (iVersion !== this._iLegacyComparisonVersion || sAnalysisId !== this._oViewModel.getProperty("/analysisId")) { return; }
+        this._oViewModel.setProperty("/comparison/status", oResult.status);
+        this._oViewModel.setProperty("/comparison/reason", "");
+        this._oViewModel.setProperty("/comparison/captureCount", oResult.alvCount);
+        this._oViewModel.setProperty("/comparison/odataCount", oResult.odataCount);
+        this._oViewModel.setProperty("/comparison/comparedColumnCount", bEmptyCapture ? 0 : Object.keys(oColumns).length);
+        this._oViewModel.setProperty("/comparison/differences", oResult.differences);
+        var oDifferenceCount = { MISSING: 0, EXTRA: 0, VALUE: 0,
+          ALV_COLUMN_MISSING: 0 };
+        oResult.differences.forEach(function (oDifference) { oDifferenceCount[oDifference.kind] += 1; });
+        this._appendLegacyRunLog(oResult.status, "RESULT", "ALV=" + oResult.alvCount +
+          " OData=" + oResult.odataCount + " Columns=" + (bEmptyCapture ? 0 : Object.keys(oColumns).length) +
+          " Missing=" + oDifferenceCount.MISSING + " Extra=" + oDifferenceCount.EXTRA +
+          " MissingAlvColumns=" + oDifferenceCount.ALV_COLUMN_MISSING +
+          " Cells=" + oDifferenceCount.VALUE + ".");
+      }.bind(this)).catch(function (oError) {
+        if (iVersion === this._iLegacyComparisonVersion) { this._legacyInconclusive(oError, "COMPARE"); }
+      }.bind(this)).finally(function () {
+        if (iVersion === this._iLegacyComparisonVersion) { this._oViewModel.setProperty("/comparison/busy", false); }
+      }.bind(this));
+    },
+
+    _legacyInconclusive: function (oError, sStep) {
+      var oParsed = oError && this.parseError && this.parseError(oError);
+      var sMessage = oParsed && oParsed.message && oParsed.message !== "Unexpected error." ?
+        oParsed.message : oError && oError.message || String(oError);
+      this._oViewModel.setProperty("/comparison/status", "INCONCLUSIVE");
+      this._oViewModel.setProperty("/comparison/reason", sMessage);
+      this._oViewModel.setProperty("/comparison/differences", []);
+      this._oViewModel.setProperty("/comparison/odataCount", null);
+      this._oViewModel.setProperty("/comparison/comparedColumnCount", null);
+      this._appendLegacyRunLog("INCONCLUSIVE", sStep || "RESULT", sMessage);
     },
 
     onCancelMailJobWizard: function () {
@@ -924,24 +1514,41 @@ sap.ui.define([
       var sAnalysisId = decodeURIComponent(oArguments.analysisId || "");
 
       this._resetState(sAnalysisId);
+      this._bRequestHistoryActive = true;
+      this._loadRequestHistory();
       this._loadHeader().then(function () {
+        var oPending = this._oPendingHistoryRequest;
+        if (oPending && RequestHistory.sameId(oPending.analysisId, sAnalysisId)) {
+          this._oPendingHistoryRequest = null;
+          this._openRequestHistoryDetail(oPending);
+        }
         return this._loadAllTabData();
       }.bind(this));
     },
 
     _resetState: function (sAnalysisId) {
+      this._stopRequestHistory();
+      this._stopLegacyComparison();
+      this._aRequestHistoryServerRows = [];
+      this._aRequestHistoryOptimisticRows = [];
+      this._iLegacyComparisonVersion = (this._iLegacyComparisonVersion || 0) + 1;
+      this._aLegacyCapturedRows = null;
+      this._sLegacySelectionJson = "";
       this._iFioriUiRequestVersion = (this._iFioriUiRequestVersion || 0) + 1;
       this._closeFioriUiReport();
       this._sCurrentRouteAnalysisId = sAnalysisId;
+      this._bODataGenerationDialogOpen = false;
       this._cancelODataGenerationPolling();
       var oFioriUiDialog = this.byId("fioriUiPrepareDialog");
       var oODataGenerationDialog = this.byId("odataGenerationDialog");
+      var oLegacyComparisonDialog = this.byId("legacyComparisonDialog");
       if (oFioriUiDialog) {
         oFioriUiDialog.close();
       }
       if (oODataGenerationDialog) {
         oODataGenerationDialog.close();
       }
+      if (oLegacyComparisonDialog) { oLegacyComparisonDialog.close(); }
       this._oViewModel.setData(models.createAnalysisDetailModel().getData());
       this._oViewModel.setProperty("/analysisId", sAnalysisId);
       this._loadPersistedPersonalizationStates();
@@ -1821,6 +2428,8 @@ sap.ui.define([
       this._pODataGenerationDialog.then(function (oDialog) {
         if (sAnalysisId === this._oViewModel.getProperty("/analysisId")) {
           oDialog.open();
+          this._bODataGenerationDialogOpen = true;
+          this._resumeODataGenerationPolling();
         }
       }.bind(this)).catch(function (oError) {
         this.showError(oError, "odataGenerationDialogError");
@@ -1890,7 +2499,8 @@ sap.ui.define([
       if (oParsed.status === "GENERATED") {
         this._oViewModel.setProperty("/odataGeneration/canGenerate", false);
         MessageToast.show(oParsed.message || this.getText("odataGenerationGenerated"));
-      } else if (oParsed.status === "BLOCKED" || oParsed.status === "FAILED") {
+      } else if (oParsed.status === "BLOCKED" || oParsed.status === "FAILED" ||
+          oParsed.status === "DISPATCH_FAILED") {
         this._oViewModel.setProperty("/odataGeneration/error", oParsed.message ||
           this.getText(oParsed.status === "BLOCKED" ? "odataGenerationBlocked" : "odataGenerationFailed"));
       }
@@ -1898,16 +2508,29 @@ sap.ui.define([
 
     _startODataGenerationPolling: function () {
       this._clearODataGenerationTimer();
-      this._iODataGenerationPollCount = 0;
       this._oViewModel.setProperty("/odataGeneration/polling", true);
       this._scheduleODataGenerationPoll();
     },
 
+    _resumeODataGenerationPolling: function () {
+      var oState = this._oViewModel.getProperty("/odataGeneration");
+      if (!this._bODataGenerationDialogOpen || oState.dialogBusy ||
+          !ODataGeneration.isUsableRequestId(oState.requestId) ||
+          !ODataGeneration.isGenerationActive(oState.status)) { return; }
+      if (!oState.polling) {
+        this._startODataGenerationPolling();
+      } else if (!this._iODataGenerationTimer) {
+        this._scheduleODataGenerationPoll();
+      }
+    },
+
     _scheduleODataGenerationPoll: function () {
+      if (!this._bODataGenerationDialogOpen || this._iODataGenerationTimer ||
+          !this._oViewModel.getProperty("/odataGeneration/polling")) { return; }
       this._iODataGenerationTimer = setTimeout(function () {
         this._iODataGenerationTimer = null;
         this._pollODataGeneration(false);
-      }.bind(this), 5000);
+      }.bind(this), REQUEST_POLL_INTERVAL_MS);
     },
 
     _pollODataGeneration: function (bManual) {
@@ -1915,11 +2538,13 @@ sap.ui.define([
       var sRequestId = this._oViewModel.getProperty("/odataGeneration/requestId");
       var iRequestVersion;
 
-      if (!sAnalysisId || !ODataGeneration.isUsableRequestId(sRequestId) ||
+      if ((!bManual && !this._bODataGenerationDialogOpen) ||
+          !sAnalysisId || !ODataGeneration.isUsableRequestId(sRequestId) ||
           this._oViewModel.getProperty("/odataGeneration/dialogBusy")) {
         if (!ODataGeneration.isUsableRequestId(sRequestId)) {
           this._oViewModel.setProperty("/odataGeneration/error", this.getText("odataGenerationRequestIdRequired"));
         }
+        if (!bManual) { this._scheduleODataGenerationPoll(); }
         return;
       }
 
@@ -1933,24 +2558,14 @@ sap.ui.define([
         }
         oParsed = this._applyODataGenerationResponse(oResponse);
         this._handleODataGenerationStatus(oParsed, false);
-        if (!bManual && ODataGeneration.isGenerationActive(oParsed.status)) {
-          this._iODataGenerationPollCount = (this._iODataGenerationPollCount || 0) + 1;
-          if (this._iODataGenerationPollCount >= 12) {
-            this._oViewModel.setProperty("/odataGeneration/polling", false);
-            this._oViewModel.setProperty("/odataGeneration/message", oParsed.status === "QUEUED" ?
-              this.getText("odataGenerationWorkerHint") : this.getText("odataGenerationPollingStopped"));
-          } else {
-            this._scheduleODataGenerationPoll();
-          }
-        }
       }.bind(this)).catch(function (oError) {
         if (iRequestVersion === (this._iODataGenerationRequestVersion || 0)) {
-          this._oViewModel.setProperty("/odataGeneration/polling", false);
           this._showODataGenerationError(oError, "odataGenerationRefreshError");
         }
       }.bind(this)).finally(function () {
         if (iRequestVersion === (this._iODataGenerationRequestVersion || 0)) {
           this._setODataGenerationBusy(false);
+          this._resumeODataGenerationPolling();
         }
       }.bind(this));
     },
@@ -2122,12 +2737,6 @@ sap.ui.define([
 
     _setBusy: function (bBusy) {
       this._oViewModel.setProperty("/busy", bBusy);
-    },
-
-    _setComparisonProgress: function (bBusy, sState, sMessage) {
-      this._oViewModel.setProperty("/comparison/busy", bBusy);
-      this._oViewModel.setProperty("/comparison/state", sState);
-      this._oViewModel.setProperty("/comparison/message", sMessage || "");
     }
   });
 });

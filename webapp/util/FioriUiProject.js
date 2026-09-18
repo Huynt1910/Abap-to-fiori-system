@@ -77,7 +77,7 @@ sap.ui.define([], function () {
     if (aExpected.length !== aActual.length || aExpected.some(function (sName, iIndex) {
       return sName !== aActual[iIndex];
     })) {
-      aIssues.push(sKind + " không khớp ConfigJson (kể cả thứ tự): expected [" +
+      aIssues.push(sKind + " does not match ConfigJson (including order): expected [" +
         aExpected.join(", ") + "], metadata [" + aActual.join(", ") + "].");
     }
   }
@@ -88,12 +88,12 @@ sap.ui.define([], function () {
     try {
       oDocument = fnParser ? fnParser(sXml) : new DOMParser().parseFromString(sXml, "application/xml");
     } catch (oError) {
-      return { issues: ["Không thể đọc XML metadata: " + oError.message] };
+      return { issues: ["Could not read XML metadata: " + oError.message] };
     }
     if (!oDocument || !oDocument.documentElement || oDocument.documentElement.localName !== "Edmx" ||
         oDocument.documentElement.namespaceURI !== EDMX_NS ||
         oDocument.getElementsByTagName("parsererror").length) {
-      return { issues: ["XML metadata không hợp lệ."] };
+      return { issues: ["Invalid XML metadata."] };
     }
     var aSchemas = descendants(oDocument.documentElement, "Schema", EDM_NS);
     var mAliases = { UI: UI_NS };
@@ -114,7 +114,7 @@ sap.ui.define([], function () {
         return !!oMatch;
       });
     });
-    if (!oSet) { return { issues: ["EntitySet '" + sSetName + "' không tồn tại trong metadata."] }; }
+    if (!oSet) { return { issues: ["EntitySet '" + sSetName + "' does not exist in metadata."] }; }
     var sType = qualified(oSet.getAttribute("EntityType"), oContainerSchema, mAliases);
     var oType;
     aSchemas.some(function (oSchema) {
@@ -124,7 +124,7 @@ sap.ui.define([], function () {
       }
       return !!oType;
     });
-    if (!oType) { return { issues: ["EntityType '" + sType + "' không tồn tại trong metadata."] }; }
+    if (!oType) { return { issues: ["EntityType '" + sType + "' does not exist in metadata."] }; }
     var sSetTarget = qualified(oContainer.getAttribute("Name"), oContainerSchema, mAliases) + "/" + sSetName;
     var aAnnotations = children(oType, "Annotation", EDM_NS).concat(children(oSet, "Annotation", EDM_NS));
     aSchemas.forEach(function (oSchema) {
@@ -146,27 +146,27 @@ sap.ui.define([], function () {
     var aLineFields = [];
     var oCollection = oLineItem && children(oLineItem, "Collection", EDM_NS)[0];
     if (read(oConfig, ["tableSupported"]) !== true) {
-      aIssues.push("List Report yêu cầu tableSupported=true.");
+      aIssues.push("List Report requires tableSupported=true.");
     } else if (!oCollection) {
-      aIssues.push("UI.LineItem của entity đang chọn không có Collection dữ liệu.");
+      aIssues.push("The selected entity's UI.LineItem has no Collection.");
     } else {
       children(oCollection, "Record", EDM_NS).forEach(function (oRecord) {
         var sTypeName = oRecord.getAttribute("Type") || "";
         var sPath = pathValue(propertyValue(oRecord, "Value"));
         if (sTypeName && !/(^|\.)DataField$/.test(sTypeName) || !sPath) {
-          aIssues.push("UI.LineItem có record không phải DataField/Path; không thể bảo đảm cột read-only.");
+          aIssues.push("UI.LineItem contains a record without DataField/Path; read-only columns cannot be verified.");
         } else { aLineFields.push(sPath); }
       });
       sameFields(list(read(oConfig, ["columns"])).map(field), aLineFields, "UI.LineItem", aIssues);
     }
     var aFilters = list(read(oConfig, ["filters"])).map(field);
     if (aFilters.length && read(oConfig, ["filterSupported"]) !== true) {
-      aIssues.push("ConfigJson có filters nhưng filterSupported=false.");
+      aIssues.push("ConfigJson has filters but filterSupported=false.");
     }
     if (read(oConfig, ["filterSupported"]) === true && aFilters.length) {
       var oSelection = annotation("SelectionFields");
       var aSelection = oSelection && children(oSelection, "Collection", EDM_NS)[0];
-      if (!aSelection) { aIssues.push("UI.SelectionFields của entity đang chọn không có Collection."); }
+      if (!aSelection) { aIssues.push("The selected entity's UI.SelectionFields has no Collection."); }
       else {
         sameFields(aFilters, children(aSelection, "PropertyPath", EDM_NS).map(function (oPath) {
           return String(oPath.textContent || "").trim();
@@ -180,18 +180,18 @@ sap.ui.define([], function () {
       var aDimensions = oChartRecord && paths(propertyValue(oChartRecord, "Dimensions")) || [];
       var aMeasures = oChartRecord && paths(propertyValue(oChartRecord, "Measures")) || [];
       if (read(oConfig, ["readOnly"]) === true && oChartRecord && propertyValue(oChartRecord, "Actions")) {
-        aIssues.push("UI.Chart có action; project read-only không thể hiển thị chart này.");
+        aIssues.push("UI.Chart has an action; the read-only project cannot display this chart.");
       }
       if (!aDimensions.length || !aMeasures.length) {
-        aIssues.push("UI.Chart cần ít nhất một Dimension và một Measure.");
+        aIssues.push("UI.Chart needs at least one Dimension and one Measure.");
       }
       aDimensions.concat(aMeasures).forEach(function (sName) {
-        if (!named(aProperties, sName)) { aIssues.push("UI.Chart tham chiếu property '" + sName + "' không tồn tại."); }
+        if (!named(aProperties, sName)) { aIssues.push("UI.Chart references missing property '" + sName + "'."); }
       });
       aMeasures.forEach(function (sName) {
         var oProperty = named(aProperties, sName);
         if (oProperty && !/^Edm\.(Byte|SByte|Int16|Int32|Int64|Decimal|Double|Single)$/.test(oProperty.getAttribute("Type") || "")) {
-          aIssues.push("UI.Chart Measure '" + sName + "' không có EDM type dạng số.");
+          aIssues.push("UI.Chart Measure '" + sName + "' has no numeric EDM type.");
         }
       });
       if (oChart) { sChartPath = "@UI.Chart" + (oChart.getAttribute("Qualifier") ? "#" + oChart.getAttribute("Qualifier") : ""); }
@@ -203,19 +203,19 @@ sap.ui.define([], function () {
     var sTitle = value(oConfig, ["appTitle"]);
     var sAnalysisId = value(oConfig, ["analysisId"]);
     if (!sTitle || /[\\/\x00-\x1f]/.test(sTitle) || sTitle.indexOf("..") >= 0) {
-      throw new Error("appTitle không hợp lệ cho tên project.");
+      throw new Error("appTitle is invalid for a project name.");
     }
     if (!/^[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}$/.test(sAnalysisId)) {
-      throw new Error("analysisId không hợp lệ.");
+      throw new Error("Invalid analysisId.");
     }
     var sSlug = sTitle.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
       .replace(/[^a-z0-9]+/g, "").slice(0, 28);
     var sName = oOptions && oOptions.appName || "fe" + (sSlug || "listreport") + sAnalysisId.slice(0, 8).toLowerCase();
     var sNamespace = oOptions && oOptions.namespace || "generated.fe";
     var sFileName = oOptions && oOptions.fileName || sName + ".zip";
-    if (!/^[a-z][a-z0-9]{1,49}$/.test(sName)) { throw new Error("Tên app không hợp lệ."); }
-    if (!/^[a-z][a-z0-9]*(\.[a-z][a-z0-9]*)+$/.test(sNamespace)) { throw new Error("Namespace không hợp lệ."); }
-    if (sFileName !== sName + ".zip") { throw new Error("Tên file ZIP không hợp lệ."); }
+    if (!/^[a-z][a-z0-9]{1,49}$/.test(sName)) { throw new Error("Invalid app name."); }
+    if (!/^[a-z][a-z0-9]*(\.[a-z][a-z0-9]*)+$/.test(sNamespace)) { throw new Error("Invalid namespace."); }
+    if (sFileName !== sName + ".zip") { throw new Error("Invalid ZIP file name."); }
     return { appName: sName, namespace: sNamespace, appId: sNamespace + "." + sName, fileName: sFileName, title: sTitle };
   }
 
@@ -228,7 +228,7 @@ sap.ui.define([], function () {
     if (/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/.test(sId)) {
       return sId;
     }
-    throw new Error("analysisId không hợp lệ.");
+    throw new Error("Invalid analysisId.");
   }
 
   function serviceUri(oConfig) {
@@ -237,7 +237,7 @@ sap.ui.define([], function () {
     if (aParts.length > 2 || !/^\/sap\/[A-Za-z0-9._~/-]+\/?$/.test(aParts[0]) ||
         aParts[0].split("/").some(function (sPart) { return sPart === "." || sPart === ".."; }) ||
         /\$metadata/i.test(sRoot) || (aParts[1] && aParts[1] !== "sap-client=324")) {
-      throw new Error("serviceRootUrl phải là đường dẫn /sap/... hợp lệ, không chứa hostname hoặc $metadata.");
+      throw new Error("serviceRootUrl must be a valid /sap/... path without a hostname or $metadata.");
     }
     return aParts[0].replace(/\/+$/, "") + "/?sap-client=324";
   }
@@ -284,7 +284,7 @@ sap.ui.define([], function () {
   }
 
   function zip(oFiles, sFolder) {
-    if (!/^[a-z][a-z0-9]{1,49}$/.test(sFolder)) { throw new Error("Tên thư mục ZIP không hợp lệ."); }
+    if (!/^[a-z][a-z0-9]{1,49}$/.test(sFolder)) { throw new Error("Invalid ZIP folder name."); }
     var aBytes = [], aCentral = [];
     var oEncoder = new TextEncoder();
     var iDate = ((2024 - 1980) << 9) | (1 << 5) | 1;
@@ -300,16 +300,16 @@ sap.ui.define([], function () {
       return (iCrc ^ -1) >>> 0;
     }
     var aNames = Object.keys(oFiles).sort();
-    if (!aNames.length || aNames.length > 65535) { throw new Error("Số file ZIP không hợp lệ."); }
+    if (!aNames.length || aNames.length > 65535) { throw new Error("Invalid number of ZIP files."); }
     aNames.forEach(function (sPath) {
       if (!/^[A-Za-z0-9._/-]+$/.test(sPath) || sPath.charAt(0) === "/" ||
           sPath.split("/").some(function (sPart) { return !sPart || sPart === "." || sPart === ".."; })) {
-        throw new Error("Đường dẫn ZIP không hợp lệ: " + sPath);
+        throw new Error("Invalid ZIP path: " + sPath);
       }
       var aName = oEncoder.encode(sFolder + "/" + sPath);
       var aData = oEncoder.encode(oFiles[sPath]);
       var iCrc = crc32(aData), iOffset = aBytes.length;
-      if (aData.length > 0xFFFFFFFF || iOffset > 0xFFFFFFFF) { throw new Error("ZIP quá lớn."); }
+      if (aData.length > 0xFFFFFFFF || iOffset > 0xFFFFFFFF) { throw new Error("ZIP is too large."); }
       u32(aBytes, 0x04034b50); u16(aBytes, 20); u16(aBytes, 0x800); u16(aBytes, 0);
       u16(aBytes, 0); u16(aBytes, iDate); u32(aBytes, iCrc);
       u32(aBytes, aData.length); u32(aBytes, aData.length); u16(aBytes, aName.length); u16(aBytes, 0);
@@ -334,13 +334,13 @@ sap.ui.define([], function () {
     if (!value(oConfig, ["contractVersion"]) ||
         value(oConfig, ["template"]) !== "sap.fe.templates.ListReport" ||
         value(oConfig, ["odataVersion"]) !== "4.0") {
-      throw new Error("ConfigJson phải có contractVersion, ListReport và OData V4.");
+      throw new Error("ConfigJson must include contractVersion, ListReport and OData V4.");
     }
     var sEntitySet = value(oConfig, ["entitySet", "entitySetName"]);
-    if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(sEntitySet)) { throw new Error("Tên EntitySet không hợp lệ."); }
+    if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(sEntitySet)) { throw new Error("Invalid EntitySet name."); }
     var oInfo = inspect(sXml, oConfig, fnParser);
     if (oInfo.issues.length) {
-      var oError = new Error("Metadata chưa đủ để tạo List Report.");
+      var oError = new Error("Metadata is insufficient to create a List Report.");
       oError.issues = oInfo.issues;
       throw oError;
     }

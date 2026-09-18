@@ -25,7 +25,9 @@ sap.ui.define([], function () {
       annotations: "/Annotations",
       analysisMessages: "/AnalysisMessages",
       exportResult: "/ExportResult",
-      exportJobs: "/ExportJobs"
+      exportJobs: "/ExportJobs",
+      captureRequests: "/CaptureRequests",
+      generationRequests: "/GenerationRequests"
     }),
 
     navigation: Object.freeze({
@@ -78,6 +80,12 @@ sap.ui.define([], function () {
       programNameMaxLength: 40,
       status: "Status",
       createdAt: "CreatedAt",
+      captureRequests: Object.freeze([
+        "RequestId", "AnalysisId", "RequestedBy", "CreatedAt", "UpdatedAt", "Status", "CountRow", "Message"
+      ]),
+      generationRequests: Object.freeze([
+        "RequestId", "AnalysisId", "RequestedBy", "CreatedAt", "UpdatedAt", "Status", "Message"
+      ]),
       analyses: Object.freeze([
         "AnalysisId",
         "ProgramName",

@@ -27,6 +27,10 @@ sap.ui.define([
       return this.getOwnerComponent().getAnalysisService();
     },
 
+    getRequestHistoryService: function () {
+      return this.getOwnerComponent().getRequestHistoryService();
+    },
+
     getProgramValueHelpService: function () {
       return this.getOwnerComponent().getProgramValueHelpService();
     },

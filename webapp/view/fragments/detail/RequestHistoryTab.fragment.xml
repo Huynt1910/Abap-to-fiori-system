@@ -1,0 +1,41 @@
+<core:FragmentDefinition xmlns:core="sap.ui.core" xmlns="sap.m">
+  <VBox width="100%">
+    <HBox wrap="Wrap" alignItems="Center" class="sapUiSmallMarginBottom">
+      <Select selectedKey="{detail>/requestHistory/scope}" change=".onRequestHistoryScopeChange"
+        class="sapUiSmallMarginEnd">
+        <core:Item key="ANALYSIS" text="{i18n>requestHistoryThisAnalysis}" />
+        <core:Item key="ALL" text="{i18n>requestHistoryAllMine}" />
+      </Select>
+      <Button icon="sap-icon://refresh" text="{i18n>refresh}" press=".onRefreshRequestHistory"
+        enabled="{= !${detail>/requestHistory/busy} }" />
+    </HBox>
+    <MessageStrip text="{detail>/requestHistory/error}" type="Error" showIcon="true"
+      visible="{= !!${detail>/requestHistory/error} }" class="sapUiSmallMarginBottom" />
+    <Table items="{detail>/requestHistory/items}" busy="{detail>/requestHistory/busy}"
+      busyIndicatorDelay="0" noDataText="{i18n>requestHistoryEmpty}" growing="true" growingThreshold="30">
+      <columns>
+        <Column width="11rem"><Text text="{i18n>requestHistorySubmittedAt}" /></Column>
+        <Column width="8rem" minScreenWidth="Tablet" demandPopin="true"><Text text="{i18n>requestHistoryType}" /></Column>
+        <Column width="9rem"><Text text="{i18n>status}" /></Column>
+        <Column minScreenWidth="Tablet" demandPopin="true"><Text text="{i18n>requestHistoryMessage}" /></Column>
+        <Column width="17rem" minScreenWidth="Desktop" demandPopin="true"><Text text="{i18n>requestHistoryRequestId}" /></Column>
+        <Column width="8rem" minScreenWidth="Desktop" demandPopin="true"><Text text="{i18n>requestHistoryRowCount}" /></Column>
+        <Column width="17rem" minScreenWidth="Desktop" demandPopin="true"
+          visible="{= ${detail>/requestHistory/scope} === 'ALL' }"><Text text="{i18n>requestHistoryAnalysisId}" /></Column>
+      </columns>
+      <items>
+        <ColumnListItem type="Navigation" press=".onRequestHistoryPress">
+          <cells>
+            <Text text="{path: 'detail>createdAt', formatter: '.formatter.formatDateTime'}" />
+            <Text text="{= ${detail>kind} === 'CAPTURE' ? ${i18n>requestHistoryCapture} : ${i18n>requestHistoryGeneration} }" />
+            <ObjectStatus text="{detail>status}" state="{path: 'detail>status', formatter: '.formatter.formatRequestStatusState'}" />
+            <Text text="{path: 'detail>message', formatter: '.formatter.formatText'}" wrapping="true" />
+            <Text text="{detail>requestId}" wrapping="true" />
+            <Text text="{detail>rowCountText}" />
+            <Text text="{detail>analysisId}" wrapping="true" />
+          </cells>
+        </ColumnListItem>
+      </items>
+    </Table>
+  </VBox>
+</core:FragmentDefinition>

@@ -31,7 +31,7 @@ sap.ui.define(["abap/to/fiori/system/util/FioriUiProject"], function (FioriUiPro
           return sPart === "." || sPart === "..";
         }) || /\$metadata/i.test(sValue) ||
         (aParts[1] && !/^sap-client=[0-9]{1,3}$/.test(aParts[1]))) {
-      throw new Error("serviceRootUrl phải là đường dẫn /sap/... qua proxy, không chứa hostname hoặc $metadata.");
+      throw new Error("serviceRootUrl must be a /sap/... proxy path without a hostname or $metadata.");
     }
     return sPath.replace(/\/+$/, "") + "/" + (aParts[1] ? "?" + aParts[1] : "");
   }
@@ -40,14 +40,14 @@ sap.ui.define(["abap/to/fiori/system/util/FioriUiProject"], function (FioriUiPro
     var sInputRoot = serviceUrl(sInputUrl);
     var sConfigRoot = serviceUrl(value(oConfig, ["serviceRootUrl"]));
     if (sInputRoot !== sConfigRoot) {
-      throw new Error("ConfigJson.serviceRootUrl không khớp ServiceRootUrl đã kiểm tra.");
+      throw new Error("ConfigJson.serviceRootUrl does not match the validated ServiceRootUrl.");
     }
     var sMetadataUrl = value(oConfig, ["metadataUrl"]);
     if (sMetadataUrl) {
       var sExpected = sConfigRoot.replace(/\?(.*)$/, "").replace(/\/$/, "/$metadata") +
         (sConfigRoot.indexOf("?") >= 0 ? sConfigRoot.slice(sConfigRoot.indexOf("?")) : "");
       if (sMetadataUrl !== sExpected) {
-        throw new Error("ConfigJson.metadataUrl không thuộc service root qua proxy /sap.");
+        throw new Error("ConfigJson.metadataUrl is outside the /sap proxy service root.");
       }
     }
     return sConfigRoot;
@@ -57,19 +57,19 @@ sap.ui.define(["abap/to/fiori/system/util/FioriUiProject"], function (FioriUiPro
     if (!oState || oState.busy || !oState.hasResult || oState.status !== "CONFIG_READY" ||
         oState.metadataStatus !== "VALIDATED" || !oState.metadataSignature ||
         oState.metadataSignature !== sSignature || !oState.config) {
-      throw new Error("Cần Prepare CONFIG_READY và Metadata VALIDATED cho cấu hình hiện tại.");
+      throw new Error("The current configuration requires Prepare CONFIG_READY and Metadata VALIDATED.");
     }
     var sOpen = FioriUiProject.normalizeAnalysisId(sAnalysisId);
     var sConfig = FioriUiProject.normalizeAnalysisId(oState.configAnalysisId ||
       value(oState.config, ["analysisId"]));
     if (sRouteAnalysisId && FioriUiProject.normalizeAnalysisId(sRouteAnalysisId) !== sOpen) {
-      throw new Error("Route analysisId không khớp analysis đang mở.");
+      throw new Error("Route analysisId does not match the open analysis.");
     }
     if (sConfig !== sOpen) {
-      throw new Error("ConfigJson.analysisId không khớp analysis đang mở.");
+      throw new Error("ConfigJson.analysisId does not match the open analysis.");
     }
     if (oState.prepareAnalysisId && FioriUiProject.normalizeAnalysisId(oState.prepareAnalysisId) !== sOpen) {
-      throw new Error("PrepareFioriUi.AnalysisId không khớp analysis đang mở.");
+      throw new Error("PrepareFioriUi.AnalysisId does not match the open analysis.");
     }
     return assertService(oState.config, oState.serviceRootUrl);
   }
@@ -88,7 +88,7 @@ sap.ui.define(["abap/to/fiori/system/util/FioriUiProject"], function (FioriUiPro
   function entitySet(oConfig) {
     var sEntitySet = value(oConfig, ["entitySet", "entitySetName"]);
     if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(sEntitySet)) {
-      throw new Error("ConfigJson.entitySet không hợp lệ.");
+      throw new Error("Invalid ConfigJson.entitySet.");
     }
     return sEntitySet;
   }
@@ -101,24 +101,24 @@ sap.ui.define(["abap/to/fiori/system/util/FioriUiProject"], function (FioriUiPro
       var aAvailable = Object.keys(oContainer || {}).filter(function (sName) {
         return oContainer[sName] && oContainer[sName].$kind === "EntitySet";
       });
-      throw new Error("EntitySet '" + sEntitySet + "' không tồn tại trong metadata runtime. " +
-        "Service URL: " + sServiceUrl + ". Các EntitySet hiện có: " +
-        (aAvailable.length ? aAvailable.join(", ") : "(không có)") + ".");
+      throw new Error("EntitySet '" + sEntitySet + "' does not exist in runtime metadata. " +
+        "Service URL: " + sServiceUrl + ". Available EntitySets: " +
+        (aAvailable.length ? aAvailable.join(", ") : "(none)") + ".");
     }
     if (!oSet.$Type) {
-      throw new Error("EntitySet '" + sEntitySet + "' thiếu EntityType trong metadata runtime tại " +
+      throw new Error("EntitySet '" + sEntitySet + "' has no EntityType in runtime metadata at " +
         sServiceUrl + ".");
     }
     var oType = oRuntime.type;
     if (!oType || oType.$kind !== "EntityType") {
-      throw new Error("EntityType của '" + sEntitySet + "' không tồn tại trong metadata runtime tại " +
+      throw new Error("EntityType for '" + sEntitySet + "' does not exist in runtime metadata at " +
         sServiceUrl + ".");
     }
 
     function checked(sName, sContext) {
       var oProperty = /^[A-Za-z_][A-Za-z0-9_]*$/.test(sName) && oType[sName];
       if (!oProperty || oProperty.$kind !== "Property" || !/^Edm\./.test(oProperty.$Type || "")) {
-        throw new Error(sContext + " '" + sName + "' không phải property EDM của EntitySet '" + sEntitySet + "'.");
+        throw new Error(sContext + " '" + sName + "' is not an EDM property of EntitySet '" + sEntitySet + "'.");
       }
       return oProperty;
     }
@@ -150,7 +150,7 @@ sap.ui.define(["abap/to/fiori/system/util/FioriUiProject"], function (FioriUiPro
       });
     }
     if (!aNames.length) {
-      throw new Error("UI.LineItem và ConfigJson.columns không có cột hiển thị hợp lệ.");
+      throw new Error("UI.LineItem and ConfigJson.columns have no valid visible columns.");
     }
     var aColumns = aNames.map(function (sName) {
       var oProperty = checked(sName, "Column");
@@ -159,19 +159,21 @@ sap.ui.define(["abap/to/fiori/system/util/FioriUiProject"], function (FioriUiPro
     });
 
     var aFilters = (read(oConfig, ["filters"]) || []);
-    if (!Array.isArray(aFilters)) { throw new Error("ConfigJson.filters không hợp lệ."); }
+    if (!Array.isArray(aFilters)) { throw new Error("Invalid ConfigJson.filters."); }
     aFilters = aFilters.map(function (oFilter) {
       var sName = property(oFilter);
       var oProperty = checked(sName, "Filter");
       var sKind = value(oFilter, ["filterType", "selectionType", "kind", "mode", "type"]) || "SCALAR";
       if (/^Edm\./.test(sKind)) { sKind = "SCALAR"; }
       var sOperator = value(oFilter, ["operator", "comparisonOperator"]) || "EQ";
-      var bSupported = sKind.toUpperCase() === "SCALAR" && sOperator.toUpperCase() === "EQ" &&
+      var bSupported = (sKind.toUpperCase() === "SCALAR" || sKind.toUpperCase() === "RANGE") &&
+        sOperator.toUpperCase() === "EQ" &&
         oProperty.$Type === "Edm.String";
       return { property: sName, label: label(oProperty) ||
         value(oFilter, ["label", "title", "description"]) || sName,
       supported: bSupported, reason: bSupported ? "" :
-        sName + ": chỉ hỗ trợ filter chuỗi SCALAR với phép EQ (ConfigJson: " +
+        sName + ": only exact-match (EQ) inputs are supported for SCALAR or RANGE strings; " +
+        "other filters are not implemented (ConfigJson: " +
         sKind + "/" + sOperator + ", metadata: " + oProperty.$Type + ")." };
     });
     var aSort = read(oConfig, ["defaultSort"]);

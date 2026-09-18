@@ -139,7 +139,7 @@ test("chartSupported=false omits chart views even if the service advertises UI.C
 
 test("annotation field content and order must match the selected entity contract", () => {
   assert.throws(() => project.build(config({ columns: [{ property: "Name" }, { property: "ProductID" }] }), xml, null, parseXml),
-    (error) => error.issues.some((issue) => /UI.LineItem.*thứ tự/.test(issue)));
+    (error) => error.issues.some((issue) => /UI.LineItem.*including order/.test(issue)));
   assert.throws(() => project.build(config({ filters: [{ property: "Name" }] }), xml, null, parseXml),
     (error) => error.issues.some((issue) => /UI.SelectionFields/.test(issue)));
   const otherOnly = xml.replace(/<Annotations Target="Demo.Service.Product">[\s\S]*?<\/Annotations>/, "");
@@ -152,15 +152,15 @@ test("chart is configured only with valid dimensions and numeric measures", () =
   assert.equal(built.manifest["sap.ui5"].routing.targets.ListReport.options.settings.views.paths.length, 2);
   const broken = xml.replace('Name="Price" Type="Edm.Decimal"', 'Name="Price" Type="Edm.String"');
   assert.throws(() => project.build(config({ chartSupported: true }), broken, null, parseXml),
-    (error) => error.issues.some((issue) => /EDM type dạng số/.test(issue)));
+    (error) => error.issues.some((issue) => /numeric EDM type/.test(issue)));
 });
 
 test("dangerous app, namespace, file and ZIP paths are rejected", () => {
   assert.throws(() => project.build(config({ appTitle: "../evil" }), xml, null, parseXml), /appTitle/);
-  assert.throws(() => project.build(config(), xml, { appName: "../evil" }, parseXml), /Tên app/);
-  assert.throws(() => project.build(config(), xml, { namespace: "generated../evil" }, parseXml), /Namespace/);
-  assert.throws(() => project.build(config(), xml, { fileName: "../../evil.zip" }, parseXml), /Tên file ZIP/);
-  assert.throws(() => project.zip({ "../evil.txt": "x" }, "safeapp"), /Đường dẫn ZIP/);
+  assert.throws(() => project.build(config(), xml, { appName: "../evil" }, parseXml), /Invalid app name/);
+  assert.throws(() => project.build(config(), xml, { namespace: "generated../evil" }, parseXml), /Invalid namespace/);
+  assert.throws(() => project.build(config(), xml, { fileName: "../../evil.zip" }, parseXml), /Invalid ZIP file name/);
+  assert.throws(() => project.zip({ "../evil.txt": "x" }, "safeapp"), /Invalid ZIP path/);
   assert.throws(() => project.build(config({ serviceRootUrl: "https://sap.example/sap/service/" }), xml, null, parseXml), /serviceRootUrl/);
   assert.throws(() => project.build(config({ serviceRootUrl: "/sap/service/$metadata" }), xml, null, parseXml), /serviceRootUrl/);
 });
@@ -170,8 +170,8 @@ test("ZIP identity requires a 36-character GUID and normalization accepts exactl
   const compact = canonical.replace(/-/g, "");
   assert.equal(project.normalizeAnalysisId(compact.toUpperCase()), canonical);
   assert.equal(project.normalizeAnalysisId(canonical.toUpperCase()), canonical);
-  assert.throws(() => project.safeIdentity(config({ analysisId: compact })), /analysisId không hợp lệ/);
-  assert.throws(() => project.normalizeAnalysisId("not-a-guid"), /analysisId không hợp lệ/);
+  assert.throws(() => project.safeIdentity(config({ analysisId: compact })), /Invalid analysisId/);
+  assert.throws(() => project.normalizeAnalysisId("not-a-guid"), /Invalid analysisId/);
 });
 
 class Model {

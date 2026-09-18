@@ -43,6 +43,7 @@ function metadata() {
       ID: { $kind: "Property", $Type: "Edm.String" },
       Name: { $kind: "Property", $Type: "Edm.String", "@com.sap.vocabularies.Common.v1.Label": "Product name" },
       Category: { $kind: "Property", $Type: "Edm.String", "@Common.Label": "Category label" },
+      PRODUCT_ID: { $kind: "Property", $Type: "Edm.String" },
       Price: { $kind: "Property", $Type: "Edm.Decimal" },
       "@com.sap.vocabularies.UI.v1.LineItem": [
         { $Type: "com.sap.vocabularies.UI.v1.DataField", Value: { $Path: "ID" }, Label: "Product ID" },
@@ -80,15 +81,26 @@ test("invalid properties stop rendering and unsupported filter kinds are explici
     type: { $kind: "EntityType", OrderID: { $kind: "Property", $Type: "Edm.String" } }
   }, serviceRootUrl), /Column/);
   const selected = reportConfig.select(config({ filters: [
-    { property: "Category", kind: "RANGE" },
+    { property: "Category", kind: "RANGE", operator: "BT" },
     { property: "Price", kind: "SCALAR", operator: "EQ" },
     { property: "Category", kind: "SCALAR", operator: "EQ" }
   ] }), metadata(), serviceRootUrl);
   assert.equal(selected.filters[0].supported, false);
-  assert.match(selected.filters[0].reason, /RANGE/);
+  assert.match(selected.filters[0].reason, /RANGE\/BT/);
   assert.equal(selected.filters[1].supported, false);
   assert.match(selected.filters[1].reason, /Edm.Decimal/);
   assert.equal(selected.filters[2].supported, true);
+});
+
+test("RANGE/EQ Edm.String is an exact-match filter, while RANGE/BT remains unsupported", () => {
+  const selected = reportConfig.select(config({ filters: [
+    { property: "PRODUCT_ID", filterType: "RANGE", operator: "EQ", label: "Product ID" },
+    { property: "Category", filterType: "RANGE", operator: "BT" }
+  ] }), metadata(), serviceRootUrl);
+  assert.equal(selected.filters[0].supported, true);
+  assert.equal(selected.filters[0].reason, "");
+  assert.equal(selected.filters[1].supported, false);
+  assert.match(selected.filters[1].reason, /RANGE\/BT/);
 });
 
 test("only proxy /sap roots and matching metadata URL can create the OData V4 model", () => {
@@ -246,7 +258,10 @@ function reportUi(oRuntime = metadata(), oMetaFailure) {
     "abap/to/fiori/system/util/FioriUiReportConfig": reportConfig
   };
   const report = load("webapp/util/FioriUiReport.js", common);
-  const owner = { getText(key, args) { return key + (args ? " " + args.join(" ") : ""); },
+  const owner = { getText(key, args) {
+    if (key === "fioriUiReportExactMatch") return "Exact match";
+    return key + (args ? " " + args.join(" ") : "");
+  },
     getView() { return { addDependent() {} }; } };
   return { report, owner, created, models, metaPaths, bindings, Table, Button, Input, MessageStrip };
 }
@@ -293,6 +308,44 @@ test("valid V4 metadata binds the ConfigJson entity set on its report service wi
   assert.equal(ui.models[0].destroyed, true);
 });
 
+test("RANGE/EQ string renders one exact-match input and searches with OData EQ", async () => {
+  assert.match(fs.readFileSync(path.join(root, "webapp/i18n/i18n.properties"), "utf8"),
+    /^fioriUiReportExactMatch=Exact match$/m);
+  assert.match(fs.readFileSync(path.join(root, "webapp/i18n/i18n_en.properties"), "utf8"),
+    /^fioriUiReportExactMatch=Exact match$/m);
+  const ui = reportUi();
+  ui.report.open(ui.owner, serviceRootUrl, config({ filters: [
+    { property: "PRODUCT_ID", kind: "RANGE", operator: "EQ", label: "Product ID" }
+  ] }), () => true);
+  await new Promise((resolve) => setImmediate(resolve));
+  const inputs = ui.created.filter((control) => control instanceof ui.Input);
+  assert.equal(inputs.length, 1);
+  const label = ui.created.find((control) => control.options.labelFor === inputs[0]);
+  assert.match(label.options.text, /Product ID \(PRODUCT_ID\) — Exact match/);
+  assert.equal(ui.created.find((control) => control instanceof ui.MessageStrip &&
+    control.options.type === "Warning"), undefined);
+  inputs[0].setValue("HT-1000");
+  ui.created.find((control) => control instanceof ui.Button &&
+    control.options.text === "fioriUiReportSearch").options.press();
+  const table = ui.created.find((control) => control instanceof ui.Table);
+  assert.equal(table.binding.type, "Application");
+  assert.deepEqual(Array.from(table.binding.filters, (filter) =>
+    [filter.propertyName, filter.operator, filter.filterValue]),
+  [["PRODUCT_ID", "EQ", "HT-1000"]]);
+});
+
+test("RANGE/BT keeps a warning and does not create an unsupported input", async () => {
+  const ui = reportUi();
+  ui.report.open(ui.owner, serviceRootUrl, config({ filters: [
+    { property: "PRODUCT_ID", filterType: "RANGE", operator: "BT" }
+  ] }), () => true);
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(ui.created.filter((control) => control instanceof ui.Input).length, 0);
+  const warning = ui.created.find((control) => control instanceof ui.MessageStrip &&
+    control.options.type === "Warning");
+  assert.match(warning.options.text, /PRODUCT_ID.*RANGE\/BT/);
+});
+
 test("missing EntitySet lists the requested service and actual EntitySets without binding data", async () => {
   const ui = reportUi();
   ui.report.open(ui.owner, serviceRootUrl, config({ entitySet: "Missing" }), () => true);
@@ -302,7 +355,7 @@ test("missing EntitySet lists the requested service and actual EntitySets withou
   const error = ui.created.find((control) => control instanceof ui.MessageStrip);
   assert.match(error.text, /EntitySet 'Missing'/);
   assert.match(error.text, /Service URL: \/sap\/opu\/odata4\/sap\/demo\/srvd\/sap\/demo\/0001\//);
-  assert.match(error.text, /Các EntitySet hiện có: Products, Orders/);
+  assert.match(error.text, /Available EntitySets: Products, Orders/);
 });
 
 test("metadata HTTP failure shows status and metadata URL", async () => {

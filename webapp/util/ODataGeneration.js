@@ -16,7 +16,8 @@ sap.ui.define([], function () {
   }
 
   function isGenerationActive(sStatus) {
-    return sStatus === "QUEUED" || sStatus === "RUNNING";
+    return sStatus === "QUEUED" || sStatus === "DISPATCHING" ||
+      sStatus === "SCHEDULED" || sStatus === "RUNNING";
   }
 
   function normalizeParameters(oState, sRequestId) {
