@@ -335,7 +335,7 @@ test("history selection navigates to the owning analysis before opening the deta
   assert.equal(opened[0], row);
 });
 
-test("capture history opens the existing dialog and reads the selected RequestId without enabling comparison", async () => {
+test("capture history opens the existing dialog and makes captured rows ready for comparison", async () => {
   const controller = createController();
   const analysisId = controller._oViewModel.getProperty("/analysisId");
   const requestId = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee";
@@ -354,7 +354,7 @@ test("capture history opens the existing dialog and reads the selected RequestId
   assert.equal(controller._oViewModel.getProperty("/comparison/captureStatus"), "CAPTURED");
   assert.equal(controller._oViewModel.getProperty("/comparison/captureCount"), 2);
   assert.equal(controller._oViewModel.getProperty("/comparison/captureMessage"), "Done");
-  assert.equal(controller._oViewModel.getProperty("/comparison/ready"), false);
+  assert.equal(controller._oViewModel.getProperty("/comparison/ready"), true);
   controller._stopRequestHistory();
 });
 

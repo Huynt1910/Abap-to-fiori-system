@@ -140,6 +140,7 @@ sap.ui.define([
         scopeMessage: "",
         status: "INCONCLUSIVE",
         reason: "",
+        error: "",
         selectionJson: "[]",
         filterMappingJson: "{}",
         columnMappingJson: "{}",

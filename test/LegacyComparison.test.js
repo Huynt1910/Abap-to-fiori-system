@@ -277,6 +277,12 @@ test("metadata types and SAP client stay tied to the selected generated service"
   assert.equal(new URL(calls[1]).searchParams.get("sap-client"), "324");
 });
 
+test("metadata error lists available entity sets when the selected name is wrong", async () => {
+  const { api } = service();
+  await assert.rejects(api.getEntityMetadata("/sap/report/", "Missing"),
+    /Entity set 'Missing' is missing.*Available EntitySets: Products/);
+});
+
 test("absolute backend nextLink stays on the local proxy while reading all OData pages", async () => {
   const { api, calls } = service([
     { value: [{ ProductID: "A" }], "@odata.nextLink":
@@ -358,6 +364,7 @@ function controller(captureResponse, targetRows = odata) {
 
 test("Compare all sends [] and automatically compares every row after CAPTURED", async () => {
   const response = { AnalysisId: "analysis", RequestId: "request", Status: "QUEUED",
+    Message: "Queued. Run ZRMIG_LEGACY_WORKER under the requesting user.",
     RowsJson: JSON.stringify(alv), CountRow: 1 };
   const { instance, state } = controller(response);
   await instance.onRequestLegacyCapture();
@@ -366,7 +373,9 @@ test("Compare all sends [] and automatically compares every row after CAPTURED",
   await instance.onCheckLegacyCapture();
   assert.equal(state.status, "INCONCLUSIVE");
   assert.equal(state.ready, false);
-  assert.match(state.reason, /QUEUED/);
+  assert.equal(state.reason, "");
+  assert.equal(state.captureMessage, "");
+  assert.doesNotMatch(state.runLogText, /Queued\. Run ZRMIG_LEGACY_WORKER/);
   assert.equal(instance.onCompareLegacyRows(), undefined);
   response.Status = "CAPTURED";
   await instance.onCheckLegacyCapture();
@@ -675,7 +684,7 @@ test("extra capture fields do not fail when every generated OData field and row 
   assert.match(state.scopeMessage, /TYPE_CODE, DESCRIPTION, SUPPLIER_ID/);
 });
 
-test("changing parameters invalidates the old request and a failed OData read remains inconclusive", async () => {
+test("changing the OData target retains the capture and a failed OData read remains inconclusive", async () => {
   const { instance, state } = controller({ AnalysisId: "analysis", RequestId: "request",
     Status: "CAPTURED", RowsJson: JSON.stringify(alv), CountRow: 1 });
   await instance.onRequestLegacyCapture();
@@ -686,16 +695,43 @@ test("changing parameters invalidates the old request and a failed OData read re
   await instance.onCheckLegacyCapture();
   assert.equal(state.status, "INCONCLUSIVE");
   assert.match(state.reason, /second page failed/);
+  assert.match(state.error, /second page failed/);
   assert.match(state.runLogText, /\[ODATA_PAGE\].*Page 1: 30 rows.*nextLink=yes/);
   assert.match(state.runLogText, /\[INCONCLUSIVE\] \[COMPARE\] second page failed/);
   instance.onLegacyComparisonInputChange({ getSource: () => ({ getBinding: () => ({ getPath: () =>
     "/comparison/serviceRootUrl" }) }), getParameter: () => "/sap/other/" });
-  assert.equal(state.requestId, "");
-  assert.equal(state.ready, false);
+  assert.equal(state.requestId, "request");
+  assert.equal(state.captureStatus, "CAPTURED");
+  assert.equal(state.ready, true);
   assert.equal(state.status, "INCONCLUSIVE");
 });
 
-test("capture HTTP 400 exposes the backend OData message on the dialog", async () => {
+test("captured history request compares with a new OData target without creating another capture", async () => {
+  const response = { AnalysisId: "analysis", RequestId: "request", Status: "CAPTURED",
+    RowsJson: JSON.stringify(odata), CountRow: 1 };
+  const { instance, state } = controller(response);
+  state.requestId = "request";
+  state.captureStatus = "CAPTURED";
+  state.historyMode = true;
+  instance._sLegacySelectionJson = "";
+  instance._oLegacyComparisonService.captureLegacyRows = () => {
+    throw new Error("A new capture must not be created.");
+  };
+  await instance.onCheckLegacyCapture();
+  assert.equal(state.ready, true);
+  instance.onLegacyComparisonInputChange({ getSource: () => ({ getBinding: () => ({ getPath: () =>
+    "/comparison/serviceRootUrl" }) }), getParameter: () => "/sap/new-service/" });
+  instance.onLegacyComparisonInputChange({ getSource: () => ({ getBinding: () => ({ getPath: () =>
+    "/comparison/entitySet" }) }), getParameter: () => "Products" });
+  await instance.onRequestLegacyCapture();
+  assert.equal(state.requestId, "request");
+  assert.equal(state.captureStatus, "CAPTURED");
+  assert.equal(state.status, "PASS");
+  assert.equal(state.odataCount, 1);
+  assert.match(state.runLogText, /SelectionJson=unknown/);
+});
+
+test("capture HTTP 400 retains the backend OData message in the run log", async () => {
   const { instance, state } = controller(null);
   instance._oLegacyComparisonService.captureLegacyRows = () =>
     Promise.reject(new Error("Communication error: 400 Bad Request"));
@@ -703,5 +739,7 @@ test("capture HTTP 400 exposes the backend OData message on the dialog", async (
   await instance.onRequestLegacyCapture();
   assert.equal(state.status, "INCONCLUSIVE");
   assert.equal(state.reason, "SelectionJson: unsupported value ALL");
+  assert.equal(state.error, "SelectionJson: unsupported value ALL");
+  assert.match(state.runLogText, /SelectionJson: unsupported value ALL/);
   assert.equal(state.requestId, "");
 });

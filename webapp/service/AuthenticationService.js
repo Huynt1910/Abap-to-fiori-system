@@ -3,6 +3,8 @@ sap.ui.define([
 ], function (JSONModel) {
   "use strict";
 
+  var ABAP_SESSION = {};
+
   function AuthenticationService(mOptions) {
     this._mOptions = mOptions || {};
     this._fnFetch = this._mOptions.fetch || window.fetch.bind(window);
@@ -39,6 +41,11 @@ sap.ui.define([
       return Promise.resolve(this._oModel.getData());
     }
 
+    if (this._isStandaloneAbap()) {
+      this._setStandaloneAbapState();
+      return Promise.resolve(this._oModel.getData());
+    }
+
     if (this._isLocalDevelopment()) {
       this._setLocalDevelopmentState();
       return Promise.resolve(this._oModel.getData());
@@ -52,6 +59,10 @@ sap.ui.define([
       cache: "no-store",
       headers: { Accept: "application/json" }
     }).then(function (oResponse) {
+      if (this._isAbapServerResponse(oResponse)) {
+        this._setStandaloneAbapState();
+        return ABAP_SESSION;
+      }
       if (oResponse.status === 401) {
         this.redirectToLogin();
         throw new Error("Authentication session expired.");
@@ -64,6 +75,7 @@ sap.ui.define([
       }
       return oResponse.json();
     }.bind(this)).then(function (oUser) {
+      if (oUser === ABAP_SESSION) { return this._oModel.getData(); }
       var aScopes = Array.isArray(oUser.scopes) ? oUser.scopes.slice() : [];
       var bAdmin = this._hasScope(aScopes, "Admin");
       this._oModel.setData({
@@ -94,7 +106,8 @@ sap.ui.define([
   };
 
   AuthenticationService.prototype.handleHttpStatus = function (iStatus) {
-    if (Number(iStatus) === 401 && !this._isLocalDevelopment() && !this._isLaunchpad()) {
+    if (Number(iStatus) === 401 && !this._isLocalDevelopment() &&
+        !this._isLaunchpad() && !this._isStandaloneAbap()) {
       this.redirectToLogin();
       return true;
     }
@@ -132,6 +145,18 @@ sap.ui.define([
     return sHost === "localhost" || sHost === "127.0.0.1" || sHost === "::1";
   };
 
+  AuthenticationService.prototype._isStandaloneAbap = function () {
+    var sPath = String(this._oLocation && this._oLocation.pathname || "");
+    return this._bAbapSession || /^\/sap\/bc\/ui5_ui5\//i.test(sPath);
+  };
+
+  AuthenticationService.prototype._isAbapServerResponse = function (oResponse) {
+    var oHeaders = oResponse && oResponse.headers;
+    return oResponse && oResponse.status === 404 && oHeaders &&
+      typeof oHeaders.get === "function" &&
+      String(oHeaders.get("sap-server") || "").toLowerCase() === "true";
+  };
+
   AuthenticationService.prototype._getShellContainer = function () {
     return typeof sap !== "undefined" && sap.ushell && sap.ushell.Container || null;
   };
@@ -163,6 +188,28 @@ sap.ui.define([
       canMail: true,
       isAdmin: false,
       auditNotice: "Signed in through SAP Fiori Launchpad. Backend audit identity still requires verification by a CurrentUser endpoint.",
+      error: ""
+    });
+  };
+
+  AuthenticationService.prototype._setStandaloneAbapState = function () {
+    this._bAbapSession = true;
+    this._oModel.setData({
+      busy: false,
+      authenticated: true,
+      mode: "abap",
+      displayName: "SAP user",
+      btpUser: "",
+      sapUser: "",
+      sapUserVerified: false,
+      scopes: [],
+      canRead: true,
+      canAnalyze: true,
+      canCompare: true,
+      canExport: true,
+      canMail: true,
+      isAdmin: false,
+      auditNotice: "Signed in through the ABAP application URL. The backend checks authorization for each operation.",
       error: ""
     });
   };
