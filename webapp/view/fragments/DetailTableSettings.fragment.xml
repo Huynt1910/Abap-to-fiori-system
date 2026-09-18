@@ -48,11 +48,11 @@
             <OverflowToolbar><Button text="{i18n>addSort}" icon="sap-icon://add" press=".onAddDetailSorter" /></OverflowToolbar>
             <List items="{detail>/tableSettings/sorters}">
               <CustomListItem>
-                <HBox alignItems="Center" renderType="Bare" class="sapUiTinyMargin">
-                  <Select width="18rem" selectedKey="{detail>key}" items="{detail>/tableSettings/sortFields}">
+                <HBox alignItems="Center" wrap="Wrap" class="sapUiTinyMargin settingsRuleRow">
+                  <Select width="18rem" selectedKey="{detail>key}" items="{path: 'detail>/tableSettings/sortFields', templateShareable: false}">
                     <core:Item key="{detail>key}" text="{detail>label}" />
                   </Select>
-                  <CheckBox text="{i18n>descending}" selected="{detail>descending}" class="sapUiSmallMarginBeginEnd" />
+                  <CheckBox text="{i18n>descending}" selected="{detail>descending}" />
                   <Button icon="sap-icon://delete" tooltip="{i18n>delete}" press=".onRemoveDetailSorter" />
                 </HBox>
               </CustomListItem>
@@ -64,11 +64,11 @@
             <OverflowToolbar><Button text="{i18n>addGroup}" icon="sap-icon://add" press=".onAddDetailGroup" /></OverflowToolbar>
             <List items="{detail>/tableSettings/groups}">
               <CustomListItem>
-                <HBox alignItems="Center" renderType="Bare" class="sapUiTinyMargin">
-                  <Select width="18rem" selectedKey="{detail>key}" items="{detail>/tableSettings/groupFields}">
+                <HBox alignItems="Center" wrap="Wrap" class="sapUiTinyMargin settingsRuleRow">
+                  <Select width="18rem" selectedKey="{detail>key}" items="{path: 'detail>/tableSettings/groupFields', templateShareable: false}">
                     <core:Item key="{detail>key}" text="{detail>label}" />
                   </Select>
-                  <CheckBox text="{i18n>descending}" selected="{detail>descending}" class="sapUiSmallMarginBeginEnd" />
+                  <CheckBox text="{i18n>descending}" selected="{detail>descending}" />
                   <Button icon="sap-icon://delete" tooltip="{i18n>delete}" press=".onRemoveDetailGroup" />
                 </HBox>
               </CustomListItem>
@@ -80,11 +80,11 @@
             <OverflowToolbar><Button text="{i18n>addFilter}" icon="sap-icon://add" press=".onAddDetailFilter" /></OverflowToolbar>
             <List items="{detail>/tableSettings/filters}">
               <CustomListItem>
-                <HBox alignItems="Center" renderType="Bare" class="sapUiTinyMargin">
-                  <Select width="14rem" selectedKey="{detail>key}" items="{detail>/tableSettings/filterFields}">
+                <HBox alignItems="Center" wrap="Wrap" class="sapUiTinyMargin settingsRuleRow">
+                  <Select width="14rem" selectedKey="{detail>key}" items="{path: 'detail>/tableSettings/filterFields', templateShareable: false}">
                     <core:Item key="{detail>key}" text="{detail>label}" />
                   </Select>
-                  <Select width="10rem" selectedKey="{detail>operator}" class="sapUiSmallMarginBegin">
+                  <Select width="10rem" selectedKey="{detail>operator}">
                     <core:Item key="Contains" text="{i18n>contains}" />
                     <core:Item key="EQ" text="{i18n>equals}" />
                     <core:Item key="NE" text="{i18n>notEquals}" />
@@ -94,9 +94,9 @@
                     <core:Item key="LE" text="{i18n>lessEqual}" />
                     <core:Item key="BT" text="{i18n>between}" />
                   </Select>
-                  <Input width="10rem" value="{detail>value}" class="sapUiSmallMarginBegin" />
-                  <Input width="10rem" value="{detail>value2}" visible="{= ${detail>operator} === 'BT' }" class="sapUiSmallMarginBegin" />
-                  <Button icon="sap-icon://delete" tooltip="{i18n>delete}" press=".onRemoveDetailFilter" class="sapUiSmallMarginBegin" />
+                  <Input width="10rem" value="{detail>value}" />
+                  <Input width="10rem" value="{detail>value2}" visible="{= ${detail>operator} === 'BT' }" />
+                  <Button icon="sap-icon://delete" tooltip="{i18n>delete}" press=".onRemoveDetailFilter" />
                 </HBox>
               </CustomListItem>
             </List>

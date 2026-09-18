@@ -27,10 +27,10 @@
     </OverflowToolbar>
     <IllustratedMessage
       visible="{= !${detail>/errors/recommendations} &amp;&amp; ${detail>/recommendations}.length === 0 }"
-      illustrationType="sapIllus-NoEntries"
+      illustrationType="sapIllus-NoEntries" illustrationSize="Spot"
       title="{i18n>noRecommendationsTitle}"
       description="{i18n>noRecommendationsDescription}" />
-    <Table
+    <Table autoPopinMode="true" contextualWidth="Auto"
       id="recommendationsTable"
       visible="{path: 'detail>/recommendations', formatter: '.formatter.hasItems'}"
       growing="true"
@@ -49,7 +49,7 @@
         <Column width="8rem" demandPopin="true" minScreenWidth="Tablet" visible="{detail>/columns/recommendations/manualReview}"><Text text="{i18n>manualReview}" /></Column>
       </columns>
       <items>
-        <ColumnListItem type="Active" press=".onRecommendationPress">
+        <ColumnListItem type="Active">
           <cells>
             <Text text="{path: 'detail>RuleVersion', formatter: '.formatter.formatText'}" visible="{detail>/columns/recommendations/ruleVersion}" />
             <ObjectStatus text="{path: 'detail>Severity', formatter: '.formatter.formatText'}" state="{path: 'detail>Severity', formatter: '.formatter.formatSeverityState'}" icon="sap-icon://flag" visible="{detail>/columns/recommendations/severity}" />
@@ -81,7 +81,7 @@
         <ObjectAttribute title="{i18n>reviewStatus}" text="{path: 'detail>/selectedRecommendation/ReviewStatus', formatter: '.formatter.formatText'}" />
         <Text text="{path: 'detail>/selectedRecommendation/Explanation', formatter: '.formatter.formatText'}" wrapping="true" />
       </VBox>
-      <Table growing="true" growingThreshold="20" items="{detail>/recommendationDetail/annotations}">
+      <Table autoPopinMode="true" contextualWidth="Auto" growing="true" growingThreshold="20" items="{detail>/recommendationDetail/annotations}">
         <headerToolbar>
           <OverflowToolbar>
             <Title text="{i18n>annotations}" level="H5" />

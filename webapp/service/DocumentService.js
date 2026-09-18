@@ -6,13 +6,15 @@ sap.ui.define([
   var MIME_TYPES = Object.freeze({
     X: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     P: "application/pdf",
-    C: "text/csv;charset=utf-8"
+    C: "text/csv;charset=utf-8",
+    M: "text/markdown;charset=utf-8"
   });
 
   var EXTENSIONS = Object.freeze({
     X: "xlsx",
     P: "pdf",
-    C: "csv"
+    C: "csv",
+    M: "md"
   });
 
   function DocumentService(oODataModel, mOptions) {
@@ -88,6 +90,7 @@ sap.ui.define([
   DocumentService.prototype.prepareSelectedExport = function (sAnalysisId, mParameters) {
     var sId = String(sAnalysisId || "").trim();
     var oAction;
+    var mActionParameters;
 
     this._validateSelectedExportParameters(mParameters);
 
@@ -95,12 +98,13 @@ sap.ui.define([
       return Promise.reject(new Error("AnalysisId is required for export."));
     }
 
+    mActionParameters = this._buildSelectedExportActionParameters(mParameters);
     oAction = this._oModel.bindContext(
       Constants.entitySet.analyses + "(" + encodeURIComponent(sId) + ")/" + Constants.action.prepareSelectedExportSuffix
     );
-    oAction.setParameter("FileFormat", mParameters.fileFormat);
-    oAction.setParameter("ExportSection", mParameters.exportSection);
-    oAction.setParameter("SelectedFields", this.serializeSelectedFields(mParameters.selectedFields));
+    Object.keys(mActionParameters).forEach(function (sName) {
+      oAction.setParameter(sName, mActionParameters[sName]);
+    });
 
     return oAction.execute("$direct").then(function () {
       var oContext = oAction.getBoundContext && oAction.getBoundContext();
@@ -131,11 +135,94 @@ sap.ui.define([
     }.bind(this));
   };
 
+  DocumentService.prototype.generateTechnicalDocument = function (sAnalysisId) {
+    var sId = String(sAnalysisId || "").trim();
+    var oAction;
+
+    if (!sId) {
+      return Promise.reject(new Error("AnalysisId is required for technical document generation."));
+    }
+
+    oAction = this._oModel.bindContext(
+      Constants.entitySet.analyses + "(" + encodeURIComponent(sId) + ")/" + Constants.action.generateTechnicalDocumentSuffix
+    );
+
+    return oAction.execute("$direct").then(function () {
+      var oContext = oAction.getBoundContext && oAction.getBoundContext();
+      return oContext && oContext.requestObject ? oContext.requestObject() : {};
+    });
+  };
+
+  DocumentService.prototype.downloadTechnicalDocument = function (sAnalysisId, mOptions) {
+    var mDownloadOptions = mOptions || {};
+    var sFileFormat = Constants.technicalDocument.fileFormat;
+
+    return this.generateTechnicalDocument(sAnalysisId).then(function (oResult) {
+      if (oResult && oResult.DownloadUrl) {
+        return this.downloadUrl(this._normalizeDownloadUrl(oResult.DownloadUrl), {
+          fileName: this.getDownloadFileName(mDownloadOptions.fileName, oResult.FileName, sFileFormat),
+          mimeType: oResult.MimeType,
+          fileFormat: sFileFormat
+        });
+      }
+
+      if (oResult && oResult.ExportId) {
+        return this.pollExportJob(oResult.ExportId).then(function (oJob) {
+          return this.downloadExportJobContent(oJob, {
+            fileName: mDownloadOptions.fileName,
+            fileFormat: sFileFormat
+          });
+        }.bind(this));
+      }
+
+      throw new Error("Technical document generation did not return a DownloadUrl or ExportId.");
+    }.bind(this));
+  };
+
   DocumentService.prototype.serializeSelectedFields = function (aFieldKeys) {
     if (typeof aFieldKeys === "string") {
       return aFieldKeys;
     }
     return (aFieldKeys || []).join(",");
+  };
+
+  DocumentService.prototype._buildSelectedExportActionParameters = function (mParameters) {
+    var mDefaults = Constants.exportDefaults || {};
+    var bPdf = mParameters.fileFormat === Constants.fileFormat.pdf;
+    var bExcel = mParameters.fileFormat === Constants.fileFormat.excel;
+    var iFontSize = parseInt(mParameters.fontSize !== undefined ? mParameters.fontSize : mDefaults.fontSize, 10);
+
+    if (isNaN(iFontSize)) {
+      iFontSize = 10;
+    }
+
+    return {
+      FileFormat: mParameters.fileFormat,
+      ExportSection: mParameters.exportSection,
+      SelectedFields: this.serializeSelectedFields(mParameters.selectedFields),
+      PdfHeaderText: bPdf ? String(mParameters.pdfHeaderText !== undefined ? mParameters.pdfHeaderText : mDefaults.pdfHeaderText || "") : "",
+      PdfFooterText: bPdf ? String(mParameters.pdfFooterText !== undefined ? mParameters.pdfFooterText : mDefaults.pdfFooterText || "") : "",
+      PaperSize: bPdf ? String(mParameters.paperSize !== undefined ? mParameters.paperSize : mDefaults.paperSize || "A4") : "",
+      Orientation: bPdf ? String(mParameters.orientation !== undefined ? mParameters.orientation : mDefaults.orientation || "P") : "",
+      FontSize: bPdf ? iFontSize : 0,
+      FitToPage: bPdf ? this._normalizeBoolean(mParameters.fitToPage, mDefaults.fitToPage) : false,
+      SplitMultiValue: bExcel ? this._normalizeBoolean(mParameters.splitMultiValue, mDefaults.splitMultiValue) : false
+    };
+  };
+
+  DocumentService.prototype._normalizeBoolean = function (vValue, bDefault) {
+    var sValue;
+
+    if (vValue === undefined || vValue === null) {
+      return bDefault === true;
+    }
+
+    if (typeof vValue === "boolean") {
+      return vValue;
+    }
+
+    sValue = String(vValue).trim().toUpperCase();
+    return sValue === "TRUE" || sValue === "X" || sValue === "1" || sValue === "Y";
   };
 
   DocumentService.prototype.cancelExportPolling = function () {
@@ -259,7 +346,7 @@ sap.ui.define([
       return sSanitized;
     }
 
-    sSanitized = sSanitized.replace(/\.(xlsx|pdf|csv)$/i, "");
+    sSanitized = sSanitized.replace(/\.(xlsx|pdf|csv|md)$/i, "");
     return sSanitized + "." + sExtension;
   };
 
@@ -311,6 +398,18 @@ sap.ui.define([
 
     if (mParameters.selectedFields !== undefined && typeof mParameters.selectedFields !== "string" && !Array.isArray(mParameters.selectedFields)) {
       throw new Error("SelectedFields must be a string or an array.");
+    }
+
+    if (mParameters.paperSize !== undefined && String(mParameters.paperSize).length > 10) {
+      throw new Error("PaperSize must not exceed 10 characters.");
+    }
+
+    if (mParameters.orientation !== undefined && String(mParameters.orientation).length > 1) {
+      throw new Error("Orientation must not exceed 1 character.");
+    }
+
+    if (mParameters.fileFormat === Constants.fileFormat.pdf && mParameters.fontSize !== undefined && (isNaN(parseInt(mParameters.fontSize, 10)) || parseInt(mParameters.fontSize, 10) <= 0)) {
+      throw new Error("FontSize must be a positive integer.");
     }
   };
 

@@ -43,8 +43,8 @@ sap.ui.define([
     }, options || {}));
   }
 
-  function guidField(key) {
-    return field(key, key, "P3", {
+  function guidField(key, labelKey) {
+    return field(key, labelKey || key, "P3", {
       type: "Edm.Guid",
       defaultVisible: false,
       technical: true,
@@ -80,11 +80,11 @@ sap.ui.define([
       titleKey: "uiFilters",
       navigationPath: Constants.navigation.uiFilters,
       exportSection: Constants.exportSection.uiFilter,
-      exportFields: ["FieldName", "FieldKind", "ReferenceTable", "ReferenceField", "DataElement", "Mandatory", "MultipleSelection", "Confidence"],
+      exportFields: ["FieldName", "FieldKind", "ReferenceTable", "ReferenceField", "DataElement", "Mandatory", "MultipleSelection", "Confidence", "DataType", "Description", "SelectionBlock", "Hidden", "Checkbox", "RadioGroup", "RangeSupported", "DefaultValue", "ValidationRoutine", "EvidenceId"],
       fields: [
         guidField("AnalysisId"),
         guidField("ItemId"),
-        guidField("EvidenceId"),
+        guidField("EvidenceId", "evidenceId"),
         field("FieldName", "fieldName", "P1", { width: "12rem" }),
         field("FieldKind", "fieldKind", "P1", { width: "9rem", groupable: true }),
         field("ReferenceTable", "referenceTable", "P1", { width: "12rem" }),
@@ -109,9 +109,9 @@ sap.ui.define([
       titleKey: "databaseObjects",
       navigationPath: Constants.navigation.databaseObjects,
       exportSection: Constants.exportSection.databaseObjects,
-      exportFields: ["ObjectName", "ObjectType", "Operation", "ContainingRoutine", "DynamicAccess", "ReadOnly", "PagingCapability", "Confidence"],
+      exportFields: ["ObjectName", "ObjectType", "Operation", "ContainingRoutine", "DynamicAccess", "ReadOnly", "PagingCapability", "Confidence", "SelectedFields", "WhereFields", "JoinedObjects", "JoinCondition", "Aggregation", "Description", "ResultTarget", "ExecutionKind", "ExecutionContext", "EvidenceId"],
       fields: [
-        guidField("AnalysisId"), guidField("ItemId"), guidField("EvidenceId"),
+        guidField("AnalysisId"), guidField("ItemId"), guidField("EvidenceId", "evidenceId"),
         field("ObjectName", "objectName", "P1", { width: "14rem" }),
         field("ObjectType", "objectType", "P1"),
         field("Operation", "operation", "P1", { groupable: true }),
@@ -120,7 +120,10 @@ sap.ui.define([
         field("JoinedObjects", "joinedObjects", "P2", { width: "16rem", wrap: true }),
         field("JoinCondition", "joinCondition", "P2", { width: "16rem", wrap: true }),
         field("Aggregation", "aggregation", "P2", { width: "14rem", wrap: true }),
+        field("ResultTarget", "resultTarget", "P2", { width: "12rem" }),
         field("ContainingRoutine", "containingRoutine", "P1", { width: "14rem" }),
+        field("ExecutionKind", "executionKind", "P1", { width: "11rem", groupable: true }),
+        field("ExecutionContext", "executionContext", "P2", { width: "18rem", wrap: true }),
         boolField("DynamicAccess", "dynamicAccess", "P1"),
         boolField("ReadOnly", "readOnly", "P1"),
         field("PagingCapability", "pagingCapability", "P1", { width: "12rem" }),
@@ -133,19 +136,36 @@ sap.ui.define([
       titleKey: "businessLogic",
       navigationPath: Constants.navigation.businessLogic,
       exportSection: Constants.exportSection.businessLogic,
-      exportFields: ["ObjectName", "ObjectType", "ContainerName", "CallingRoutine", "SideEffect", "GuiDependency", "ReuseFeasibility", "Confidence"],
+      exportFields: ["ObjectName", "ObjectType", "ContainerName", "CallingRoutine", "SideEffect", "GuiDependency", "ReuseFeasibility", "Confidence", "InterfaceSummary", "Description", "TransactionDependency", "ExecutionKind", "ExecutionContext"],
       fields: [
         guidField("AnalysisId"), guidField("ItemId"), guidField("EvidenceId"),
         field("ObjectName", "objectName", "P1", { width: "14rem" }),
         field("ObjectType", "objectType", "P1", { groupable: true }),
         field("ContainerName", "containerName", "P1", { width: "14rem" }),
         field("CallingRoutine", "callingRoutine", "P1", { width: "14rem" }),
+        field("ExecutionKind", "executionKind", "P1", { width: "11rem", groupable: true }),
+        field("ExecutionContext", "executionContext", "P2", { width: "18rem", wrap: true }),
         field("InterfaceSummary", "interfaceSummary", "P2", { width: "18rem", wrap: true }),
         field("Description", "description", "P2", { width: "16rem", wrap: true }),
-        boolField("SideEffect", "sideEffect", "P1", { groupable: true }),
+        field("SideEffect", "sideEffect", "P1", { width: "10rem", groupable: true }),
         boolField("TransactionDependency", "transactionDependency", "P2"),
         boolField("GuiDependency", "guiDependency", "P1", { groupable: true }),
         field("ReuseFeasibility", "reuseFeasibility", "P1", { width: "12rem", groupable: true }),
+        field("Confidence", "confidence", "P1", { width: "8rem" })
+      ]
+    },
+    callBindings: {
+      tableKey: "businessLogic.callBindings",
+      titleKey: "callBindings",
+      navigationPath: Constants.navigation.callBindings,
+      exportSection: "",
+      defaultSort: [{ path: "BindingPosition", descending: false }],
+      fields: [
+        guidField("AnalysisId"), guidField("ItemId"), guidField("CallItemId"), guidField("EvidenceId"),
+        field("ParameterName", "parameterName", "P1", { width: "14rem" }),
+        field("Direction", "direction", "P1", { width: "9rem", groupable: true }),
+        field("ActualExpression", "actualExpression", "P1", { width: "22rem", wrap: true }),
+        numberField("BindingPosition", "bindingPosition", "P1"),
         field("Confidence", "confidence", "P1", { width: "8rem" })
       ]
     },
@@ -154,12 +174,13 @@ sap.ui.define([
       titleKey: "alvOutputs",
       navigationPath: Constants.navigation.alvOutputs,
       exportSection: Constants.exportSection.alvOutput,
-      exportFields: ["OutputName", "OutputKind", "Framework", "OutputTable", "RowType", "Editable", "Confidence"],
+      exportFields: ["OutputName", "OutputKind", "Framework", "OutputTable", "RowType", "Editable", "Confidence", "ControlObject", "FieldCatalog", "SortTable", "FilterTable", "LayoutObject", "VariantObject", "Hierarchical", "Zebra", "AutoWidth", "SelectionMode", "ContainingRoutine", "EvidenceId", "LayoutEvidenceId"],
       fields: [
-        guidField("AnalysisId"), guidField("OutputId"), guidField("EvidenceId"), guidField("LayoutEvidenceId"),
+        guidField("AnalysisId"), guidField("OutputId"), guidField("EvidenceId", "evidenceId"), guidField("LayoutEvidenceId", "layoutEvidenceId"),
         field("OutputName", "outputName", "P1", { width: "14rem" }),
         field("OutputKind", "outputKind", "P1", { groupable: true }),
         field("Framework", "framework", "P1", { groupable: true }),
+        field("ContainingRoutine", "containingRoutine", "P1", { width: "14rem" }),
         field("ControlObject", "controlObject", "P2", { width: "12rem" }),
         field("OutputTable", "outputTable", "P1", { width: "12rem" }),
         field("RowType", "rowType", "P1", { width: "12rem" }),
@@ -258,9 +279,9 @@ sap.ui.define([
       titleKey: "recommendationsTabTitle",
       navigationPath: Constants.navigation.recommendations,
       exportSection: Constants.exportSection.recommendations,
-      exportFields: ["Severity", "Title", "TargetLayer", "ReviewStatus", "ManualReview", "Confidence"],
+      exportFields: ["Severity", "Title", "TargetLayer", "ReviewStatus", "ManualReview", "Confidence", "RuleId", "RuleVersion", "DisplayText", "Explanation", "EvidenceId", "SourceItemId"],
       fields: [
-        guidField("AnalysisId"), guidField("RecommendationId"), guidField("SourceItemId"), guidField("EvidenceId"),
+        guidField("AnalysisId"), guidField("RecommendationId"), guidField("SourceItemId", "sourceItemId"), guidField("EvidenceId", "evidenceId"),
         field("RuleId", "ruleId", "P2", { width: "12rem", technical: true, personalizable: false, exportable: false, sortable: false, groupable: false, filterable: false }),
         field("RuleVersion", "ruleVersion", "P2"),
         field("TargetLayer", "targetLayer", "P1", { width: "10rem", groupable: true }),
@@ -293,7 +314,7 @@ sap.ui.define([
       titleKey: "evidence",
       navigationPath: Constants.navigation.evidences,
       exportSection: Constants.exportSection.sourceEvidence,
-      exportFields: ["SourceObject", "StartLine", "EndLine", "StatementId", "Confidence"],
+      exportFields: ["SourceObject", "StartLine", "EndLine", "StatementId", "Confidence", "StatementText"],
       fields: [
         guidField("AnalysisId"), guidField("EvidenceId"),
         field("SourceObject", "sourceObject", "P1", { width: "14rem" }),

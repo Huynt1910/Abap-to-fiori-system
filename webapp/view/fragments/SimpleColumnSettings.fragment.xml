@@ -19,11 +19,11 @@
       </Bar>
     </customHeader>
     <VBox>
-      <Toolbar>
+      <OverflowToolbar>
         <Title text="{i18n>columns}" level="H5" />
         <ToolbarSpacer />
         <Text text="{= ${p13n>/selectedCount} + '/' + ${p13n>/totalCount} }" />
-      </Toolbar>
+      </OverflowToolbar>
       <List
         mode="MultiSelect"
         includeItemInSelection="true"

@@ -27,14 +27,6 @@
                         />
                     </HBox>
                 </f:heading>
-                <f:actions>
-                    <Button
-                        icon="sap-icon://refresh"
-                        text="{i18n>refresh}"
-                        type="Transparent"
-                        press=".onRefresh"
-                    />
-                </f:actions>
             </f:DynamicPageTitle>
         </f:title>
         <f:header>
@@ -166,7 +158,7 @@
                     showIcon="true"
                     visible="{= !!${comparisonUi>/errorMessage} }"
                 />
-                <Table
+                <Table autoPopinMode="true" contextualWidth="Auto"
                     id="comparisonRunsTable"
                     growing="true"
                     growingThreshold="20"
@@ -176,7 +168,7 @@
                 >
                     <noData>
                         <IllustratedMessage
-                            illustrationType="sapIllus-NoEntries"
+                            illustrationType="sapIllus-NoEntries" illustrationSize="Spot"
                             title="{i18n>noComparisonRuns}"
                             description="{i18n>noComparisonRunsDescription}"
                         />

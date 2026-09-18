@@ -14,12 +14,17 @@ sap.ui.define([
   function createDashboardModel() {
     return new JSONModel({
       busy: false,
+      deleteBusy: false,
+      deleteEnabled: false,
+      selectedAnalysisCount: 0,
       filters: {
         search: "",
         status: ""
       },
       visibleCount: 0,
       selectedCount: 0,
+      analyses: [],
+      errorMessage: "",
       kpi: {
         total: 0,
         completed: 0,
@@ -82,9 +87,14 @@ sap.ui.define([
         alvOutputs: null,
         evidences: null,
         recommendations: null,
-        messages: null
+        messages: null,
+        history: null
       },
       overview: {},
+      history: {
+        busy: false,
+        items: []
+      },
       export: {
         busy: false,
         fileFormat: "X",
@@ -99,6 +109,13 @@ sap.ui.define([
         availableFields: [],
         fileName: "",
         defaultFileName: "",
+        pdfHeaderText: "",
+        pdfFooterText: "",
+        paperSize: "A4",
+        orientation: "L",
+        fontSize: 10,
+        fitToPage: false,
+        splitMultiValue: false,
         message: ""
       },
       exportAvailable: {
@@ -192,7 +209,23 @@ sap.ui.define([
       },
       columns: AnalysisTableConfig.getAllColumnDefaults(),
       tableSettingsState: {},
+      selectedSourceObject: null,
+      sourceObjectTree: [],
+      sourceObjectNarrow: false,
+      sourceCodeMobileDetail: false,
+      sourceCodeDetail: {
+        loading: false,
+        error: null,
+        lines: [],
+        lineCount: 0
+      },
       selectedAlvOutput: null,
+      selectedBusinessLogic: null,
+      businessLogicDetail: {
+        loading: false,
+        error: null,
+        callBindings: []
+      },
       alvOutputDetail: {
         loading: false,
         error: null,
@@ -237,7 +270,6 @@ sap.ui.define([
         fileFormat: true,
         frequency: true,
         nextRunAt: true,
-        recipientCount: true,
         createdBy: true,
         createdAt: true,
         actions: true
@@ -247,6 +279,13 @@ sap.ui.define([
         mode: "create",
         errorMessage: "",
         job: {},
+        schedule: {
+          showStartDate: false,
+          showStartTime: false,
+          showDayOfWeek: false,
+          showDayOfMonth: false,
+          timezoneText: "System time zone"
+        },
         recipients: [],
         newRecipient: {
           RecipientType: "T",

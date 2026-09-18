@@ -3,6 +3,7 @@
     xmlns:mvc="sap.ui.core.mvc"
     xmlns:core="sap.ui.core"
     xmlns:f="sap.f"
+    xmlns:grid="sap.ui.layout.cssgrid"
     xmlns:card="sap.f.cards"
     xmlns="sap.m"
     displayBlock="true"
@@ -47,6 +48,16 @@
                         press=".onRunAnalysis"
                     />
                     <Button
+                        id="deleteAnalysesButton"
+                        text="{i18n>deleteAnalyses}"
+                        type="Reject"
+                        icon="sap-icon://delete"
+                        enabled="{= ${dashboard>/deleteEnabled} &amp;&amp; !${dashboard>/deleteBusy} }"
+                        busy="{dashboard>/deleteBusy}"
+                        busyIndicatorDelay="0"
+                        press=".onDeleteSelectedAnalyses"
+                    />
+                    <Button
                         id="analysisViewSettingsButton"
                         type="Transparent"
                         icon="sap-icon://action-settings"
@@ -86,6 +97,7 @@
                         />
                         <Select
                             id="statusSelect"
+                            width="100%"
                             selectedKey="{dashboard>/filters/status}"
                             change=".onSearch"
                         >
@@ -114,21 +126,15 @@
         </f:header>
         <f:content>
             <VBox class="migrationAnalyzerContent">
-                <f:GridContainer
+                <grid:CSSGrid
                     id="dashboardKpiGrid"
                     class="migrationAnalyzerKpiGrid"
                 >
-                    <f:items>
+                    <grid:items>
                         <f:Card
                             class="migrationAnalyzerCard migrationAnalyzerCardTotal"
                             tooltip="{i18n>totalAnalysesTooltip}"
                         >
-                            <f:layoutData>
-                                <f:GridContainerItemLayoutData
-                                    columns="3"
-                                    minRows="1"
-                                />
-                            </f:layoutData>
                             <f:header>
                                 <card:Header
                                     title="{i18n>totalAnalyses}"
@@ -141,12 +147,6 @@
                             class="migrationAnalyzerCard migrationAnalyzerCardSuccess"
                             tooltip="{i18n>completedTooltip}"
                         >
-                            <f:layoutData>
-                                <f:GridContainerItemLayoutData
-                                    columns="3"
-                                    minRows="1"
-                                />
-                            </f:layoutData>
                             <f:header>
                                 <card:Header
                                     title="{i18n>statusCompleted}"
@@ -159,12 +159,6 @@
                             class="migrationAnalyzerCard migrationAnalyzerCardWarning"
                             tooltip="{i18n>warningTooltip}"
                         >
-                            <f:layoutData>
-                                <f:GridContainerItemLayoutData
-                                    columns="3"
-                                    minRows="1"
-                                />
-                            </f:layoutData>
                             <f:header>
                                 <card:Header
                                     title="{i18n>statusWarning}"
@@ -177,12 +171,6 @@
                             class="migrationAnalyzerCard migrationAnalyzerCardError"
                             tooltip="{i18n>errorTooltip}"
                         >
-                            <f:layoutData>
-                                <f:GridContainerItemLayoutData
-                                    columns="3"
-                                    minRows="1"
-                                />
-                            </f:layoutData>
                             <f:header>
                                 <card:Header
                                     title="{i18n>statusError}"
@@ -191,23 +179,26 @@
                                 />
                             </f:header>
                         </f:Card>
-                    </f:items>
-                </f:GridContainer>
+                    </grid:items>
+                </grid:CSSGrid>
                 <Table
                     id="analysisTable"
                     growing="true"
                     growingThreshold="20"
                     growingScrollToLoad="true"
                     sticky="ColumnHeaders"
-                    mode="None"
-                    autoPopinMode="true"
+                    mode="MultiSelect"
+                    multiSelectMode="ClearAll"
+                    rememberSelections="false"
+                    autoPopinMode="true" contextualWidth="Auto"
                     itemPress=".onAnalysisPress"
+                    selectionChange=".onAnalysisSelectionChange"
                     updateFinished=".onAnalysesUpdateFinished"
                     items="{odata>/Analyses}"
                 >
                     <noData>
                         <IllustratedMessage
-                            illustrationType="sapIllus-NoEntries"
+                            illustrationType="sapIllus-NoEntries" illustrationSize="Spot"
                             title="{i18n>noAnalyses}"
                             description="{i18n>noAnalysesDescription}"
                         />
@@ -284,12 +275,16 @@
                     <items>
                         <ColumnListItem
                             type="Navigation"
-                            press=".onAnalysisPress"
                         >
+                            <customData>
+                                <core:CustomData
+                                    key="deletable"
+                                    value="{odata>__EntityControl/Deletable}"
+                                />
+                            </customData>
                             <cells>
                                 <ObjectIdentifier
                                     title="{path: 'odata>ProgramName', formatter: '.formatter.formatText'}"
-                                    text="{path: 'odata>ProgramDescription', formatter: '.formatter.formatText'}"
                                     visible="{dashboard>/columns/program}"
                                 />
                                 <ObjectStatus

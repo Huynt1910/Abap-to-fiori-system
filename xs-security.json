@@ -1,0 +1,122 @@
+{
+  "xsappname": "abap-to-fiori-system",
+  "tenant-mode": "dedicated",
+  "description": "Security profile for ABAP to Fiori application",
+
+  "scopes": [
+    {
+      "name": "uaa.user",
+      "description": "UAA user scope"
+    },
+    {
+      "name": "$XSAPPNAME.AnalysisRead",
+      "description": "View dashboard and analysis results"
+    },
+    {
+      "name": "$XSAPPNAME.AnalysisExecute",
+      "description": "Execute ABAP report analysis"
+    },
+    {
+      "name": "$XSAPPNAME.ComparisonExecute",
+      "description": "Execute analysis comparison"
+    },
+    {
+      "name": "$XSAPPNAME.Export",
+      "description": "Export analysis data"
+    },
+    {
+      "name": "$XSAPPNAME.MailSend",
+      "description": "Manage mail jobs and send reports"
+    },
+    {
+      "name": "$XSAPPNAME.Admin",
+      "description": "Full application administration"
+    }
+  ],
+
+  "attributes": [],
+
+  "role-templates": [
+    {
+      "name": "Token_Exchange",
+      "description": "UAA token exchange",
+      "scope-references": ["uaa.user"],
+      "attribute-references": []
+    },
+    {
+      "name": "Viewer",
+      "description": "Read-only application user",
+      "scope-references": ["$XSAPPNAME.AnalysisRead"],
+      "attribute-references": []
+    },
+    {
+      "name": "Analyst",
+      "description": "Analyze, compare and export ABAP reports",
+      "scope-references": [
+        "$XSAPPNAME.AnalysisRead",
+        "$XSAPPNAME.AnalysisExecute",
+        "$XSAPPNAME.ComparisonExecute",
+        "$XSAPPNAME.Export"
+      ],
+      "attribute-references": []
+    },
+    {
+      "name": "MailOperator",
+      "description": "Manage mail jobs and distribute reports",
+      "scope-references": [
+        "$XSAPPNAME.AnalysisRead",
+        "$XSAPPNAME.Export",
+        "$XSAPPNAME.MailSend"
+      ],
+      "attribute-references": []
+    },
+    {
+      "name": "Administrator",
+      "description": "Full application access",
+      "scope-references": [
+        "$XSAPPNAME.AnalysisRead",
+        "$XSAPPNAME.AnalysisExecute",
+        "$XSAPPNAME.ComparisonExecute",
+        "$XSAPPNAME.Export",
+        "$XSAPPNAME.MailSend",
+        "$XSAPPNAME.Admin"
+      ],
+      "attribute-references": []
+    }
+  ],
+
+  "role-collections": [
+    {
+      "name": "ABAP_FIORI_VIEWER",
+      "description": "Read-only access to ABAP analysis results",
+      "role-template-references": [
+        "$XSAPPNAME.Viewer",
+        "$XSAPPNAME.Token_Exchange"
+      ]
+    },
+    {
+      "name": "ABAP_FIORI_ANALYST",
+      "description": "Analyze, compare and export ABAP reports",
+      "role-template-references": [
+        "$XSAPPNAME.Analyst",
+        "$XSAPPNAME.Token_Exchange"
+      ]
+    },
+    {
+      "name": "ABAP_FIORI_MAIL_OPERATOR",
+      "description": "Manage mail jobs and distribute reports",
+      "role-template-references": [
+        "$XSAPPNAME.MailOperator",
+        "$XSAPPNAME.Token_Exchange"
+      ]
+    },
+    {
+      "name": "ABAP_FIORI_ADMIN",
+      "description": "Full administration of the application",
+      "role-template-references": [
+        "$XSAPPNAME.Administrator",
+        "$XSAPPNAME.Token_Exchange"
+      ]
+    }
+  ]
+}

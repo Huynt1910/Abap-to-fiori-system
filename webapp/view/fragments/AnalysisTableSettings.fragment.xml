@@ -24,11 +24,11 @@
         placeholder="{i18n>search}"
         liveChange=".onSearchAnalysisTableSettings"
         class="sapUiSmallMarginBottom" />
-      <Toolbar>
+      <OverflowToolbar>
         <Title text="{i18n>columns}" level="H5" />
         <ToolbarSpacer />
         <Text text="{= ${dashboard>/tableSettings/selectedCount} + '/' + ${dashboard>/tableSettings/totalCount} }" />
-      </Toolbar>
+      </OverflowToolbar>
       <List
         id="analysisTableSettingsList"
         mode="MultiSelect"

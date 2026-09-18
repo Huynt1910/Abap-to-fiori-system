@@ -7,8 +7,7 @@ sap.ui.define(
     "abap/to/fiori/system/service/ComparisonService",
     "abap/to/fiori/system/service/DocumentService",
     "abap/to/fiori/system/service/MailService",
-    "abap/to/fiori/system/service/RequestHistoryService",
-    "sap/ui/model/odata/v4/ODataModel",
+    "abap/to/fiori/system/util/ThemeParameters",
   ],
   function (
     UIComponent,
@@ -18,7 +17,7 @@ sap.ui.define(
     ComparisonService,
     DocumentService,
     MailService,
-    RequestHistoryService,
+    ThemeParameters,
   ) {
     "use strict";
 
@@ -41,10 +40,25 @@ sap.ui.define(
         );
         this._oDocumentService = new DocumentService(this.getModel());
         this._oMailService = new MailService(this.getModel("mail"));
-        this._oRequestHistoryService = new RequestHistoryService(
-          this.getModel(), this.getManifest()["sap.app"].dataSources.mainService.uri
+        this._fnApplyTheme = function () {
+          var oRoot = this.getRootControl();
+          ThemeParameters.apply(oRoot && oRoot.getDomRef());
+        }.bind(this);
+        sap.ui.getCore().attachThemeChanged(this._fnApplyTheme);
+        this.rootControlLoaded().then(
+          function (oRoot) {
+            if (this.bIsDestroyed) {
+              return;
+            }
+            oRoot.addEventDelegate({ onAfterRendering: this._fnApplyTheme });
+            this._fnApplyTheme();
+          }.bind(this),
         );
         this.getRouter().initialize();
+      },
+
+      exit: function () {
+        sap.ui.getCore().detachThemeChanged(this._fnApplyTheme);
       },
 
       getAnalysisService: function () {

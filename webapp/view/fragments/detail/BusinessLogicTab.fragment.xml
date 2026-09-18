@@ -16,38 +16,83 @@
         </customData>
       </Button>
     </OverflowToolbar>
-    <IllustratedMessage visible="{path: 'detail>/businessLogic', formatter: '.formatter.hasNoItems'}" illustrationType="sapIllus-NoEntries" title="{i18n>noBusinessLogic}" />
-    <Table id="businessLogicTable" visible="{path: 'detail>/businessLogic', formatter: '.formatter.hasItems'}" growing="true" growingThreshold="20" items="{detail>/businessLogic}" itemPress=".onBusinessLogicPress">
+    <IllustratedMessage visible="{path: 'detail>/businessLogic', formatter: '.formatter.hasNoItems'}" illustrationType="sapIllus-NoEntries" illustrationSize="Spot" title="{i18n>noBusinessLogic}" />
+    <VBox id="businessLogicScroll" class="detailSingleRowScroll" width="100%" renderType="Bare">
+    <Table fixedLayout="false" id="businessLogicTable" visible="{path: 'detail>/businessLogic', formatter: '.formatter.hasItems'}" growing="true" growingThreshold="20" items="{detail>/businessLogic}" itemPress=".onBusinessLogicPress">
       <columns>
-        <Column width="12rem" visible="{detail>/columns/businessLogic/objectName}"><Text text="{i18n>objectName}" /></Column>
-        <Column width="9rem" visible="{detail>/columns/businessLogic/objectType}"><Text text="{i18n>objectType}" /></Column>
-        <Column width="12rem" demandPopin="true" minScreenWidth="Tablet" visible="{detail>/columns/businessLogic/containerName}"><Text text="{i18n>containerName}" /></Column>
-        <Column width="12rem" demandPopin="true" minScreenWidth="Tablet" visible="{detail>/columns/businessLogic/callingRoutine}"><Text text="{i18n>callingRoutine}" /></Column>
-        <Column width="18rem" demandPopin="true" minScreenWidth="Desktop" visible="{detail>/columns/businessLogic/interfaceSummary}"><Text text="{i18n>interfaceSummary}" /></Column>
-        <Column width="16rem" demandPopin="true" minScreenWidth="Desktop" visible="{detail>/columns/businessLogic/description}"><Text text="{i18n>description}" /></Column>
-        <Column width="8rem" demandPopin="true" minScreenWidth="Tablet" visible="{detail>/columns/businessLogic/sideEffect}"><Text text="{i18n>sideEffect}" /></Column>
-        <Column width="8rem" demandPopin="true" minScreenWidth="Tablet" visible="{detail>/columns/businessLogic/transactionDependency}"><Text text="{i18n>transactionDependency}" /></Column>
-        <Column width="8rem" demandPopin="true" minScreenWidth="Tablet" visible="{detail>/columns/businessLogic/guiDependency}"><Text text="{i18n>guiDependency}" /></Column>
-        <Column width="10rem" demandPopin="true" minScreenWidth="Desktop" visible="{detail>/columns/businessLogic/reuseFeasibility}"><Text text="{i18n>reuseFeasibility}" /></Column>
-        <Column width="8rem" visible="{detail>/columns/businessLogic/confidence}"><Text text="{i18n>confidence}" /></Column>
+        <Column width="12rem" visible="{detail>/columns/businessLogic/objectName}"><Text wrapping="false" text="{i18n>objectName}" /></Column>
+        <Column width="9rem" visible="{detail>/columns/businessLogic/objectType}"><Text wrapping="false" text="{i18n>objectType}" /></Column>
+        <Column width="12rem" visible="{detail>/columns/businessLogic/containerName}"><Text wrapping="false" text="{i18n>containerName}" /></Column>
+        <Column width="12rem" visible="{detail>/columns/businessLogic/callingRoutine}"><Text wrapping="false" text="{i18n>callingRoutine}" /></Column>
+        <Column width="11rem" visible="{detail>/columns/businessLogic/executionKind}"><Text wrapping="false" text="{i18n>executionKind}" /></Column>
+        <Column width="18rem" visible="{detail>/columns/businessLogic/executionContext}"><Text wrapping="false" text="{i18n>executionContext}" /></Column>
+        <Column width="18rem" visible="{detail>/columns/businessLogic/interfaceSummary}"><Text wrapping="false" text="{i18n>interfaceSummary}" /></Column>
+        <Column width="16rem" visible="{detail>/columns/businessLogic/description}"><Text wrapping="false" text="{i18n>description}" /></Column>
+        <Column width="8rem" visible="{detail>/columns/businessLogic/sideEffect}"><Text wrapping="false" text="{i18n>sideEffect}" /></Column>
+        <Column width="8rem" visible="{detail>/columns/businessLogic/transactionDependency}"><Text wrapping="false" text="{i18n>transactionDependency}" /></Column>
+        <Column width="8rem" visible="{detail>/columns/businessLogic/guiDependency}"><Text wrapping="false" text="{i18n>guiDependency}" /></Column>
+        <Column width="10rem" visible="{detail>/columns/businessLogic/reuseFeasibility}"><Text wrapping="false" text="{i18n>reuseFeasibility}" /></Column>
+        <Column width="8rem" visible="{detail>/columns/businessLogic/confidence}"><Text wrapping="false" text="{i18n>confidence}" /></Column>
       </columns>
       <items>
-        <ColumnListItem type="Active" press=".onBusinessLogicPress">
+        <ColumnListItem type="Active">
           <cells>
-            <Text text="{path: 'detail>ObjectName', formatter: '.formatter.formatText'}" visible="{detail>/columns/businessLogic/objectName}" />
-            <Text text="{path: 'detail>ObjectType', formatter: '.formatter.formatText'}" visible="{detail>/columns/businessLogic/objectType}" />
-            <Text text="{path: 'detail>ContainerName', formatter: '.formatter.formatText'}" visible="{detail>/columns/businessLogic/containerName}" />
-            <Text text="{path: 'detail>CallingRoutine', formatter: '.formatter.formatText'}" visible="{detail>/columns/businessLogic/callingRoutine}" />
-            <Text text="{path: 'detail>InterfaceSummary', formatter: '.formatter.formatText'}" maxLines="2" wrapping="true" visible="{detail>/columns/businessLogic/interfaceSummary}" />
-            <Text text="{path: 'detail>Description', formatter: '.formatter.formatText'}" maxLines="2" wrapping="true" visible="{detail>/columns/businessLogic/description}" />
-            <Text text="{path: 'detail>SideEffect', formatter: '.formatter.formatBoolean'}" visible="{detail>/columns/businessLogic/sideEffect}" />
-            <Text text="{path: 'detail>TransactionDependency', formatter: '.formatter.formatBoolean'}" visible="{detail>/columns/businessLogic/transactionDependency}" />
-            <Text text="{path: 'detail>GuiDependency', formatter: '.formatter.formatBoolean'}" visible="{detail>/columns/businessLogic/guiDependency}" />
-            <Text text="{path: 'detail>ReuseFeasibility', formatter: '.formatter.formatText'}" visible="{detail>/columns/businessLogic/reuseFeasibility}" />
-            <Text text="{path: 'detail>Confidence', formatter: '.formatter.formatText'}" visible="{detail>/columns/businessLogic/confidence}" />
+            <Text wrapping="false" text="{path: 'detail>ObjectName', formatter: '.formatter.formatText'}" visible="{detail>/columns/businessLogic/objectName}" />
+            <Text wrapping="false" text="{path: 'detail>ObjectType', formatter: '.formatter.formatText'}" visible="{detail>/columns/businessLogic/objectType}" />
+            <Text wrapping="false" text="{path: 'detail>ContainerName', formatter: '.formatter.formatText'}" visible="{detail>/columns/businessLogic/containerName}" />
+            <Text wrapping="false" text="{path: 'detail>CallingRoutine', formatter: '.formatter.formatText'}" visible="{detail>/columns/businessLogic/callingRoutine}" />
+            <Text wrapping="false" text="{path: 'detail>ExecutionKind', formatter: '.formatter.formatText'}" visible="{detail>/columns/businessLogic/executionKind}" />
+            <Text wrapping="false" text="{path: 'detail>ExecutionContext', formatter: '.formatter.formatText'}" visible="{detail>/columns/businessLogic/executionContext}" />
+            <Text wrapping="false" text="{path: 'detail>InterfaceSummary', formatter: '.formatter.formatText'}" visible="{detail>/columns/businessLogic/interfaceSummary}" />
+            <Text wrapping="false" text="{path: 'detail>Description', formatter: '.formatter.formatText'}" visible="{detail>/columns/businessLogic/description}" />
+            <Text wrapping="false" text="{path: 'detail>SideEffect', formatter: '.formatter.formatText'}" visible="{detail>/columns/businessLogic/sideEffect}" />
+            <Text wrapping="false" text="{path: 'detail>TransactionDependency', formatter: '.formatter.formatBoolean'}" visible="{detail>/columns/businessLogic/transactionDependency}" />
+            <Text wrapping="false" text="{path: 'detail>GuiDependency', formatter: '.formatter.formatBoolean'}" visible="{detail>/columns/businessLogic/guiDependency}" />
+            <Text wrapping="false" text="{path: 'detail>ReuseFeasibility', formatter: '.formatter.formatText'}" visible="{detail>/columns/businessLogic/reuseFeasibility}" />
+            <Text wrapping="false" text="{path: 'detail>Confidence', formatter: '.formatter.formatText'}" visible="{detail>/columns/businessLogic/confidence}" />
           </cells>
         </ColumnListItem>
       </items>
     </Table>
+    </VBox>
+    <VBox visible="{path: 'detail>/selectedBusinessLogic', formatter: '.formatter.hasValue'}" busy="{detail>/businessLogicDetail/loading}" busyIndicatorDelay="0" class="inlineDetailPanel sapUiMediumMarginTop">
+      <OverflowToolbar class="sectionToolbar">
+        <Title text="{path: 'detail>/selectedBusinessLogic/ObjectName', formatter: '.formatter.formatText'}" level="H4" />
+        <ObjectStatus text="{path: 'detail>/selectedBusinessLogic/ObjectType', formatter: '.formatter.formatText'}" />
+        <ToolbarSpacer />
+        <Button icon="sap-icon://decline" tooltip="{i18n>close}" press=".onCloseBusinessLogicInlineDetail" />
+      </OverflowToolbar>
+      <MessageStrip visible="{path: 'detail>/businessLogicDetail/error', formatter: '.formatter.hasValue'}" text="{detail>/businessLogicDetail/error}" type="Error" showIcon="true" class="sapUiSmallMarginBottom" />
+      <Text text="{path: 'detail>/selectedBusinessLogic/Description', formatter: '.formatter.formatText'}" class="sapUiSmallMarginBottom" />
+      <Table autoPopinMode="true" contextualWidth="Auto" growing="true" growingThreshold="20" items="{detail>/businessLogicDetail/callBindings}">
+        <headerToolbar>
+          <OverflowToolbar>
+            <Title text="{i18n>callBindings}" level="H5" />
+            <ObjectStatus text="{path: 'detail>/businessLogicDetail/callBindings/length', formatter: '.formatter.formatCountText'}" />
+          </OverflowToolbar>
+        </headerToolbar>
+        <noData>
+          <IllustratedMessage illustrationType="sapIllus-NoEntries" illustrationSize="Spot" title="{i18n>noCallBindings}" />
+        </noData>
+        <columns>
+          <Column popinDisplay="Inline" width="14rem"><Text text="{i18n>parameterName}" /></Column>
+          <Column popinDisplay="Inline" width="9rem"><Text text="{i18n>direction}" /></Column>
+          <Column popinDisplay="Inline" width="22rem" demandPopin="true" minScreenWidth="Tablet"><Text text="{i18n>actualExpression}" /></Column>
+          <Column popinDisplay="Inline" width="8rem" hAlign="End"><Text text="{i18n>bindingPosition}" /></Column>
+          <Column popinDisplay="Inline" width="8rem"><Text text="{i18n>confidence}" /></Column>
+        </columns>
+        <items>
+          <ColumnListItem>
+            <cells>
+              <Text text="{path: 'detail>ParameterName', formatter: '.formatter.formatText'}" />
+              <Text text="{path: 'detail>Direction', formatter: '.formatter.formatText'}" />
+              <Text text="{path: 'detail>ActualExpression', formatter: '.formatter.formatText'}" maxLines="2" wrapping="true" />
+              <ObjectNumber number="{path: 'detail>BindingPosition', formatter: '.formatter.formatNumber'}" />
+              <Text text="{path: 'detail>Confidence', formatter: '.formatter.formatText'}" />
+            </cells>
+          </ColumnListItem>
+        </items>
+      </Table>
+    </VBox>
   </VBox>
 </core:FragmentDefinition>

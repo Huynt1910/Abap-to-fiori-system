@@ -15,12 +15,12 @@
           value="{detail>/export/reportType}"
           editable="false" />
 
-        <Label text="{i18n>exportSelectedSection}" labelFor="exportSelectedSectionInput" visible="{= !${detail>/export/isAll} }" />
+        <Label text="{i18n>exportSelectedSection}" labelFor="exportSelectedSectionInput" visible="{= !${detail>/export/isAll} &amp;&amp; ${detail>/export/fileFormat} !== 'M' }" />
         <ObjectStatus
           id="exportSelectedSectionInput"
           text="{detail>/export/selectedSectionLabel}"
           state="Information"
-          visible="{= !${detail>/export/isAll} }"
+          visible="{= !${detail>/export/isAll} &amp;&amp; ${detail>/export/fileFormat} !== 'M' }"
           class="exportSelectedSectionStatus" />
 
         <Label text="{i18n>exportFileFormat}" labelFor="exportFileFormatSelect" />
@@ -33,6 +33,10 @@
             <core:Item key="X" text="{i18n>exportFormatExcel}" />
             <core:Item key="P" text="{i18n>exportFormatPdf}" />
             <core:Item key="C" text="{i18n>exportFormatCsv}" />
+            <core:Item
+              key="M"
+              text="{i18n>exportFormatMarkdown}"
+              enabled="{= ${detail>/overview/__OperationControl/GenerateTechnicalDocument} === true }" />
           </items>
         </Select>
 
@@ -44,13 +48,74 @@
           enabled="{= !${detail>/export/busy} }"
           maxLength="128" />
 
-        <Toolbar>
+        <VBox visible="{= ${detail>/export/fileFormat} === 'P' }" class="sapUiTinyMarginTop">
+          <OverflowToolbar>
+            <Title text="{i18n>pdfOptions}" level="H5" />
+          </OverflowToolbar>
+          <Label text="{i18n>pdfHeaderText}" labelFor="exportPdfHeaderInput" />
+          <Input
+            id="exportPdfHeaderInput"
+            value="{detail>/export/pdfHeaderText}"
+            enabled="{= !${detail>/export/busy} }" />
+
+          <Label text="{i18n>pdfFooterText}" labelFor="exportPdfFooterInput" />
+          <Input
+            id="exportPdfFooterInput"
+            value="{detail>/export/pdfFooterText}"
+            enabled="{= !${detail>/export/busy} }" />
+
+          <Label text="{i18n>paperSize}" labelFor="exportPaperSizeSelect" />
+          <Select
+            id="exportPaperSizeSelect"
+            selectedKey="{detail>/export/paperSize}"
+            enabled="{= !${detail>/export/busy} }">
+            <items>
+              <core:Item key="A4" text="A4" />
+              <core:Item key="LETTER" text="Letter" />
+            </items>
+          </Select>
+
+          <Label text="{i18n>orientation}" labelFor="exportOrientationSelect" />
+          <Select
+            id="exportOrientationSelect"
+            selectedKey="{detail>/export/orientation}"
+            enabled="{= !${detail>/export/busy} }">
+            <items>
+              <core:Item key="P" text="{i18n>orientationPortrait}" />
+              <core:Item key="L" text="{i18n>orientationLandscape}" />
+            </items>
+          </Select>
+
+          <Label text="{i18n>fontSize}" labelFor="exportFontSizeInput" />
+          <Input
+            id="exportFontSizeInput"
+            value="{detail>/export/fontSize}"
+            type="Number"
+            enabled="{= !${detail>/export/busy} }" />
+
+          <CheckBox
+            text="{i18n>fitToPage}"
+            selected="{detail>/export/fitToPage}"
+            enabled="{= !${detail>/export/busy} }" />
+        </VBox>
+
+        <VBox visible="{= ${detail>/export/fileFormat} === 'X' }" class="sapUiTinyMarginTop">
+          <OverflowToolbar>
+            <Title text="{i18n>excelOptions}" level="H5" />
+          </OverflowToolbar>
+          <CheckBox
+            text="{i18n>splitMultiValue}"
+            selected="{detail>/export/splitMultiValue}"
+            enabled="{= !${detail>/export/busy} }" />
+        </VBox>
+
+        <OverflowToolbar visible="{= ${detail>/export/fileFormat} !== 'M' }">
           <Title text="{i18n>selectedColumns}" level="H5" />
           <ToolbarSpacer />
           <Button text="{i18n>selectAll}" type="Transparent" enabled="{= !${detail>/export/busy} }" press=".onSelectAllExportFields" />
           <Button text="{i18n>clearAll}" type="Transparent" enabled="{= !${detail>/export/busy} }" press=".onClearExportFields" />
-        </Toolbar>
-        <ScrollContainer height="22rem" vertical="true" focusable="false">
+        </OverflowToolbar>
+        <ScrollContainer height="22rem" vertical="true" focusable="false" visible="{= ${detail>/export/fileFormat} !== 'M' }">
           <VBox class="exportSectionList" items="{detail>/export/availableSections}">
             <items>
               <Panel expandable="true" expanded="true" class="exportSectionPanel">
@@ -66,7 +131,7 @@
                   </OverflowToolbar>
                 </headerToolbar>
                 <content>
-                  <VBox items="{detail>fields}">
+                  <VBox items="{path: 'detail>fields', templateShareable: false}">
                     <items>
                       <HBox class="exportFieldRow" alignItems="Center">
                         <CheckBox
@@ -92,6 +157,7 @@
         text="{i18n>download}"
         type="Emphasized"
         icon="sap-icon://download"
+        visible="{auth>/canExport}"
         enabled="{= !${detail>/export/busy} }"
         press=".onDownloadExport" />
     </beginButton>

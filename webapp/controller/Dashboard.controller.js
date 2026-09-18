@@ -5,11 +5,13 @@ sap.ui.define(
     "sap/ui/model/Filter",
     "sap/ui/model/FilterOperator",
     "sap/ui/model/Sorter",
+    "sap/m/MessageBox",
     "sap/m/MessageToast",
     "abap/to/fiori/system/controller/BaseController",
     "abap/to/fiori/system/model/models",
     "abap/to/fiori/system/util/Constants",
     "abap/to/fiori/system/util/formatter",
+    "abap/to/fiori/system/util/AnalysisDeleteHelper",
   ],
   function (
     Fragment,
@@ -17,11 +19,13 @@ sap.ui.define(
     Filter,
     FilterOperator,
     Sorter,
+    MessageBox,
     MessageToast,
     BaseController,
     models,
     Constants,
     formatter,
+    AnalysisDeleteHelper,
   ) {
     "use strict";
 
@@ -37,6 +41,7 @@ sap.ui.define(
       },
 
       onSearch: function () {
+        this._clearAnalysisSelection();
         this._applyAnalysisFilters();
       },
 
@@ -55,6 +60,7 @@ sap.ui.define(
       onClearFilters: function () {
         this._oViewModel.setProperty("/filters/search", "");
         this._oViewModel.setProperty("/filters/status", "");
+        this._clearAnalysisSelection();
         this._applyAnalysisFilters();
       },
 
@@ -162,6 +168,16 @@ sap.ui.define(
           )
           .catch(
             function (oError) {
+              var sMessage = this._getRunAnalysisErrorMessage(
+                oError,
+                sProgramName,
+              );
+
+              if (sMessage) {
+                this.showErrorMessage(sMessage);
+                return;
+              }
+
               this.showError(oError, "runAnalysisError");
             }.bind(this),
           )
@@ -170,6 +186,24 @@ sap.ui.define(
               this._oViewModel.setProperty("/newAnalysis/busy", false);
             }.bind(this),
           );
+      },
+
+      _getRunAnalysisErrorMessage: function (oError, sProgramName) {
+        var sBackendMessage = this.parseError(oError).message || "";
+        var sExpectedMessage = this.getText("sourceProgramNotFound", [
+          sProgramName,
+        ]);
+
+        if (
+          sBackendMessage &&
+          sExpectedMessage.toLowerCase().indexOf(
+            sBackendMessage.toLowerCase(),
+          ) === 0
+        ) {
+          return sExpectedMessage;
+        }
+
+        return "";
       },
 
       onProgramNameChange: function (oEvent) {
@@ -234,6 +268,151 @@ sap.ui.define(
         });
       },
 
+      onAnalysisSelectionChange: function () {
+        var iSelected = this._getSelectedAnalysisContexts().length;
+
+        this._oViewModel.setProperty("/selectedAnalysisCount", iSelected);
+        this._oViewModel.setProperty("/deleteEnabled", iSelected > 0);
+      },
+
+      onDeleteSelectedAnalyses: function () {
+        var aSelected = this._getSelectedAnalysisContexts();
+        var oPermission = AnalysisDeleteHelper.splitByDeletePermission(aSelected);
+        var oPreview;
+        var sMessage;
+
+        if (this._oViewModel.getProperty("/deleteBusy")) {
+          return;
+        }
+
+        if (!aSelected.length) {
+          return;
+        }
+
+        if (!oPermission.deletableContexts.length) {
+          MessageBox.information(this.getText("deleteAnalysesNoneAllowed"));
+          return;
+        }
+
+        sMessage = oPermission.blockedContexts.length
+          ? this.getText("deleteAnalysesMixedMessage", [
+              aSelected.length,
+              oPermission.deletableContexts.length,
+              oPermission.blockedContexts.length,
+            ])
+          : this.getText("deleteAnalysesConfirmMessage", [
+              oPermission.deletableContexts.length,
+            ]);
+        oPreview = AnalysisDeleteHelper.buildProgramPreview(
+          oPermission.deletableContexts,
+          5,
+        );
+        if (oPreview.names.length) {
+          sMessage += "\n\n" + oPreview.names.map(function (sName) {
+            return "• " + sName;
+          }).join("\n");
+        }
+        if (oPreview.remaining) {
+          sMessage +=
+            "\n" +
+            this.getText("deleteAnalysesRemaining", [oPreview.remaining]);
+        }
+
+        MessageBox.confirm(sMessage, {
+          title: this.getText("deleteAnalysesConfirmTitle"),
+          actions: [MessageBox.Action.DELETE, MessageBox.Action.CANCEL],
+          emphasizedAction: MessageBox.Action.DELETE,
+          onClose: function (sAction) {
+            if (sAction === MessageBox.Action.DELETE) {
+              this._deleteAnalyses(
+                oPermission.deletableContexts,
+                oPermission.blockedContexts.length,
+              );
+            }
+          }.bind(this),
+        });
+      },
+
+      _getSelectedAnalysisContexts: function () {
+        var oTable = this.byId("analysisTable");
+
+        return (oTable ? oTable.getSelectedItems() : []).map(function (oItem) {
+          return oItem.getBindingContext("odata");
+        }).filter(Boolean);
+      },
+
+      _clearAnalysisSelection: function () {
+        var oTable = this.byId("analysisTable");
+
+        if (oTable) {
+          oTable.removeSelections(true);
+        }
+        this._oViewModel.setProperty("/selectedAnalysisCount", 0);
+        this._oViewModel.setProperty("/deleteEnabled", false);
+      },
+
+      _deleteAnalyses: function (aContexts, iBlockedCount) {
+        var aRequests;
+
+        this._oViewModel.setProperty("/deleteBusy", true);
+        aRequests = aContexts.map(
+          function (oContext) {
+            return this.getAnalysisService().deleteAnalysisContext(
+              oContext,
+              "$direct",
+            );
+          }.bind(this),
+        );
+
+        Promise.allSettled(aRequests)
+          .then(
+            function (aResults) {
+              var oSummary = AnalysisDeleteHelper.summarizeDeleteResults(
+                aResults,
+                aContexts,
+                iBlockedCount,
+              );
+              var sSummary;
+              var aFailureLines;
+
+              this._clearAnalysisSelection();
+              this._updateDashboardKpis();
+
+              if (!oSummary.failedCount && !oSummary.blockedCount) {
+                MessageToast.show(
+                  this.getText("deleteAnalysesSuccess", [
+                    oSummary.successCount,
+                  ]),
+                );
+                return;
+              }
+
+              sSummary = this.getText("deleteAnalysesPartial", [
+                oSummary.successCount,
+                oSummary.failedCount,
+                oSummary.blockedCount,
+              ]);
+              aFailureLines = oSummary.failures.slice(0, 5).map(
+                function (oFailure) {
+                  return this.getText("deleteAnalysesFailureLine", [
+                    oFailure.programName,
+                    oFailure.message,
+                  ]);
+                }.bind(this),
+              );
+              if (aFailureLines.length) {
+                sSummary += "\n\n" + aFailureLines.join("\n");
+              }
+              MessageBox.warning(sSummary);
+            }.bind(this),
+          )
+          .finally(
+            function () {
+              this._oViewModel.setProperty("/deleteBusy", false);
+            }.bind(this),
+          );
+      },
+
       _applyAnalysisFilters: function () {
         var oTable = this.byId("analysisTable");
         var oBinding = oTable && oTable.getBinding("items");
@@ -249,11 +428,11 @@ sap.ui.define(
       _refreshAnalyses: function () {
         var oBinding = this.byId("analysisTable").getBinding("items");
 
-        this._applyAnalysisFilters();
-
-        // if (oBinding) {
-        //   oBinding.refresh();
-        // }
+        this._clearAnalysisSelection();
+        if (oBinding) {
+          oBinding.refresh();
+        }
+        this._updateDashboardKpis();
       },
 
       _buildFilters: function () {

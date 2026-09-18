@@ -27,14 +27,6 @@
                         />
                     </HBox>
                 </f:heading>
-                <f:actions>
-                    <Button
-                        text="{i18n>refresh}"
-                        type="Transparent"
-                        icon="sap-icon://refresh"
-                        press=".onRefresh"
-                    />
-                </f:actions>
             </f:DynamicPageTitle>
         </f:title>
         <f:header>
@@ -123,6 +115,10 @@
                                     key="C"
                                     text="{i18n>exportFormatCsv}"
                                 />
+                                <core:Item
+                                    key="M"
+                                    text="{i18n>exportFormatMarkdown}"
+                                />
                             </items>
                         </Select>
                     </VBox>
@@ -142,13 +138,13 @@
                     growing="true"
                     growingThreshold="20"
                     sticky="ColumnHeaders"
-                    autoPopinMode="true"
+                    autoPopinMode="true" contextualWidth="Auto"
                     updateFinished=".onMailJobsUpdateFinished"
-                    items="{path: 'mail>/MailJobs', sorter: { path: 'CreatedAt', descending: true }, parameters: { $$groupId: '$direct', $select: 'JobId,AnalysisId,JobName,ReportType,FileFormat,Frequency,StartDate,StartTime,DayOfWeek,DayOfMonth,NextRunAt,MailSubject,MailBody,Status,CreatedBy,CreatedAt,LocalLastChangedAt' }}"
+                    items="{path: 'mail>/MailJobs', sorter: { path: 'CreatedAt', descending: true }, parameters: { $$groupId: '$direct', $select: 'JobId,AnalysisId,JobName,ReportType,FileFormat,Frequency,StartDate,StartTime,JobTimeZone,DayOfWeek,DayOfMonth,NextRunAt,MailSubject,MailBody,Status,CreatedBy,CreatedAt,LocalLastChangedAt,__OperationControl' }}"
                 >
                     <noData>
                         <IllustratedMessage
-                            illustrationType="sapIllus-NoEntries"
+                            illustrationType="sapIllus-NoEntries" illustrationSize="Spot"
                             title="{i18n>noMailJobs}"
                             description="{i18n>noMailJobsDescription}"
                         />
@@ -192,15 +188,6 @@
                             visible="{mailUi>/columns/nextRunAt}"
                         >
                             <Text text="{i18n>nextRunAt}" />
-                        </Column>
-                        <Column
-                            width="7rem"
-                            hAlign="End"
-                            demandPopin="true"
-                            minScreenWidth="Desktop"
-                            visible="{mailUi>/columns/recipientCount}"
-                        >
-                            <Text text="{i18n>recipientCount}" />
                         </Column>
                         <Column
                             width="9rem"
@@ -249,10 +236,6 @@
                                     text="{path: 'mail>NextRunAt', formatter: '.mailFormatter.formatDateTime'}"
                                     visible="{mailUi>/columns/nextRunAt}"
                                 />
-                                <ObjectNumber
-                                    number="{path: 'mail>JobId', formatter: '.formatRecipientCountForJob'}"
-                                    visible="{mailUi>/columns/recipientCount}"
-                                />
                                 <Text
                                     text="{path: 'mail>CreatedBy', formatter: '.mailFormatter.formatText'}"
                                     visible="{mailUi>/columns/createdBy}"
@@ -274,23 +257,27 @@
                                         icon="sap-icon://edit"
                                         tooltip="{i18n>edit}"
                                         press=".onEditMailJob"
+                                        visible="{auth>/canMail}"
                                     />
                                     <Button
                                         icon="sap-icon://add-contact"
                                         tooltip="{i18n>addRecipient}"
                                         press=".onAddRecipient"
+                                        visible="{auth>/canMail}"
                                     />
                                     <Button
                                         icon="sap-icon://email"
                                         tooltip="{i18n>sendNow}"
                                         press=".onSendNow"
-                                        enabled="{parts: [{path: 'mail>JobId', targetType: 'any'}, {path: 'mailUi>/sendBusyJobId', targetType: 'any'}], formatter: '.canSendNowForJob'}"
+                                        visible="{auth>/canMail}"
+                                        enabled="{parts: [{path: 'mail>JobId', targetType: 'any'}, {path: 'mailUi>/sendBusyJobId', targetType: 'any'}, {path: 'mail>__OperationControl/sendNow', targetType: 'any'}], formatter: '.canSendNowForJob'}"
                                     />
                                     <Button
                                         icon="sap-icon://delete"
                                         tooltip="{i18n>delete}"
                                         type="Transparent"
                                         press=".onDeleteMailJob"
+                                        visible="{auth>/canMail}"
                                     />
                                 </OverflowToolbar>
                             </cells>

@@ -34,7 +34,6 @@
           </HBox>
         </uxap:expandedHeading>
         <uxap:actions>
-          <Button icon="sap-icon://refresh" tooltip="{i18n>refresh}" press=".onRefresh" />
         </uxap:actions>
       </uxap:ObjectPageDynamicHeaderTitle>
     </uxap:headerTitle>
@@ -91,7 +90,7 @@
                     <Input id="comparisonItemSeverity" value="{comparisonUi>/itemFilters/severity}" submit=".onItemFilterChange" />
                   </VBox>
                 </HBox>
-                <Table
+                <Table autoPopinMode="true" contextualWidth="Auto"
                   id="comparisonItemsTable"
                   growing="true"
                   growingThreshold="50"
@@ -100,7 +99,7 @@
                   items="{comparisonUi>/items}">
                   <noData>
                     <IllustratedMessage
-                      illustrationType="sapIllus-NoEntries"
+                      illustrationType="sapIllus-NoEntries" illustrationSize="Spot"
                       title="{i18n>noComparisonItems}"
                       description="{i18n>noComparisonItemsDescription}" />
                   </noData>
@@ -116,7 +115,7 @@
                     <Column demandPopin="true" minScreenWidth="Desktop"><Text text="{i18n>messageText}" /></Column>
                   </columns>
                   <items>
-                    <ColumnListItem type="Navigation" press=".onItemPress">
+                    <ColumnListItem type="Navigation">
                       <cells>
                         <ObjectNumber number="{path: 'comparisonUi>ItemNo', formatter: '.comparisonFormatter.formatCount'}" />
                         <Text text="{path: 'comparisonUi>Category', formatter: '.comparisonFormatter.formatText'}" />

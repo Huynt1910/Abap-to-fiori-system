@@ -174,17 +174,16 @@ sap.ui.define([
 
     _executeSendNow: function (oContext, sJobId) {
       this._oViewModel.setProperty("/sendBusyJobId", sJobId);
-      this.getMailService().updateContext(oContext, {
-        Status: MailConstants.status.active
-      }).then(function () {
-        return this.getMailService().sendNow(oContext);
-      }.bind(this))
+      this.getMailService().sendNow(oContext)
         .then(function (oResult) {
           var aMessages = oResult && oResult.SAP__Messages || [];
           var bWarning = aMessages.some(function (oMessage) {
             return String(oMessage.type || oMessage.severity || "").toUpperCase() === "WARNING";
           });
           MessageToast.show(this.getText(bWarning ? "sendNowAcceptedWithWarning" : "sendNowAccepted"));
+          if (oContext.refresh) {
+            oContext.refresh();
+          }
           this._loadLogsAfterSend(sJobId);
         }.bind(this))
         .catch(this._showMailError.bind(this))
@@ -314,7 +313,7 @@ sap.ui.define([
 
       this._sLastMailErrorMessage = sMessage;
       this._iLastMailErrorAt = iNow;
-      MessageBox.error(sMessage);
+      this.showErrorMessage(sMessage);
     },
 
     _buildMailJobPath: function (sJobId) {

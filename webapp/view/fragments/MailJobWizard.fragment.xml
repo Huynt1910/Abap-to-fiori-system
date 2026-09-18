@@ -6,7 +6,7 @@
     id="mailJobWizardDialog"
     title="{= ${mailUi>/wizard/mode} === 'edit' ? ${i18n>editMailJob} : ${i18n>createMailJob} }"
     contentWidth="48rem"
-    contentHeight="42rem"
+    class="mailJobWizardDialog"
     resizable="true"
     draggable="true">
     <MessageStrip
@@ -15,8 +15,7 @@
       showIcon="true"
       visible="{mailUi>/wizard/busy}"
       class="sapUiSmallMarginBottom" />
-    <ScrollContainer height="34rem" vertical="true" focusable="false">
-      <VBox class="sapUiSmallMargin formStack">
+    <VBox class="sapUiSmallMargin formStack">
         <Panel headerText="{i18n>mailStepGeneral}" expandable="false">
           <content>
         <MessageStrip
@@ -38,12 +37,11 @@
               <core:Item key="X" text="{i18n>exportFormatExcel}" />
               <core:Item key="P" text="{i18n>exportFormatPdf}" />
               <core:Item key="C" text="{i18n>exportFormatCsv}" />
+              <core:Item key="M" text="{i18n>exportFormatMarkdown}" />
             </items>
           </Select>
           <Label text="{i18n>mailSubject}" required="true" />
           <Input value="{mailUi>/wizard/job/MailSubject}" maxLength="120" />
-          <Label text="{i18n>mailBody}" />
-          <TextArea value="{mailUi>/wizard/job/MailBody}" rows="6" width="100%" />
         </f:SimpleForm>
           </content>
         </Panel>
@@ -59,11 +57,17 @@
           text="{i18n>scheduledJobScheduleHint}"
           type="Information"
           showIcon="true"
-          visible="{= ${mailUi>/wizard/job/Frequency} !== 'O' }"
+          visible="{mailUi>/wizard/schedule/showStartTime}"
+          class="sapUiSmallMarginBottom" />
+        <MessageStrip
+          text="{i18n>dayOfMonthScheduleWarning}"
+          type="Warning"
+          showIcon="true"
+          visible="{mailUi>/wizard/schedule/showDayOfMonth}"
           class="sapUiSmallMarginBottom" />
         <f:SimpleForm editable="true" layout="ColumnLayout" columnsM="1" columnsL="2" columnsXL="2">
           <Label text="{i18n>frequency}" required="true" />
-          <Select selectedKey="{mailUi>/wizard/job/Frequency}">
+          <Select selectedKey="{mailUi>/wizard/job/Frequency}" change=".onFrequencyChange">
             <items>
               <core:Item key="O" text="{i18n>frequencyOnDemand}" />
               <core:Item key="D" text="{i18n>frequencyDaily}" />
@@ -71,12 +75,12 @@
               <core:Item key="M" text="{i18n>frequencyMonthly}" />
             </items>
           </Select>
-          <Label text="{i18n>startDate}" visible="{= ${mailUi>/wizard/job/Frequency} !== 'O' }" />
-          <DatePicker value="{mailUi>/wizard/job/StartDate}" valueFormat="yyyy-MM-dd" displayFormat="medium" visible="{= ${mailUi>/wizard/job/Frequency} !== 'O' }" />
-          <Label text="{i18n>startTime}" visible="{= ${mailUi>/wizard/job/Frequency} !== 'O' }" />
-          <TimePicker value="{mailUi>/wizard/job/StartTime}" valueFormat="HH:mm:ss" displayFormat="HH:mm" visible="{= ${mailUi>/wizard/job/Frequency} !== 'O' }" />
-          <Label text="{i18n>dayOfWeek}" visible="{= ${mailUi>/wizard/job/Frequency} === 'W' }" />
-          <Select selectedKey="{mailUi>/wizard/job/DayOfWeek}" visible="{= ${mailUi>/wizard/job/Frequency} === 'W' }">
+          <Label text="{i18n>startDate}" visible="{mailUi>/wizard/schedule/showStartDate}" />
+          <DatePicker id="mailScheduleStartDate" value="{mailUi>/wizard/job/StartDate}" valueFormat="yyyy-MM-dd" displayFormat="medium" visible="{mailUi>/wizard/schedule/showStartDate}" />
+          <Label text="{i18n>startTime}" required="{mailUi>/wizard/schedule/showStartTime}" visible="{mailUi>/wizard/schedule/showStartTime}" />
+          <TimePicker id="mailScheduleStartTime" value="{mailUi>/wizard/job/StartTime}" valueFormat="HH:mm:ss" displayFormat="HH:mm:ss" visible="{mailUi>/wizard/schedule/showStartTime}" />
+          <Label text="{i18n>dayOfWeek}" required="{mailUi>/wizard/schedule/showDayOfWeek}" visible="{mailUi>/wizard/schedule/showDayOfWeek}" />
+          <Select id="mailScheduleDayOfWeek" selectedKey="{mailUi>/wizard/job/DayOfWeek}" visible="{mailUi>/wizard/schedule/showDayOfWeek}">
             <items>
               <core:Item key="1" text="{i18n>monday}" />
               <core:Item key="2" text="{i18n>tuesday}" />
@@ -87,17 +91,16 @@
               <core:Item key="7" text="{i18n>sunday}" />
             </items>
           </Select>
-          <Label text="{i18n>dayOfMonth}" visible="{= ${mailUi>/wizard/job/Frequency} === 'M' }" />
-          <StepInput value="{mailUi>/wizard/job/DayOfMonth}" min="1" max="31" step="1" visible="{= ${mailUi>/wizard/job/Frequency} === 'M' }" />
+          <Label text="{i18n>dayOfMonth}" required="{mailUi>/wizard/schedule/showDayOfMonth}" visible="{mailUi>/wizard/schedule/showDayOfMonth}" />
+          <StepInput id="mailScheduleDayOfMonth" value="{mailUi>/wizard/job/DayOfMonth}" min="1" max="31" step="1" visible="{mailUi>/wizard/schedule/showDayOfMonth}" />
         </f:SimpleForm>
           </content>
         </Panel>
         <Panel headerText="{i18n>mailStepRecipients}" expandable="false">
           <content>
         <VBox class="sapUiSmallMarginBottom">
-          <MessageStrip text="{i18n>recipientSapUserHint}" type="Information" showIcon="true" class="sapUiSmallMarginBottom" />
           <MessageStrip text="{i18n>recipientOptionalHint}" type="Information" showIcon="true" class="sapUiSmallMarginBottom" />
-          <Toolbar visible="{= ${mailUi>/wizard/mode} !== 'edit' }">
+          <OverflowToolbar visible="{= ${mailUi>/wizard/mode} !== 'edit' }">
             <Select selectedKey="{mailUi>/wizard/newRecipient/RecipientType}" width="8rem">
               <items>
                 <core:Item key="T" text="{i18n>recipientTypeTo}" />
@@ -107,8 +110,8 @@
             </Select>
             <Input value="{mailUi>/wizard/newRecipient/SapUser}" placeholder="{i18n>sapUser}" width="14rem" />
             <Button text="{i18n>addRecipient}" icon="sap-icon://add" press=".onAddDraftRecipient" />
-          </Toolbar>
-          <Table items="{mailUi>/wizard/recipients}" inset="false">
+          </OverflowToolbar>
+          <Table autoPopinMode="true" contextualWidth="Auto" items="{mailUi>/wizard/recipients}" inset="false">
             <columns>
               <Column width="8rem"><Text text="{i18n>recipientType}" /></Column>
               <Column><Text text="{i18n>sapUser}" /></Column>
@@ -127,13 +130,13 @@
         </VBox>
           </content>
         </Panel>
-      </VBox>
-    </ScrollContainer>
+    </VBox>
     <beginButton>
       <Button
         text="{= ${mailUi>/wizard/mode} === 'edit' ? ${i18n>save} : ${i18n>create} }"
         type="Emphasized"
         press=".onSaveMailJob"
+        visible="{auth>/canMail}"
         enabled="{= !${mailUi>/wizard/busy} }" />
     </beginButton>
     <endButton>

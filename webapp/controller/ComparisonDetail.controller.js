@@ -93,7 +93,7 @@ sap.ui.define([
         }.bind(this))
         .catch(function (oError) {
           this._oViewModel.setProperty("/items", []);
-          MessageBox.error(this.parseError(oError).message || this.getText("comparisonItemsLoadError"));
+          this.showErrorMessage(this.parseError(oError).message || this.getText("comparisonItemsLoadError"));
         }.bind(this));
     },
 

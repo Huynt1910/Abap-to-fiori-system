@@ -7,6 +7,11 @@ sap.ui.define([
   "use strict";
 
   return Controller.extend("abap.to.fiori.system.controller.BaseController", {
+    onLogout: function () {
+      this.getAuthenticationService().logout().catch(function (oError) {
+        MessageBox.information(oError.message);
+      });
+    },
     getRouter: function () {
       return UIComponent.getRouterFor(this);
     },
@@ -47,19 +52,52 @@ sap.ui.define([
       return this.getOwnerComponent().getMailService();
     },
 
+    getAuthenticationService: function () {
+      var oComponent = this.getOwnerComponent();
+      return oComponent && typeof oComponent.getAuthenticationService === "function" ?
+        oComponent.getAuthenticationService() : null;
+    },
+
     parseError: function (oError) {
       return ODataErrorHandler.parse(oError);
+    },
+
+    showErrorMessage: function (sMessage) {
+      var fnText = function (sKey, sDefault) {
+        try {
+          return this.getText(sKey) || sDefault;
+        } catch (oError) {
+          return sDefault;
+        }
+      }.bind(this);
+      var sClose = fnText("close", "Close");
+      var sTitle = fnText("errorTitle", "Error");
+      var sFallback = fnText("errorGeneric", "Unexpected error.");
+
+      return MessageBox.error(String(sMessage || sFallback), {
+        title: sTitle,
+        actions: [sClose],
+        emphasizedAction: sClose,
+        initialFocus: sClose,
+        contentWidth: "34rem",
+        styleClass: "migrationAnalyzerErrorMessageBox"
+      });
     },
 
     showError: function (oError, sFallbackKey) {
       var oParsedError = this.parseError(oError);
       var sMessage = oParsedError.message;
+      var oAuthentication = this.getAuthenticationService();
+
+      if (oAuthentication && oAuthentication.handleHttpStatus(oParsedError.status)) {
+        return;
+      }
 
       if (!sMessage || sMessage === "Unexpected error.") {
         sMessage = this.getText(sFallbackKey || "errorGeneric");
       }
 
-      MessageBox.error(sMessage);
+      this.showErrorMessage(sMessage);
     }
   });
 });

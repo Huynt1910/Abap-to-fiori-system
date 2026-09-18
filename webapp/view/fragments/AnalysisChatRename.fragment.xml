@@ -1,0 +1,17 @@
+<core:FragmentDefinition xmlns="sap.m" xmlns:core="sap.ui.core">
+  <ResponsivePopover id="chatRenamePopover" title="{i18n>chatRenameTitle}" contentWidth="22rem" placement="Auto" busy="{chatModel>/renameBusy}" busyIndicatorDelay="0">
+    <content>
+      <VBox class="analysisChatRenameContent">
+        <Label text="{i18n>chatSessionName}" labelFor="chatRenameInput" />
+        <Input id="chatRenameInput" value="{chatModel>/renameDraft}" valueLiveUpdate="true" maxLength="80" placeholder="{i18n>chatSessionName}" valueState="{= !!${chatModel>/renameError} ? 'Error' : 'None' }" valueStateText="{chatModel>/renameError}" submit=".onSaveChatName" />
+        <MessageStrip text="{chatModel>/renameError}" visible="{= !!${chatModel>/renameError} }" type="Error" showIcon="true" class="analysisChatRenameError" />
+      </VBox>
+    </content>
+    <beginButton>
+      <Button text="{i18n>chatSave}" type="Emphasized" press=".onSaveChatName" enabled="{= !!${chatModel>/renameDraft}.trim() &amp;&amp; ${chatModel>/renameDraft}.trim() !== ${chatModel>/renameOriginalTitle}.trim() &amp;&amp; ${chatModel>/renameDraft}.length &lt;= 80 &amp;&amp; !${chatModel>/renameBusy} }" />
+    </beginButton>
+    <endButton>
+      <Button text="{i18n>chatCancel}" press=".onCancelChatName" enabled="{= !${chatModel>/renameBusy} }" />
+    </endButton>
+  </ResponsivePopover>
+</core:FragmentDefinition>

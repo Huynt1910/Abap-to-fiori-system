@@ -1,3 +1,12 @@
+html,
+body,
+#container,
+#abap-to-fiori-system,
+.sapUiComponentContainer {
+  height: 100%;
+  width: 100%;
+}
+
 .migrationAnalyzerPage,
 .migrationAnalyzerObjectPage {
   background: var(--sapBackgroundColor);
@@ -35,8 +44,7 @@
   border-radius: 0.5rem;
   box-shadow: var(--sapContent_Shadow0);
   box-sizing: border-box;
-  overflow-x: auto;
-  overflow-y: hidden;
+  min-width: 0;
   padding: 1rem;
   scrollbar-color: var(--sapContent_ForegroundBorderColor) transparent;
   scrollbar-width: thin;
@@ -45,12 +53,10 @@
 .tabSurface .sapMListTbl,
 .migrationAnalyzerContent .sapMListTbl,
 .sapUxAPObjectPageSubSection .sapMListTbl {
-  min-width: 64rem;
+  min-width: 0;
 }
 
 .sapUxAPObjectPageSubSection .sapMListTblCnt {
-  overflow-x: auto;
-  overflow-y: hidden;
   padding-bottom: 0.35rem;
   scrollbar-color: var(--sapContent_ForegroundBorderColor) transparent;
   scrollbar-width: thin;
@@ -130,6 +136,67 @@
 .pageTitleWithBack {
   align-items: center;
   gap: 0.5rem;
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* These wide detail tables keep one record per row. Both native scrollbars
+   belong to the bounded viewport, so horizontal scrolling stays reachable
+   while the records scroll vertically. */
+.detailSingleRowScroll {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  max-height: 45vh;
+  max-height: 45dvh;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  scrollbar-color: var(--sapContent_ForegroundBorderColor) var(--sapGroup_ContentBackground);
+  scrollbar-width: auto;
+}
+
+.detailSingleRowScroll::-webkit-scrollbar {
+  width: 14px;
+  height: 14px;
+}
+
+.detailSingleRowScroll::-webkit-scrollbar-track,
+.detailSingleRowScroll::-webkit-scrollbar-corner {
+  background: var(--sapGroup_ContentBackground);
+}
+
+.detailSingleRowScroll::-webkit-scrollbar-thumb {
+  background: var(--sapContent_ForegroundBorderColor);
+  border: 3px solid var(--sapGroup_ContentBackground);
+  border-radius: 7px;
+}
+
+.detailSingleRowScroll:focus-visible {
+  outline: 2px solid var(--sapContent_FocusColor, #005fcc);
+  outline-offset: 2px;
+}
+
+.detailSingleRowScroll .sapMListTbl {
+  width: max-content;
+  min-width: 100%;
+}
+
+.detailSingleRowScroll .sapMListTblHeaderCell {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--sapList_HeaderBackground, var(--sapGroup_ContentBackground));
+}
+
+.pageTitleWithBack .sapMFlexItem,
+.pageTitleWithBack .sapMTitle {
+  min-width: 0;
+}
+
+.pageTitleWithBack .sapMTitle {
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .pageTitleWithBack .sapMBtn {
@@ -171,6 +238,7 @@
 }
 
 .migrationAnalyzerKpiGrid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 1rem;
   margin: 0 auto;
   max-width: 72rem;
@@ -198,7 +266,7 @@
   border-radius: 0.5rem;
   box-shadow: var(--sapContent_Shadow0);
   box-sizing: border-box;
-  min-width: 11rem;
+  min-width: 0;
   overflow: hidden;
 }
 
@@ -257,22 +325,22 @@
 }
 
 .migrationAnalyzerCardTotal {
-  background: #eef5ff;
+  background: var(--sapInformationBackground);
   border-left-color: var(--sapAccentColor6);
 }
 
 .migrationAnalyzerCardSuccess {
-  background: #edf8f0;
+  background: var(--sapSuccessBackground);
   border-left-color: var(--sapPositiveColor);
 }
 
 .migrationAnalyzerCardWarning {
-  background: #fff4df;
+  background: var(--sapWarningBackground);
   border-left-color: var(--sapCriticalColor);
 }
 
 .migrationAnalyzerCardError {
-  background: #fff0f0;
+  background: var(--sapErrorBackground);
   border-left-color: var(--sapNegativeColor);
 }
 
@@ -349,16 +417,175 @@
   padding: 0;
 }
 
+.settingsRuleRow { gap: 0.5rem; }
+.settingsRuleRow > .sapMFlexItem { min-width: 0; max-width: 100%; }
+
+.sourceCodeWorkspace {
+  /* Each pane scrolls independently, keeping the object list beside the code. */
+  --source-code-pane-height: clamp(20rem, calc(100dvh - 15rem), 56rem);
+  align-items: flex-start;
+  box-sizing: border-box;
+  gap: 1rem;
+  min-width: 0;
+  width: 100%;
+}
+
+.sourceCodeObjectPane {
+  flex: 0 0 clamp(18.75rem, 25vw, 23.75rem);
+  min-width: 0;
+  max-height: var(--source-code-pane-height);
+  overflow: auto;
+  scrollbar-gutter: stable;
+}
+
+.sourceObjectTree {
+  width: 100%;
+}
+
+.sourceObjectTree .sourceObjectTreeItem {
+  min-height: 3rem;
+}
+
+.sourceObjectTreeItemContent {
+  box-sizing: border-box;
+  gap: 0.5rem;
+  min-width: 0;
+  padding-block: 0.25rem;
+  width: 100%;
+}
+
+.sourceObjectTreeIdentity,
+.sourceObjectTreeText {
+  min-width: 0;
+}
+
+.sourceObjectTreeIdentity {
+  flex: 1 1 auto;
+  gap: 0.5rem;
+}
+
+.sourceObjectTreeIcon {
+  color: var(--sapContent_IconColor);
+  flex: 0 0 auto;
+}
+
+.sourceObjectTreeName,
+.sourceObjectTreeType {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sourceObjectTreeName {
+  color: var(--sapTextColor);
+  font-weight: 600;
+}
+
+.sourceObjectTreeType {
+  color: var(--sapContent_LabelColor);
+  font-size: 0.75rem;
+}
+
+.sourceObjectTreeLineCount {
+  flex: 0 0 auto;
+  min-width: 3rem;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.sourceCodeBackButton {
+  align-self: flex-start;
+}
+
+.sourceCodeViewerPane {
+  background: var(--sapList_Background);
+  border: 1px solid var(--sapList_BorderColor);
+  border-radius: 0.5rem;
+  box-sizing: border-box;
+  flex: 1 1 auto;
+  min-height: 24rem;
+  min-width: 0;
+  max-height: var(--source-code-pane-height);
+  overflow: auto;
+  scrollbar-gutter: stable;
+  padding: 0.75rem;
+}
+
+.sourceCodeMetaLine {
+  gap: 0.75rem;
+}
+
+.sourceCodeWorkspace .sapMListTbl {
+  min-width: 0;
+}
+
+.sourceCodeViewerPane .sourceCodeTable .sapMListTbl {
+  min-width: 48rem;
+}
+
+/* The pane owns both scroll axes so long lines never create a nested scroller. */
+.sourceCodeWorkspace .sapMListTblCnt {
+  overflow: visible;
+}
+
+.sourceCodeTable .sapMListTblRow {
+  height: 1.5rem;
+}
+
+.sourceCodeTable .sapMListTblCell {
+  padding-top: 0.125rem;
+  padding-bottom: 0.125rem;
+}
+
+.sourceCodeTable .sapMListTblCell:first-of-type {
+  background: var(--sapGroup_ContentBackground);
+}
+
+.sourceCodeTable .sapMText,
+.sourceCodeTable .sapMObjectNumberText {
+  font-size: 0.8125rem;
+  line-height: 1.25rem;
+}
+
+.sourceCodeText {
+  font-family: "72Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  white-space: pre !important;
+}
+
+.sourceCodeLineNumber .sapMObjectNumberText {
+  color: var(--sapContent_LabelColor);
+  font-family: "72Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+
 .formStack {
   gap: 0.75rem;
   min-width: 20rem;
+}
+
+@media (max-width: 900px) {
+  .sourceCodeWorkspace {
+    flex-direction: column;
+  }
+
+  .sourceCodeObjectPane {
+    flex: 0 1 auto;
+    max-width: none;
+    width: 100%;
+    max-height: 14rem;
+  }
+
+  .sourceCodeViewerPane {
+    width: 100%;
+  }
 }
 
 @media (max-width: 700px) {
   .migrationAnalyzerFilterField,
   .formStack {
     flex-basis: 100%;
-    min-width: 100%;
+    min-width: 0;
     max-width: 100%;
   }
 
@@ -384,4 +611,131 @@
     padding: 0.75rem 1rem;
   }
 
+}
+/* Analysis assistant: compact messenger layout using SAP theme roles. */
+.analysisChatRoot.sapMFlexBox { position: fixed; right: max(1rem, env(safe-area-inset-right)); bottom: max(1rem, env(safe-area-inset-bottom)); z-index: 8; }
+.analysisChatLauncher { position: relative; }
+.analysisChatLauncher .sapMBtn { width: 3.5rem; height: 3.5rem; padding: 0; }
+.analysisChatLauncher .sapMBtnInner { width: 3.5rem; height: 3.5rem; border-radius: 50%; box-shadow: var(--sapContent_Shadow1); }
+.analysisChatLauncher .sapMBtnIcon { width: 100%; line-height: 3.375rem; font-size: 1.4rem; }
+.analysisChatBadge { position: absolute; right: -0.25rem; top: -0.3rem; min-width: 1.25rem; padding: 0.15rem; text-align: center; border-radius: 1rem; background: var(--sapNegativeColor); color: var(--sapContent_ContrastTextColor); pointer-events: none; }
+.analysisChatPanel.sapMFlexBox { width: min(26.5rem, calc(100vw - 2rem)); height: min(45rem, calc(100vh - 2rem)); height: min(45rem, calc(100dvh - 2rem)); max-height: calc(100vh - 2rem); max-height: calc(100dvh - 2rem); border: 1px solid var(--sapGroup_ContentBorderColor); border-radius: 1.125rem; background: var(--sapGroup_ContentBackground); color: var(--sapTextColor); box-shadow: var(--sapContent_Shadow2); overflow: hidden; animation: analysisChatAppear 190ms cubic-bezier(0.2, 0, 0, 1); transform-origin: right bottom; }
+.analysisChatPanel.analysisChatPanelClosing { animation: analysisChatDisappear 160ms ease-in forwards; pointer-events: none; }
+.analysisChatHeader.sapMTB { flex-shrink: 0; min-height: 4rem; padding: 0.45rem 0.55rem; border-bottom: 1px solid var(--sapGroup_ContentBorderColor); background: var(--sapGroup_ContentBackground); }
+.analysisChatHeaderIdentity { min-width: 0; max-width: 10.5rem; margin-left: 0.35rem; }
+.analysisChatHeaderTitle.sapMTitle { font-size: 1rem; line-height: 1.25rem; }
+.analysisChatHeaderSubtitle { max-width: 100%; color: var(--sapContent_LabelColor); font-size: 0.75rem; }
+.analysisChatHeader .sapMBtn { min-width: 2.75rem; min-height: 2.75rem; }
+.analysisChatScroll { min-height: 0; background: var(--sapBackgroundColor); scrollbar-width: thin; scrollbar-color: var(--sapScrollBar_FaceColor, var(--sapContent_ForegroundBorderColor)) transparent; }
+.analysisChatScroll::-webkit-scrollbar { width: 0.4rem; }
+.analysisChatScroll::-webkit-scrollbar-track { background: transparent; }
+.analysisChatScroll::-webkit-scrollbar-thumb { border-radius: 1rem; background: var(--sapScrollBar_FaceColor, var(--sapContent_ForegroundBorderColor)); }
+.analysisChatError { margin: 0.5rem 0.75rem 0; }
+.analysisChatRetry { margin-left: 0.5rem; }
+.analysisChatConversation { min-height: 100%; padding: 0.35rem 0 0.75rem; }
+.analysisChatContextNotice { margin: 0.25rem 0.75rem 0.6rem; border-radius: 0.65rem; }
+.analysisChatEmptyState { gap: 0.75rem; max-width: 18rem; margin: 3rem auto; padding: 0 1rem; color: var(--sapContent_LabelColor); }
+.analysisChatMessages,
+.analysisChatMessages .sapMListUl,
+.analysisChatMessageItem.sapMLIB { background: transparent; }
+.analysisChatMessageItem.sapMLIB { min-height: 0; border: 0; }
+.analysisChatMessageItem .sapMLIBContent { padding: 0; }
+.analysisChatGroupGap { height: 0.45rem; }
+.analysisChatMessageRow { width: 100%; padding: 0.1rem 0.75rem; box-sizing: border-box; }
+.analysisChatMessageItem:last-child .analysisChatMessageRow { animation: analysisChatMessageEnter 180ms ease-out; }
+.analysisChatMessageAssistant { gap: 0.5rem; }
+.analysisChatAvatarSlot { flex: 0 0 2rem; width: 2rem; align-self: stretch; }
+.analysisChatAvatarSlot .sapFAvatar { display: block; }
+.analysisChatMessageStack { min-width: 0; max-width: 86%; }
+.analysisChatMessageStackUser { max-width: 80%; align-items: flex-end; }
+.analysisChatBubble.sapMFlexBox { min-width: 2.5rem; padding: 0.55rem 0.75rem; border-radius: 1.05rem; box-sizing: border-box; }
+.analysisChatBubble.analysisChatBubbleUser { border-bottom-right-radius: 0.35rem; background-color: var(--sapButton_Emphasized_Background, var(--sapAccentColor6)) !important; box-shadow: var(--sapContent_Shadow0); }
+.analysisChatBubbleUser .sapMText { color: var(--sapButton_Emphasized_TextColor, var(--sapContent_ContrastTextColor)) !important; }
+.analysisChatBubbleAssistant.sapMFlexBox { border-bottom-left-radius: 0.35rem; background: var(--sapList_Background, var(--sapGroup_ContentBackground)); box-shadow: inset 0 0 0 1px var(--sapGroup_ContentBorderColor); }
+.analysisChatSender { margin-bottom: 0.2rem; color: var(--sapContent_LabelColor); font-size: 0.75rem; font-weight: 600; }
+.analysisChatContent { max-width: 100%; white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; line-height: 1.4; }
+.analysisChatMessageMeta { min-height: 1.25rem; gap: 0.35rem; padding: 0.1rem 0.25rem 0; }
+.analysisChatTime,
+.analysisChatSessionTime { color: var(--sapContent_LabelColor); font-size: 0.7rem; }
+.analysisChatAssistantTime { margin-left: 3.25rem; }
+.analysisChatSendError .sapMObjStatusText { font-size: 0.75rem; }
+.analysisChatTyping { min-height: 1.35rem; gap: 0.28rem; padding: 0 0.15rem; }
+.analysisChatTypingDot { color: var(--sapContent_LabelColor); font-size: 0.7rem; line-height: 1; animation: analysisChatTypingDot 900ms ease-in-out infinite; }
+.analysisChatTypingDotTwo { animation-delay: 150ms; }
+.analysisChatTypingDotThree { animation-delay: 300ms; }
+.analysisChatHistory { min-height: 100%; animation: analysisChatHistoryIn 180ms ease-out; }
+.analysisChatHistoryHeader.sapMTB { padding: 0 0.4rem; background: transparent; }
+.analysisChatHistorySearch { margin: 0.25rem 0.75rem 0.65rem; width: calc(100% - 1.5rem); }
+.analysisChatSessionList,
+.analysisChatSessionList .sapMListUl { background: transparent; }
+.analysisChatSessionItem { min-width: 0; padding: 0.45rem 0.25rem 0.45rem 0.75rem; }
+.analysisChatSessionText { min-width: 0; }
+.analysisChatSessionTitle { font-weight: 600; }
+.analysisChatSessionPreview { margin-top: 0.15rem; color: var(--sapContent_LabelColor); }
+.analysisChatSessionTime { margin-top: 0.25rem; }
+.analysisChatComposer { flex-shrink: 0; padding: 0.55rem 0.65rem max(0.55rem, env(safe-area-inset-bottom)); border-top: 1px solid var(--sapGroup_ContentBorderColor); background: var(--sapGroup_ContentBackground); }
+.analysisChatComposerShell { width: 100%; gap: 0.4rem; padding: 0.25rem 0.3rem 0.25rem 0.75rem; border: 1px solid var(--sapField_BorderColor); border-radius: 1.25rem; background: var(--sapField_BackgroundStyle, var(--sapField_Background)); box-sizing: border-box; }
+.analysisChatComposerShell > .sapMFlexItem { min-width: 0; }
+.analysisChatComposerShell .analysisChatDraft { min-width: 0; flex: 1 1 auto; }
+.analysisChatComposerShell .sapMInputBaseContentWrapper { border: 0; background: transparent; box-shadow: none; }
+.analysisChatComposerShell .sapMTextAreaInner { min-height: 2.25rem; padding: 0.45rem 0; border: 0; background: transparent; resize: none; }
+.analysisChatSendButton .sapMBtnInner { width: 2.5rem; min-width: 2.5rem; height: 2.5rem; border-radius: 50%; }
+.analysisChatSendButton .sapMBtnIcon { line-height: 2.375rem; }
+.analysisChatHeader .sapMBtn:active,
+.analysisChatSendButton:active { transform: scale(0.97); }
+.analysisChatRenameContent { gap: 0.35rem; padding: 0.75rem; }
+.analysisChatRenameError { margin-top: 0.35rem; }
+@keyframes analysisChatAppear { from { opacity: 0; transform: translateY(0.5rem) scale(0.96); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes analysisChatDisappear { from { opacity: 1; transform: translateY(0) scale(1); } to { opacity: 0; transform: translateY(0.35rem) scale(0.97); } }
+@keyframes analysisChatMessageEnter { from { opacity: 0; transform: translateY(0.5rem); } to { opacity: 1; transform: translateY(0); } }
+@keyframes analysisChatHistoryIn { from { opacity: 0; transform: translateX(0.75rem); } to { opacity: 1; transform: translateX(0); } }
+@keyframes analysisChatTypingDot { 0%, 60%, 100% { transform: translateY(0); opacity: 0.45; } 30% { transform: translateY(-0.3rem); opacity: 1; } }
+@media (max-width: 768px) {
+  .analysisChatRoot.sapMFlexBox { right: max(0.75rem, env(safe-area-inset-right)); bottom: max(0.75rem, env(safe-area-inset-bottom)); }
+  .analysisChatPanel.sapMFlexBox { width: min(27rem, calc(100vw - 1.5rem)); height: calc(100vh - 1.5rem); height: calc(100dvh - 1.5rem); max-height: calc(100vh - 1.5rem); max-height: calc(100dvh - 1.5rem); }
+}
+
+@media (max-width: 1279px) {
+  .migrationAnalyzerKpiGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 599px) {
+  .migrationAnalyzerKpiGrid { grid-template-columns: minmax(0, 1fr); }
+  .analysisChatRoot.sapMFlexBox { right: 0; bottom: 0; }
+  .analysisChatPanel.sapMFlexBox { width: 100vw; height: 100vh; height: 100dvh; max-height: 100vh; max-height: 100dvh; border-right: 0; border-bottom: 0; border-left: 0; border-radius: 1rem 1rem 0 0; }
+  .analysisChatHeaderIdentity { max-width: 5rem; }
+  .analysisChatMessageRow { padding-right: 0.6rem; padding-left: 0.6rem; }
+  .analysisChatMessageStack { max-width: 88%; }
+  .analysisChatMessageStackUser { max-width: 84%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .analysisChatPanel.sapMFlexBox,
+  .analysisChatPanel.analysisChatPanelClosing,
+  .analysisChatMessageItem:last-child .analysisChatMessageRow,
+  .analysisChatHistory,
+  .analysisChatTypingDot { animation: none; }
+  .analysisChatTypingDot { opacity: 1; }
+}
+@media (max-height: 600px) {
+  .analysisChatRoot.sapMFlexBox { bottom: max(0.5rem, env(safe-area-inset-bottom)); }
+  .analysisChatPanel.sapMFlexBox { height: calc(100vh - 1rem); height: calc(100dvh - 1rem); max-height: calc(100vh - 1rem); max-height: calc(100dvh - 1rem); }
+}
+@media (max-width: 599px) and (max-height: 600px) {
+  .analysisChatRoot.sapMFlexBox { bottom: 0; }
+  .analysisChatPanel.sapMFlexBox { height: 100vh; height: 100dvh; max-height: 100vh; max-height: 100dvh; }
+}
+.migrationAnalyzerErrorMessageBox.sapMDialog {
+  max-width: calc(100vw - 2rem) !important;
+}
+
+.migrationAnalyzerErrorMessageBox .sapMDialogScrollCont,
+.migrationAnalyzerErrorMessageBox .sapMMsgBoxText {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.migrationAnalyzerErrorMessageBox .sapMMsgBoxText {
+  white-space: pre-wrap !important;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
