@@ -2553,10 +2553,13 @@ sap.ui.define([
         this._oViewModel.setProperty("/comparison/historyMode", true);
         this._oViewModel.setProperty("/comparison/requestId", sRequestId);
         this._oViewModel.setProperty("/comparison/captureStatus", oRow.status);
-        this._oViewModel.setProperty("/comparison/captureMessage", oRow.message);
+        this._oViewModel.setProperty("/comparison/captureMessage",
+          RequestHistory.isActive(oRow.status) ? "" : oRow.message);
         this._oViewModel.setProperty("/comparison/captureCount", oRow.rowCount);
         this._oViewModel.setProperty("/comparison/ready", false);
-        this._oViewModel.setProperty("/comparison/reason", oRow.message || "");
+        this._oViewModel.setProperty("/comparison/error", "");
+        this._oViewModel.setProperty("/comparison/reason",
+          RequestHistory.isActive(oRow.status) ? "" : oRow.message || "");
         this.onOpenLegacyComparison();
         this.onCheckLegacyCapture();
         return;
@@ -3020,6 +3023,8 @@ sap.ui.define([
     },
 
     onLegacyComparisonInputChange: function (oEvent) {
+      var oState = this._oViewModel.getProperty("/comparison");
+      var bReuseCapture = oState.captureStatus === "CAPTURED" && !!oState.requestId;
       var oBinding = oEvent.getSource().getBinding("value");
       var sPath = oBinding && oBinding.getPath();
       if (sPath) { this._oViewModel.setProperty(sPath, oEvent.getParameter("value")); }
@@ -3029,26 +3034,32 @@ sap.ui.define([
       this._bLegacyAutoCompare = false;
       this._oViewModel.setProperty("/comparison/busy", false);
       this._resetLegacyRunLog();
-      this._aLegacyCapturedRows = null;
-      this._oViewModel.setProperty("/comparison/requestId", "");
-      this._oViewModel.setProperty("/comparison/captureStatus", "");
-      this._oViewModel.setProperty("/comparison/captureMessage", "");
-      this._oViewModel.setProperty("/comparison/captureCount", null);
-      this._oViewModel.setProperty("/comparison/ready", false);
+      if (!bReuseCapture) {
+        this._aLegacyCapturedRows = null;
+        this._oViewModel.setProperty("/comparison/requestId", "");
+        this._oViewModel.setProperty("/comparison/captureStatus", "");
+        this._oViewModel.setProperty("/comparison/captureMessage", "");
+        this._oViewModel.setProperty("/comparison/captureCount", null);
+      }
+      this._oViewModel.setProperty("/comparison/ready", bReuseCapture && !!this._aLegacyCapturedRows);
       this._oViewModel.setProperty("/comparison/status", "INCONCLUSIVE");
+      this._oViewModel.setProperty("/comparison/error", "");
       this._oViewModel.setProperty("/comparison/reason", this.getText("legacyCompareInputsChanged"));
       this._oViewModel.setProperty("/comparison/differences", []);
       this._clearLegacyMappingLog();
       this._oViewModel.setProperty("/comparison/odataCount", null);
       this._oViewModel.setProperty("/comparison/comparedColumnCount", null);
       this._oViewModel.setProperty("/comparison/scopeMessage", "");
-      this._appendLegacyRunLog("WARN", "INPUT", "Comparison input changed: " + (sPath || "unknown") + ". Previous result invalidated.");
+      this._appendLegacyRunLog("WARN", "INPUT", "Comparison input changed: " + (sPath || "unknown") +
+        ". Previous result invalidated; " + (bReuseCapture ?
+          "captured RequestId=" + oState.requestId + " retained." : "a new capture is required."));
     },
 
     onLegacyComparisonMappingChange: function (oEvent) {
       this._oViewModel.setProperty("/comparison/manualColumnMappingJson", oEvent.getParameter("value"));
       this._iLegacyComparisonVersion = (this._iLegacyComparisonVersion || 0) + 1;
       this._oViewModel.setProperty("/comparison/status", "INCONCLUSIVE");
+      this._oViewModel.setProperty("/comparison/error", "");
       this._oViewModel.setProperty("/comparison/reason", this.getText("legacyCompareInputsChanged"));
       this._oViewModel.setProperty("/comparison/differences", []);
       this._oViewModel.setProperty("/comparison/odataCount", null);
@@ -3059,6 +3070,16 @@ sap.ui.define([
     },
 
     onRequestLegacyCapture: function () {
+      var oState = this._oViewModel.getProperty("/comparison");
+      if (oState.busy) { return; }
+      if (oState.captureStatus === "CAPTURED" && oState.requestId) {
+        return oState.ready && this._aLegacyCapturedRows ?
+          this.onCompareLegacyRows() : this.onCheckLegacyCapture();
+      }
+      return this.onStartNewLegacyCapture();
+    },
+
+    onStartNewLegacyCapture: function () {
       var oState = this._oViewModel.getProperty("/comparison");
       var sAnalysisId = this._oViewModel.getProperty("/analysisId");
       if (oState.busy || RequestHistory.isActive(oState.captureStatus)) { return; }
@@ -3100,6 +3121,7 @@ sap.ui.define([
       this._oViewModel.setProperty("/comparison/ready", false);
       this._oViewModel.setProperty("/comparison/busy", true);
       this._oViewModel.setProperty("/comparison/status", "INCONCLUSIVE");
+      this._oViewModel.setProperty("/comparison/error", "");
       this._oViewModel.setProperty("/comparison/reason", this.getText("legacyCompareSubmitting"));
       this._resetLegacyRunLog();
       this._appendLegacyRunLog("INFO", "CAPTURE", "Submitting AnalysisId=" + sAnalysisId +
@@ -3122,10 +3144,11 @@ sap.ui.define([
           throw new Error("Capture request was sent, but SAP did not return its Status.");
         }
         this._oViewModel.setProperty("/comparison/captureStatus", oResponse.Status);
-        this._oViewModel.setProperty("/comparison/captureMessage", oResponse.Message || "");
+        this._oViewModel.setProperty("/comparison/captureMessage",
+          RequestHistory.isActive(oResponse.Status) ? "" : oResponse.Message || "");
         this._oViewModel.setProperty("/comparison/reason", oResponse.Status === "CAPTURED" ?
           this.getText("legacyCompareReady") : RequestHistory.isActive(oResponse.Status) ?
-            this.getText("legacyCompareWorkerHint") : oResponse.Message || oResponse.Status);
+            "" : oResponse.Message || oResponse.Status);
         this._appendLegacyRunLog("INFO", "CAPTURE", "RequestId=" + sRequestId + " Status=" + oResponse.Status + ".");
         if (RequestHistory.isActive(oResponse.Status)) {
           this._appendLegacyRunLog("INFO", "WORKER", "Capture is pending; the scheduled SAP background job runs about every 2 minutes and status refreshes automatically.");
@@ -3166,6 +3189,7 @@ sap.ui.define([
       this._oViewModel.setProperty("/comparison/scopeMessage", "");
       this._oViewModel.setProperty("/comparison/busy", true);
       this._oViewModel.setProperty("/comparison/status", "INCONCLUSIVE");
+      this._oViewModel.setProperty("/comparison/error", "");
       this._oViewModel.setProperty("/comparison/differences", []);
       this._clearLegacyMappingLog();
       this._appendLegacyRunLog("INFO", "CAPTURE_CHECK", "Reading AnalysisId=" + sAnalysisId +
@@ -3176,15 +3200,24 @@ sap.ui.define([
       }.bind(this)).then(function (oResponse) {
         if (iVersion !== this._iLegacyComparisonVersion || sAnalysisId !== this._oViewModel.getProperty("/analysisId")) { return; }
         this._oViewModel.setProperty("/comparison/captureStatus", oResponse && oResponse.Status || "");
-        this._oViewModel.setProperty("/comparison/captureMessage", oResponse && oResponse.Message || "");
+        this._oViewModel.setProperty("/comparison/captureMessage",
+          RequestHistory.isActive(oResponse && oResponse.Status) ? "" : oResponse && oResponse.Message || "");
         this._appendLegacyRunLog("INFO", "CAPTURE_CHECK", "Status=" + (oResponse && oResponse.Status || "unknown") + ".");
+        if (RequestHistory.isActive(oResponse && oResponse.Status)) {
+          if (!RequestHistory.sameId(oResponse.AnalysisId, sAnalysisId) ||
+              !RequestHistory.sameId(oResponse.RequestId, sRequestId)) {
+            throw new Error("Capture response does not match AnalysisId and RequestId.");
+          }
+          this._oViewModel.setProperty("/comparison/reason", "");
+          return;
+        }
         var oCapture = LegacyComparison.capture(oResponse, sAnalysisId, sRequestId);
         bCaptured = true;
         this._aLegacyCapturedRows = oCapture.rows;
         this._oViewModel.setProperty("/comparison/captureCount", oCapture.count);
-        this._oViewModel.setProperty("/comparison/ready", !oState.historyMode);
+        this._oViewModel.setProperty("/comparison/ready", true);
         this._oViewModel.setProperty("/comparison/reason",
-          this.getText(oState.historyMode ? "legacyCompareHistoryReady" : "legacyCompareReady"));
+          this.getText("legacyCompareReady"));
         this._appendLegacyRunLog("INFO", "CAPTURE_CHECK", "CAPTURED CountRow=" + oCapture.count +
           "; RowsJson contains " + oCapture.rows.length + " rows.");
       }.bind(this)).catch(function (oError) {
@@ -3221,18 +3254,14 @@ sap.ui.define([
     onCompareLegacyRows: function () {
       var oState = this._oViewModel.getProperty("/comparison");
       var sAnalysisId = this._oViewModel.getProperty("/analysisId");
-      if (oState.busy || oState.historyMode || !oState.ready || !this._aLegacyCapturedRows) { return; }
-      if (this._sLegacySelectionJson !== "[]") {
-        this._clearLegacyMappingLog();
-        this._legacyInconclusive(new Error("The capture was not created for all rows. Start a new comparison."), "COMPARE");
-        return;
-      }
+      if (oState.busy || !oState.ready || !this._aLegacyCapturedRows) { return; }
       var oParameters = {}, oFilters = {}, oColumns, aKeys, oProjection;
       var bEmptyCapture = this._aLegacyCapturedRows.length === 0;
       var iVersion = (this._iLegacyComparisonVersion || 0) + 1;
       this._iLegacyComparisonVersion = iVersion;
       this._oViewModel.setProperty("/comparison/busy", true);
       this._oViewModel.setProperty("/comparison/status", "INCONCLUSIVE");
+      this._oViewModel.setProperty("/comparison/error", "");
       this._oViewModel.setProperty("/comparison/reason", this.getText("legacyCompareLoading"));
       this._oViewModel.setProperty("/comparison/differences", []);
       this._clearLegacyMappingLog();
@@ -3242,7 +3271,12 @@ sap.ui.define([
       this._appendLegacyRunLog("INFO", "COMPARE", "Starting AnalysisId=" + sAnalysisId +
         " RequestId=" + oState.requestId + " CaptureStatus=" + oState.captureStatus +
         " CountRow=" + this._aLegacyCapturedRows.length + " EntitySet=" + oState.entitySet +
-        " SelectionJson=[].");
+        " SelectionJson=" + (this._sLegacySelectionJson || "unknown") + ".");
+      if (this._sLegacySelectionJson !== "[]") {
+        this._appendLegacyRunLog("INFO", "SCOPE",
+          "Comparing the saved ALV capture with all rows in the selected OData entity set. " +
+          "Original SelectionJson=" + (this._sLegacySelectionJson || "unknown") + ".");
+      }
       return Promise.resolve().then(function () {
         return this._oLegacyComparisonService.getEntityMetadata(oState.serviceRootUrl, oState.entitySet);
       }.bind(this)).then(function (oMetadata) {
@@ -3335,6 +3369,7 @@ sap.ui.define([
       }.bind(this)).then(function (oResult) {
         if (iVersion !== this._iLegacyComparisonVersion || sAnalysisId !== this._oViewModel.getProperty("/analysisId")) { return; }
         this._oViewModel.setProperty("/comparison/status", oResult.status);
+        this._oViewModel.setProperty("/comparison/error", "");
         this._oViewModel.setProperty("/comparison/reason", "");
         this._oViewModel.setProperty("/comparison/captureCount", oResult.alvCount);
         this._oViewModel.setProperty("/comparison/odataCount", oResult.odataCount);
@@ -3360,6 +3395,7 @@ sap.ui.define([
       var sMessage = oParsed && oParsed.message && oParsed.message !== "Unexpected error." ?
         oParsed.message : oError && oError.message || String(oError);
       this._oViewModel.setProperty("/comparison/status", "INCONCLUSIVE");
+      this._oViewModel.setProperty("/comparison/error", sMessage);
       this._oViewModel.setProperty("/comparison/reason", sMessage);
       this._oViewModel.setProperty("/comparison/differences", []);
       this._oViewModel.setProperty("/comparison/odataCount", null);

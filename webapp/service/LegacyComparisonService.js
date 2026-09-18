@@ -41,20 +41,25 @@ sap.ui.define([
     var oModel = new ODataModel({ serviceUrl: sRoot, synchronizationMode: "None",
       operationMode: "Server", groupId: "$direct", updateGroupId: "$direct" });
     var oMeta = oModel.getMetaModel();
-    return Promise.all([
-      oMeta.requestObject("/$EntityContainer/"),
-      oMeta.requestObject("/" + sEntitySet + "/")
-    ]).then(function (aResult) {
-      if (!aResult[0] || !aResult[0][sEntitySet] || aResult[0][sEntitySet].$kind !== "EntitySet" ||
-          !aResult[1] || aResult[1].$kind !== "EntityType") {
-        throw new Error("Entity set is missing from generated OData metadata.");
+    return oMeta.requestObject("/$EntityContainer/").then(function (oContainer) {
+      if (!oContainer || !oContainer[sEntitySet] || oContainer[sEntitySet].$kind !== "EntitySet") {
+        var aAvailable = Object.keys(oContainer || {}).filter(function (sName) {
+          return oContainer[sName] && oContainer[sName].$kind === "EntitySet";
+        });
+        throw new Error("Entity set '" + sEntitySet + "' is missing from generated OData metadata. " +
+          "Available EntitySets: " + (aAvailable.join(", ") || "(none)") + ".");
+      }
+      return oMeta.requestObject("/" + sEntitySet + "/");
+    }).then(function (oEntityType) {
+      if (!oEntityType || oEntityType.$kind !== "EntityType") {
+        throw new Error("Entity type for '" + sEntitySet + "' is missing from generated OData metadata.");
       }
       var oTypes = {};
-      Object.keys(aResult[1]).forEach(function (sName) {
-        var oProperty = aResult[1][sName];
+      Object.keys(oEntityType).forEach(function (sName) {
+        var oProperty = oEntityType[sName];
         if (oProperty && oProperty.$kind === "Property") { oTypes[sName] = oProperty.$Type; }
       });
-      var aKeys = aResult[1].$Key || [];
+      var aKeys = oEntityType.$Key || [];
       if (!Array.isArray(aKeys) || aKeys.some(function (vKey) {
         return typeof vKey !== "string" || !Object.prototype.hasOwnProperty.call(oTypes, vKey);
       })) {

@@ -203,6 +203,10 @@ body,
   flex: 0 0 auto;
 }
 
+.comparisonErrorText {
+  color: var(--sapNegativeTextColor);
+}
+
 .exportSectionList {
   gap: 0.75rem;
 }

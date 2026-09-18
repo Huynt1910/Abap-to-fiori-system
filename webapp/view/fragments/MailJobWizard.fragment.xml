@@ -30,7 +30,8 @@
           <Label text="{i18n>mailJobName}" required="true" />
           <Input value="{mailUi>/wizard/job/JobName}" maxLength="80" />
           <Label text="{i18n>reportType}" required="true" />
-          <Input value="{mailUi>/wizard/job/ReportType}" maxLength="80" />
+          <Input value="{mailUi>/wizard/job/ReportType}" maxLength="80"
+            editable="{= ${mailUi>/wizard/mode} !== 'edit' }" />
           <Label text="{i18n>exportFileFormat}" required="true" />
           <Select selectedKey="{mailUi>/wizard/job/FileFormat}">
             <items>
