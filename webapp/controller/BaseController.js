@@ -32,12 +32,12 @@ sap.ui.define([
       return this.getOwnerComponent().getAnalysisService();
     },
 
-    getProgramValueHelpService: function () {
-      return this.getOwnerComponent().getProgramValueHelpService();
+    getRequestHistoryService: function () {
+      return this.getOwnerComponent().getRequestHistoryService();
     },
 
-    getComparisonService: function () {
-      return this.getOwnerComponent().getComparisonService();
+    getProgramValueHelpService: function () {
+      return this.getOwnerComponent().getProgramValueHelpService();
     },
 
     getDocumentService: function () {

@@ -8,10 +8,8 @@
     busyIndicatorDelay="0">
     <content>
       <VBox class="sapUiMediumMargin formStack">
-        <Label text="{i18n>fioriUiTargetPackage}" labelFor="fioriUiTargetPackageInput" required="true" />
-        <Input id="fioriUiTargetPackageInput" value="{detail>/fioriUi/targetPackage}" enabled="{= !${detail>/fioriUi/busy} }" />
         <Label text="{i18n>fioriUiServiceRootUrl}" labelFor="fioriUiServiceRootUrlInput" required="true" />
-        <Input id="fioriUiServiceRootUrlInput" value="{detail>/fioriUi/serviceRootUrl}" enabled="{= !${detail>/fioriUi/busy} }" />
+        <Input id="fioriUiServiceRootUrlInput" value="{detail>/fioriUi/serviceRootUrl}" liveChange=".onFioriUiInputChange" enabled="{= !${detail>/fioriUi/busy} }" />
         <MessageStrip
           text="{detail>/fioriUi/error}"
           visible="{= !!${detail>/fioriUi/error} }"
@@ -24,9 +22,25 @@
           <ObjectStatus title="{i18n>fioriUiRuntimeCheck}" text="{detail>/fioriUi/runtimeCheck}" state="Information" />
           <MessageStrip
             text="{i18n>fioriUiMetadataRequiredHint}"
-            visible="{= ${detail>/fioriUi/runtimeCheck} === 'METADATA_REQUIRED' }"
+            visible="{= ${detail>/fioriUi/runtimeCheck} === 'METADATA_REQUIRED' &amp;&amp; !${detail>/fioriUi/metadataStatus} }"
             type="Information"
             showIcon="true"
+            class="sapUiSmallMarginTop" />
+          <Button text="{i18n>fioriUiValidateMetadataButton}" press=".onValidateFioriUiMetadata"
+            visible="{= ${detail>/fioriUi/status} === 'CONFIG_READY' }"
+            enabled="{= !${detail>/fioriUi/busy} }" class="sapUiSmallMarginTop" />
+          <ObjectStatus title="{i18n>fioriUiMetadataStatus}" text="{detail>/fioriUi/metadataStatus}"
+            state="{= ${detail>/fioriUi/metadataStatus} === 'VALIDATED' ? 'Success' : 'Error' }"
+            visible="{= !!${detail>/fioriUi/metadataStatus} }" class="sapUiSmallMarginTop" />
+          <List items="{detail>/fioriUi/metadataIssues}" visible="{= ${detail>/fioriUi/metadataIssues}.length &gt; 0 }">
+            <StandardListItem title="{detail>message}" type="Inactive" />
+          </List>
+          <Button text="{i18n>fioriUiOpenReportButton}" press=".onOpenFioriUiReport"
+            visible="{= ${detail>/fioriUi/status} === 'CONFIG_READY' }"
+            enabled="{= !${detail>/fioriUi/busy} &amp;&amp; ${detail>/fioriUi/metadataStatus} === 'VALIDATED' &amp;&amp; !!${detail>/fioriUi/metadataSignature} }"
+            class="sapUiSmallMarginTop" />
+          <MessageStrip text="{detail>/fioriUi/reportError}"
+            visible="{= !!${detail>/fioriUi/reportError} }" type="Error" showIcon="true"
             class="sapUiSmallMarginTop" />
           <ObjectAttribute title="{i18n>fioriUiIssueCount}" text="{detail>/fioriUi/issueCount}" />
           <Label text="{i18n>fioriUiEntitySet}" />

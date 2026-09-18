@@ -53,10 +53,6 @@ sap.ui.define(
         this._displayMailJobs();
       },
 
-      onOpenComparisonHistory: function () {
-        this.getRouter().navTo("comparisonHistory");
-      },
-
       onClearFilters: function () {
         this._oViewModel.setProperty("/filters/search", "");
         this._oViewModel.setProperty("/filters/status", "");

@@ -5,7 +5,6 @@ coverage/
 .DS_Store
 .vscode/
 resources/
-test/
 doc/
 .agents/
 AGENTS.md

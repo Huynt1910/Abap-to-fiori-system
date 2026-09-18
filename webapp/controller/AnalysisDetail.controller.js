@@ -9,17 +9,27 @@ sap.ui.define([
   "abap/to/fiori/system/model/models",
   "abap/to/fiori/system/model/mailConstants",
   "abap/to/fiori/system/model/mailFormatter",
-  "abap/to/fiori/system/model/ComparisonConstants",
   "abap/to/fiori/system/model/AnalysisTableConfig",
   "abap/to/fiori/system/util/TablePersonalizationService",
   "abap/to/fiori/system/util/Constants",
   "abap/to/fiori/system/util/formatter",
   "abap/to/fiori/system/util/AnalysisChatBox",
   "abap/to/fiori/system/util/SourceObjectTree",
+  "abap/to/fiori/system/service/LegacyComparisonService",
+  "abap/to/fiori/system/util/LegacyComparison",
+  "abap/to/fiori/system/util/FioriUiConfig",
+  "abap/to/fiori/system/util/FioriUiMetadata",
+  "abap/to/fiori/system/util/FioriUiReportConfig",
+  "abap/to/fiori/system/util/FioriUiReport",
+  "abap/to/fiori/system/util/ODataGeneration",
+  "abap/to/fiori/system/util/RequestHistory",
   "sap/ui/Device",
   "sap/base/Log"
-], function (Fragment, MessageBox, MessageToast, Filter, FilterOperator, Sorter, BaseController, models, MailConstants, mailFormatter, ComparisonConstants, AnalysisTableConfig, TablePersonalizationService, Constants, formatter, AnalysisChatBox, SourceObjectTree, Device, Log) {
+], function (Fragment, MessageBox, MessageToast, Filter, FilterOperator, Sorter, BaseController, models, MailConstants, mailFormatter, AnalysisTableConfig, TablePersonalizationService, Constants, formatter, AnalysisChatBox, SourceObjectTree, LegacyComparisonService, LegacyComparison, FioriUiConfig, FioriUiMetadata, FioriUiReportConfig, FioriUiReport, ODataGeneration, RequestHistory, Device, Log) {
   "use strict";
+
+  var REQUEST_POLL_INTERVAL_MS = 20000;
+  var FIORI_UI_TARGET_PACKAGE = "ZMIG_GEN_TEST";
 
     return BaseController.extend(
       "abap.to.fiori.system.controller.AnalysisDetail",
@@ -29,6 +39,7 @@ sap.ui.define([
 
     onInit: function () {
       this._oViewModel = models.createAnalysisDetailModel();
+      this._oLegacyComparisonService = new LegacyComparisonService(this.getODataModel());
       this._oTablePersonalization = new TablePersonalizationService();
       this.getView().setModel(this._oViewModel, "detail");
       this._oMailViewModel = models.createMailUiModel();
@@ -39,6 +50,7 @@ sap.ui.define([
       Device.resize.attachHandler(this._onSourceObjectResize, this);
       this.getRouter().getRoute("analysisDetail").attachPatternMatched(this._onRouteMatched, this);
       this.getRouter().getRoute("detail").attachPatternMatched(this._onRouteMatched, this);
+      this.getRouter().attachRouteMatched(this._onAnyRouteMatched, this);
       this._oChatBox = new AnalysisChatBox(this);
       ["uiFilters", "databaseObjects", "businessLogic"].forEach(function (sSection) {
         var oScroll = this.byId(sSection + "Scroll");
@@ -63,7 +75,13 @@ sap.ui.define([
     onExit: function () {
       if (this._oChatBox) { this._oChatBox.destroy(); }
       Device.resize.detachHandler(this._onSourceObjectResize, this);
-      this.getComparisonService().cancelPolling();
+      this._iFioriUiRequestVersion = (this._iFioriUiRequestVersion || 0) + 1;
+      this._closeFioriUiReport();
+      this._bODataGenerationDialogOpen = false;
+      this._cancelODataGenerationPolling();
+      this._stopRequestHistory();
+      this._stopLegacyComparison();
+      this.getRouter().detachRouteMatched(this._onAnyRouteMatched, this);
       this.getDocumentService().cancelExportPolling();
       if (this._iProgramValueHelpSearchTimer) {
         clearTimeout(this._iProgramValueHelpSearchTimer);
@@ -82,6 +100,7 @@ sap.ui.define([
 
         onRefresh: function () {
           this._resetLoadedState();
+          this._loadRequestHistory();
           this._loadHeader().then(
             function () {
               return this._loadAllTabData();
@@ -307,94 +326,6 @@ sap.ui.define([
             this._prefillMailWizardFromAnalysis();
             this._openMailWizard();
           }
-        },
-
-        onRunComparisonForAnalysis: function () {
-          var sAnalysisId = this._oViewModel.getProperty("/analysisId");
-          var oComparisonService = this.getComparisonService();
-
-          if (this._oViewModel.getProperty("/comparison/busy")) {
-            return;
-          }
-
-          if (!oComparisonService.isGuid(sAnalysisId)) {
-            this.showErrorMessage(this.getText("comparisonAnalysisIdRequired"));
-            return;
-          }
-
-          this._setComparisonProgress(
-            true,
-            ComparisonConstants.progressState.submitting,
-            this.getText("comparisonSubmitting"),
-          );
-
-      var aPreviousRuns = [];
-
-          oComparisonService.cancelPolling();
-          oComparisonService.resetCancellation();
-
-      return oComparisonService.getComparisonRuns({
-        top: 100,
-        filters: { analysisId: sAnalysisId }
-      }).then(function (aRuns) {
-        aPreviousRuns = (aRuns || []).map(function (oRun) {
-          return Object.assign({}, oRun);
-        });
-        return oComparisonService.executeComparison(sAnalysisId);
-      }).then(function (oResult) {
-        if (oResult && oComparisonService.isGuid(oResult.CmpRunId)) {
-          return oResult;
-        }
-        this._setComparisonProgress(true, ComparisonConstants.progressState.discoveringRun, this.getText("comparisonDiscoveringRun"));
-        return oComparisonService.discoverNewRun(sAnalysisId, aPreviousRuns);
-      }.bind(this)).then(function (oRun) {
-        if (oComparisonService.isTerminalRun(oRun)) {
-          return oRun;
-        }
-        this._setComparisonProgress(true, ComparisonConstants.progressState.running, this.getText("comparisonRunning"));
-        return oComparisonService.pollRunStatus(oRun.CmpRunId);
-      }.bind(this)).then(function (oRun) {
-        var sRunId = oRun && oRun.CmpRunId;
-        var bFailed = oComparisonService.isFailedStatus(oRun && oRun.RunStatus);
-        var sMessage = bFailed ?
-          (oRun.ErrorMessage || this.getText("comparisonFailed")) :
-          this.getText("comparisonCompleted");
-
-                this._setComparisonProgress(
-                  false,
-                  bFailed
-                    ? ComparisonConstants.progressState.failed
-                    : ComparisonConstants.progressState.completed,
-                  sMessage,
-                );
-
-                if (bFailed) {
-                  this.showErrorMessage(sMessage);
-                } else {
-                  MessageToast.show(sMessage);
-                }
-
-                if (sRunId) {
-                  this.getRouter().navTo(ComparisonConstants.route.detail, {
-                    cmpRunId: encodeURIComponent(sRunId),
-                  });
-                }
-              }.bind(this),
-            )
-            .catch(
-              function (oError) {
-                this._setComparisonProgress(
-                  false,
-                  ComparisonConstants.progressState.failed,
-                  (oError && oError.message) ||
-                    this.getText("comparisonRunError"),
-                );
-                this.showErrorMessage(
-                  (oError && oError.message) ||
-                    this.getText("comparisonRunError"),
-                );
-              }.bind(this),
-            );
         },
 
         onCancelMailJobWizard: function () {
@@ -748,14 +679,35 @@ sap.ui.define([
           var sAnalysisId = decodeURIComponent(oArguments.analysisId || "");
 
           this._resetState(sAnalysisId);
+          this._bRequestHistoryActive = true;
+          this._loadRequestHistory();
           this._loadHeader().then(
             function () {
+              var oPending = this._oPendingHistoryRequest;
+              if (oPending && RequestHistory.sameId(oPending.analysisId, sAnalysisId)) {
+                this._oPendingHistoryRequest = null;
+                this._openRequestHistoryDetail(oPending);
+              }
               return this._loadAllTabData();
             }.bind(this),
           );
         },
 
     _resetState: function (sAnalysisId) {
+      this._stopRequestHistory();
+      this._stopLegacyComparison();
+      this._aRequestHistoryServerRows = [];
+      this._aRequestHistoryOptimisticRows = [];
+      this._aLegacyCapturedRows = null;
+      this._sLegacySelectionJson = "";
+      this._iFioriUiRequestVersion = (this._iFioriUiRequestVersion || 0) + 1;
+      this._closeFioriUiReport();
+      this._bODataGenerationDialogOpen = false;
+      this._cancelODataGenerationPolling();
+      ["fioriUiPrepareDialog", "odataGenerationDialog", "legacyComparisonDialog"].forEach(function (sId) {
+        var oDialog = this.byId(sId);
+        if (oDialog) { oDialog.close(); }
+      }.bind(this));
       this._iSourceCodeRequestToken = (this._iSourceCodeRequestToken || 0) + 1;
       this._mSourceCodeCache = Object.create(null);
       this._mExpandedSourceObjectKeys = Object.create(null);
@@ -2438,11 +2390,1172 @@ sap.ui.define([
           this._oViewModel.setProperty("/busy", bBusy);
         },
 
-        _setComparisonProgress: function (bBusy, sState, sMessage) {
-          this._oViewModel.setProperty("/comparison/busy", bBusy);
-          this._oViewModel.setProperty("/comparison/state", sState);
-          this._oViewModel.setProperty("/comparison/message", sMessage || "");
-        },
+
+
+    onRequestHistoryScopeChange: function (oEvent) {
+      this._oViewModel.setProperty("/requestHistory/scope", oEvent.getSource().getSelectedKey());
+      this._updateRequestHistoryItems();
+      this._scheduleRequestHistoryPoll();
+    },
+
+    onRefreshRequestHistory: function () {
+      this._clearRequestHistoryTimer();
+      return this._loadRequestHistory();
+    },
+
+    onRequestHistoryPress: function (oEvent) {
+      var oContext = oEvent.getSource().getBindingContext("detail");
+      var oRow = oContext && oContext.getObject();
+      if (!oRow || !oRow.analysisId || !oRow.requestId) { return; }
+      if (!RequestHistory.sameId(oRow.analysisId, this._oViewModel.getProperty("/analysisId"))) {
+        this._oPendingHistoryRequest = oRow;
+        this.getRouter().navTo("analysisDetail", { analysisId: oRow.analysisId });
+        return;
+      }
+      this._openRequestHistoryDetail(oRow);
+    },
+
+    _onAnyRouteMatched: function (oEvent) {
+      var sName = oEvent.getParameter("name");
+      if (sName !== "analysisDetail" && sName !== "detail") {
+        this._oPendingHistoryRequest = null;
+        this._stopRequestHistory();
+        this._stopLegacyComparison();
+        this._bODataGenerationDialogOpen = false;
+        this._cancelODataGenerationPolling();
+        var oGenerationDialog = this.byId && this.byId("odataGenerationDialog");
+        if (oGenerationDialog && oGenerationDialog.isOpen && oGenerationDialog.isOpen()) {
+          oGenerationDialog.close();
+        }
+      }
+    },
+
+    _clearRequestHistoryTimer: function () {
+      if (this._iRequestHistoryTimer) {
+        clearTimeout(this._iRequestHistoryTimer);
+        this._iRequestHistoryTimer = null;
+      }
+    },
+
+    _stopRequestHistory: function () {
+      this._bRequestHistoryActive = false;
+      this._iRequestHistoryVersion = (this._iRequestHistoryVersion || 0) + 1;
+      this._iRequestHistoryDetailVersion = (this._iRequestHistoryDetailVersion || 0) + 1;
+      this._pRequestHistoryLoad = null;
+      this._clearRequestHistoryTimer();
+    },
+
+    _updateRequestHistoryItems: function () {
+      var oState = this._oViewModel.getProperty("/requestHistory");
+      var aRows = RequestHistory.merge(this._aRequestHistoryServerRows || [],
+        this._aRequestHistoryOptimisticRows || []);
+      this._oViewModel.setProperty("/requestHistory/items", RequestHistory.visible(aRows,
+        this._oViewModel.getProperty("/analysisId"), oState.scope));
+    },
+
+    _scheduleRequestHistoryPoll: function () {
+      this._clearRequestHistoryTimer();
+      if (!this._bRequestHistoryActive || this._pRequestHistoryLoad ||
+          !(this._oViewModel.getProperty("/requestHistory/items") || []).some(function (oRow) {
+            return RequestHistory.isActive(oRow.status);
+          })) { return; }
+      this._iRequestHistoryTimer = setTimeout(function () {
+        this._iRequestHistoryTimer = null;
+        this._loadRequestHistory();
+      }.bind(this), REQUEST_POLL_INTERVAL_MS);
+    },
+
+    _loadRequestHistory: function () {
+      if (!this._bRequestHistoryActive) { return Promise.resolve(); }
+      if (this._pRequestHistoryLoad) { return this._pRequestHistoryLoad; }
+      var iVersion = this._iRequestHistoryVersion;
+      this._oViewModel.setProperty("/requestHistory/busy", true);
+      this._oViewModel.setProperty("/requestHistory/error", "");
+      this._pRequestHistoryLoad = Promise.resolve().then(function () {
+        return this.getRequestHistoryService().readMyRequests();
+      }.bind(this)).then(function (oResult) {
+        if (!this._bRequestHistoryActive || iVersion !== this._iRequestHistoryVersion) { return; }
+        var aServer = oResult.captures.map(function (oRow) {
+          return RequestHistory.normalize(oRow, "CAPTURE");
+        }).concat(oResult.generations.map(function (oRow) {
+          return RequestHistory.normalize(oRow, "GENERATION");
+        }));
+        var mFound = {};
+        aServer.forEach(function (oRow) { mFound[RequestHistory.key(oRow)] = true; });
+        this._aRequestHistoryOptimisticRows = (this._aRequestHistoryOptimisticRows || []).filter(function (oRow) {
+          return !mFound[RequestHistory.key(oRow)] && Date.now() - oRow._addedAt < 600000;
+        });
+        this._aRequestHistoryServerRows = aServer;
+        this._updateRequestHistoryItems();
+      }.bind(this)).catch(function (oError) {
+        if (this._bRequestHistoryActive && iVersion === this._iRequestHistoryVersion) {
+          var sMessage = this.parseError(oError).message;
+          this._oViewModel.setProperty("/requestHistory/error", sMessage && sMessage !== "Unexpected error." ?
+            sMessage : this.getText("requestHistoryLoadError"));
+        }
+      }.bind(this)).finally(function () {
+        if (this._bRequestHistoryActive && iVersion === this._iRequestHistoryVersion) {
+          this._pRequestHistoryLoad = null;
+          this._oViewModel.setProperty("/requestHistory/busy", false);
+          this._scheduleRequestHistoryPoll();
+        }
+      }.bind(this));
+      return this._pRequestHistoryLoad;
+    },
+
+    _recordSubmittedRequest: function (sKind, sAnalysisId, sRequestId, oResponse) {
+      if (!this._bRequestHistoryActive || !sRequestId ||
+          !RequestHistory.sameId(sAnalysisId, this._oViewModel.getProperty("/analysisId"))) { return; }
+      var oRow = RequestHistory.normalize({
+        RequestId: sRequestId,
+        AnalysisId: sAnalysisId,
+        CreatedAt: new Date().toISOString(),
+        Status: oResponse && oResponse.Status || "QUEUED",
+        Message: oResponse && oResponse.Message || "",
+        CountRow: oResponse && oResponse.CountRow
+      }, sKind);
+      oRow._addedAt = Date.now();
+      this._aRequestHistoryOptimisticRows = (this._aRequestHistoryOptimisticRows || []).filter(function (oExisting) {
+        return RequestHistory.key(oExisting) !== RequestHistory.key(oRow);
+      });
+      this._aRequestHistoryOptimisticRows.push(oRow);
+      this._updateRequestHistoryItems();
+      this._clearRequestHistoryTimer();
+      this._loadRequestHistory();
+    },
+
+    _openRequestHistoryDetail: function (oRow) {
+      var sAnalysisId = oRow.analysisId;
+      var sRequestId = oRow.requestId;
+      var iVersion = (this._iRequestHistoryDetailVersion || 0) + 1;
+      this._iRequestHistoryDetailVersion = iVersion;
+      this._iLegacyComparisonVersion = (this._iLegacyComparisonVersion || 0) + 1;
+      if (oRow.kind === "CAPTURE") {
+        this._stopLegacyComparison();
+        this._aLegacyCapturedRows = null;
+        this._sLegacySelectionJson = "";
+        this._oViewModel.setProperty("/comparison/historyMode", true);
+        this._oViewModel.setProperty("/comparison/requestId", sRequestId);
+        this._oViewModel.setProperty("/comparison/captureStatus", oRow.status);
+        this._oViewModel.setProperty("/comparison/captureMessage", oRow.message);
+        this._oViewModel.setProperty("/comparison/captureCount", oRow.rowCount);
+        this._oViewModel.setProperty("/comparison/ready", false);
+        this._oViewModel.setProperty("/comparison/reason", oRow.message || "");
+        this.onOpenLegacyComparison();
+        this.onCheckLegacyCapture();
+        return;
+      }
+      this._cancelODataGenerationPolling();
+      this._oViewModel.setProperty("/odataGeneration/requestId", sRequestId);
+      this._oViewModel.setProperty("/odataGeneration/status", oRow.status);
+      this._oViewModel.setProperty("/odataGeneration/message", oRow.message);
+      this._oViewModel.setProperty("/odataGeneration/result", {});
+      this._oViewModel.setProperty("/odataGeneration/hasResult", true);
+      this._oViewModel.setProperty("/odataGeneration/preflightReady", false);
+      this._oViewModel.setProperty("/odataGeneration/canGenerate", false);
+      this._oViewModel.setProperty("/odataGeneration/error", "");
+      this._openODataGenerationDialog(sAnalysisId);
+      this._setODataGenerationBusy(true);
+      this.getAnalysisService().getODataGeneration(sAnalysisId, sRequestId).then(function (oResponse) {
+        if (iVersion !== this._iRequestHistoryDetailVersion || !this._bRequestHistoryActive ||
+            !RequestHistory.sameId(sAnalysisId, this._oViewModel.getProperty("/analysisId"))) { return; }
+        if (oResponse && ((oResponse.RequestId && !RequestHistory.sameId(oResponse.RequestId, sRequestId)) ||
+            (oResponse.AnalysisId && !RequestHistory.sameId(oResponse.AnalysisId, sAnalysisId)))) {
+          throw new Error("Generation response does not match AnalysisId and RequestId.");
+        }
+        var oParsed = this._applyODataGenerationResponse(oResponse);
+        if (oParsed.status === "FAILED" || oParsed.status === "DISPATCH_FAILED" || oParsed.status === "BLOCKED") {
+          this._oViewModel.setProperty("/odataGeneration/error", oParsed.message || this.getText("odataGenerationFailed"));
+        }
+      }.bind(this)).catch(function (oError) {
+        if (iVersion === this._iRequestHistoryDetailVersion && this._bRequestHistoryActive) {
+          this._showODataGenerationError(oError, "requestHistoryDetailError");
+        }
+      }.bind(this)).finally(function () {
+        if (iVersion === this._iRequestHistoryDetailVersion && this._bRequestHistoryActive) {
+          this._setODataGenerationBusy(false);
+          this._resumeODataGenerationPolling();
+        }
+      }.bind(this));
+    },
+
+    onOpenFioriUiPrepareDialog: function () {
+      var sAnalysisId = this._oViewModel.getProperty("/analysisId");
+      if (!sAnalysisId) {
+        return;
+      }
+      this._oViewModel.setProperty("/fioriUi/error", "");
+      this._openFioriUiPrepareDialog(sAnalysisId);
+    },
+
+    onCloseFioriUiPrepareDialog: function () {
+      if (this._oViewModel.getProperty("/fioriUi/busy")) {
+        return;
+      }
+      this.byId("fioriUiPrepareDialog").close();
+    },
+
+    onFioriUiInputChange: function (oEvent) {
+      var oBinding = oEvent.getSource().getBinding("value");
+      var sPath = oBinding && oBinding.getPath();
+      if (sPath !== "/fioriUi/serviceRootUrl") {
+        return;
+      }
+      var sValue = oEvent.getParameter("value");
+      this._closeFioriUiReport();
+      this._oViewModel.setProperty(sPath, sValue);
+      this._iFioriUiRequestVersion = (this._iFioriUiRequestVersion || 0) + 1;
+      this._oViewModel.setProperty("/fioriUi", Object.assign({}, this._oViewModel.getProperty("/fioriUi"), {
+        busy: false, error: "", hasResult: false, status: "", runtimeCheck: "", issueCount: 0,
+        entitySet: "", issues: [], columns: [], filters: [], config: null,
+        prepareAnalysisId: "", configAnalysisId: "",
+        metadataStatus: "", metadataIssues: [], metadataSignature: "", reportError: ""
+      }));
+    },
+
+    onPrepareFioriUi: function () {
+      if (this._oViewModel.getProperty("/fioriUi/busy")) {
+        return;
+      }
+      var sAnalysisId = this._oViewModel.getProperty("/analysisId");
+      var sServiceRootUrl = String(this._oViewModel.getProperty("/fioriUi/serviceRootUrl") || "").trim();
+      var iRequestVersion;
+
+      if (!sAnalysisId || !sServiceRootUrl) {
+        this._oViewModel.setProperty("/fioriUi/error", this.getText("fioriUiRequiredInputs"));
+        return;
+      }
+
+      iRequestVersion = (this._iFioriUiRequestVersion || 0) + 1;
+      this._closeFioriUiReport();
+      this._iFioriUiRequestVersion = iRequestVersion;
+      this._oViewModel.setProperty("/fioriUi/error", "");
+      this._oViewModel.setProperty("/fioriUi/hasResult", false);
+      this._oViewModel.setProperty("/fioriUi/metadataStatus", "");
+      this._oViewModel.setProperty("/fioriUi/metadataIssues", []);
+      this._oViewModel.setProperty("/fioriUi/metadataSignature", "");
+      this._oViewModel.setProperty("/fioriUi/reportError", "");
+      this._oViewModel.setProperty("/fioriUi/config", null);
+      this._oViewModel.setProperty("/fioriUi/prepareAnalysisId", "");
+      this._oViewModel.setProperty("/fioriUi/configAnalysisId", "");
+      this._oViewModel.setProperty("/fioriUi/busy", true);
+      this.getAnalysisService().prepareFioriUi(sAnalysisId, {
+        targetPackage: FIORI_UI_TARGET_PACKAGE,
+        serviceRootUrl: sServiceRootUrl
+      }).then(function (oResponse) {
+        var oResult = FioriUiConfig.parse(oResponse);
+        if (iRequestVersion === this._iFioriUiRequestVersion && sAnalysisId === this._oViewModel.getProperty("/analysisId")) {
+          this._oViewModel.setProperty("/fioriUi", Object.assign({}, this._oViewModel.getProperty("/fioriUi"), oResult, {
+            busy: false,
+            error: "",
+            hasResult: true
+          }));
+        }
+      }.bind(this)).catch(function (oError) {
+        if (iRequestVersion === this._iFioriUiRequestVersion && sAnalysisId === this._oViewModel.getProperty("/analysisId")) {
+          var sMessage = oError && oError.message === "Invalid ConfigJson." ?
+            this.getText("fioriUiInvalidConfigJson") : this.parseError(oError).message;
+          this._oViewModel.setProperty("/fioriUi/error", sMessage && sMessage !== "Unexpected error." ?
+            sMessage : this.getText("fioriUiPrepareError"));
+        }
+      }.bind(this)).finally(function () {
+        if (iRequestVersion === this._iFioriUiRequestVersion && sAnalysisId === this._oViewModel.getProperty("/analysisId")) {
+          this._oViewModel.setProperty("/fioriUi/busy", false);
+        }
+      }.bind(this));
+    },
+
+    onValidateFioriUiMetadata: function () {
+      var oState = this._oViewModel.getProperty("/fioriUi");
+      var sAnalysisId = this._oViewModel.getProperty("/analysisId");
+      if (oState.busy || !oState.hasResult || oState.status !== "CONFIG_READY" || !oState.config) {
+        return;
+      }
+      var iRequestVersion = (this._iFioriUiRequestVersion || 0) + 1;
+      this._closeFioriUiReport();
+      this._iFioriUiRequestVersion = iRequestVersion;
+      this._oViewModel.setProperty("/fioriUi/busy", true);
+      this._oViewModel.setProperty("/fioriUi/metadataStatus", "");
+      this._oViewModel.setProperty("/fioriUi/metadataIssues", []);
+      this._oViewModel.setProperty("/fioriUi/metadataSignature", "");
+      this._oViewModel.setProperty("/fioriUi/reportError", "");
+      var sSignature = this._fioriUiSignature();
+      Promise.resolve().then(function () {
+        FioriUiReportConfig.assertService(oState.config, oState.serviceRootUrl);
+        return FioriUiMetadata.check(oState.config);
+      }).then(function (oResult) {
+        if (iRequestVersion === this._iFioriUiRequestVersion && sAnalysisId === this._oViewModel.getProperty("/analysisId")) {
+          this._oViewModel.setProperty("/fioriUi/metadataStatus", oResult.status);
+          this._oViewModel.setProperty("/fioriUi/metadataSignature", oResult.status === "VALIDATED" ? sSignature : "");
+          this._oViewModel.setProperty("/fioriUi/metadataIssues", oResult.issues.map(function (sIssue) {
+            return { message: sIssue };
+          }));
+        }
+      }.bind(this)).catch(function (oError) {
+        if (iRequestVersion === this._iFioriUiRequestVersion && sAnalysisId === this._oViewModel.getProperty("/analysisId")) {
+          this._oViewModel.setProperty("/fioriUi/metadataStatus", "INVALID");
+          this._oViewModel.setProperty("/fioriUi/metadataIssues", [
+            { message: oError.message || this.getText("fioriUiMetadataError") }
+          ]);
+        }
+      }.bind(this)).finally(function () {
+        if (iRequestVersion === this._iFioriUiRequestVersion && sAnalysisId === this._oViewModel.getProperty("/analysisId")) {
+          this._oViewModel.setProperty("/fioriUi/busy", false);
+        }
+      }.bind(this));
+    },
+
+    _fioriUiSignature: function () {
+      return JSON.stringify({
+        routeAnalysisId: this._sCurrentRouteAnalysisId || "",
+        analysisId: this._oViewModel.getProperty("/analysisId"),
+        prepareAnalysisId: this._oViewModel.getProperty("/fioriUi/prepareAnalysisId"),
+        configAnalysisId: this._oViewModel.getProperty("/fioriUi/configAnalysisId"),
+        serviceRootUrl: this._oViewModel.getProperty("/fioriUi/serviceRootUrl"),
+        config: this._oViewModel.getProperty("/fioriUi/config")
+      });
+    },
+
+    onOpenFioriUiReport: function () {
+      var oState = this._oViewModel.getProperty("/fioriUi");
+      var sSignature = this._fioriUiSignature();
+      this._closeFioriUiReport();
+      this._oViewModel.setProperty("/fioriUi/reportError", "");
+      try {
+        var sServiceUrl = FioriUiReportConfig.assertCurrent(oState,
+          this._oViewModel.getProperty("/analysisId"), this._sCurrentRouteAnalysisId, sSignature);
+        this._oFioriUiReport = FioriUiReport.open(this, sServiceUrl, oState.config, function () {
+          try {
+            FioriUiReportConfig.assertCurrent(this._oViewModel.getProperty("/fioriUi"),
+              this._oViewModel.getProperty("/analysisId"), this._sCurrentRouteAnalysisId,
+              this._fioriUiSignature());
+            return sSignature === this._fioriUiSignature();
+          } catch (oError) {
+            return false;
+          }
+        }.bind(this));
+      } catch (oError) {
+        this._oViewModel.setProperty("/fioriUi/reportError", oError.message);
+      }
+    },
+
+    _closeFioriUiReport: function () {
+      if (this._oFioriUiReport) {
+        this._oFioriUiReport.close();
+        this._oFioriUiReport = null;
+      }
+    },
+
+    onOpenODataGenerationDialog: function () {
+      var sAnalysisId = this._oViewModel.getProperty("/analysisId");
+      var sStatus = this._oViewModel.getProperty("/odataGeneration/status");
+
+      if (!sAnalysisId) {
+        this._oViewModel.setProperty("/odataGeneration/error", this.getText("odataGenerationAnalysisIdRequired"));
+        return;
+      }
+      if (sStatus !== "BLOCKED" && sStatus !== "FAILED" && sStatus !== "DISPATCH_FAILED") {
+        this._oViewModel.setProperty("/odataGeneration/error", "");
+      }
+      this._openODataGenerationDialog(sAnalysisId);
+    },
+
+    onCloseODataGenerationDialog: function () {
+      this._iRequestHistoryDetailVersion = (this._iRequestHistoryDetailVersion || 0) + 1;
+      this._bODataGenerationDialogOpen = false;
+      this._cancelODataGenerationPolling();
+      var oDialog = this.byId("odataGenerationDialog");
+      if (oDialog) {
+        oDialog.close();
+      }
+    },
+
+    onAfterCloseODataGenerationDialog: function () {
+      this._iRequestHistoryDetailVersion = (this._iRequestHistoryDetailVersion || 0) + 1;
+      this._bODataGenerationDialogOpen = false;
+      this._cancelODataGenerationPolling();
+    },
+
+    onODataGenerationInputChange: function (oEvent) {
+      if (ODataGeneration.isGenerationActive(this._oViewModel.getProperty("/odataGeneration/status")) ||
+          this._oViewModel.getProperty("/odataGeneration/dialogBusy")) {
+        return;
+      }
+      var oSource = oEvent.getSource();
+      var oBinding = oSource.getBinding("value") || oSource.getBinding("selectedKey");
+      var sPath = oBinding && oBinding.getPath();
+      var sValue = oSource.getValue ? oSource.getValue() : oSource.getSelectedKey();
+
+      if (sPath) {
+        this._oViewModel.setProperty(sPath, ODataGeneration.normalizeUpper(sValue));
+      }
+      this._invalidateODataGenerationPreflight();
+    },
+
+    onPreflightOData: function () {
+      var oState;
+      var oParameters;
+      var sValidationError;
+      var iRequestVersion;
+      var sAnalysisId = this._oViewModel.getProperty("/analysisId");
+
+      if (this._oViewModel.getProperty("/odataGeneration/dialogBusy") ||
+          ODataGeneration.isGenerationActive(this._oViewModel.getProperty("/odataGeneration/status"))) {
+        return;
+      }
+      oState = this._oViewModel.getProperty("/odataGeneration");
+      sValidationError = this._validateODataGeneration(oState, false);
+      if (!sAnalysisId || sValidationError) {
+        this._oViewModel.setProperty("/odataGeneration/error", !sAnalysisId ?
+          this.getText("odataGenerationAnalysisIdRequired") : sValidationError);
+        return;
+      }
+
+      oParameters = ODataGeneration.normalizeParameters(oState, ODataGeneration.ZERO_UUID);
+      if (oState.status === "GENERATED" || oState.status === "FAILED" || oState.status === "BLOCKED") {
+        this._oViewModel.setProperty("/odataGeneration/requestId", "");
+        this._oViewModel.setProperty("/odataGeneration/generationSignature", "");
+      }
+      this._oViewModel.setProperty("/odataGeneration/preflightReady", false);
+      this._oViewModel.setProperty("/odataGeneration/preflightSignature", "");
+      this._oViewModel.setProperty("/odataGeneration/canGenerate", false);
+      iRequestVersion = (this._iODataGenerationRequestVersion || 0) + 1;
+      this._iODataGenerationRequestVersion = iRequestVersion;
+      this._setODataGenerationInputs(oParameters);
+      this._setODataGenerationBusy(true);
+      this.getAnalysisService().preflightOData(sAnalysisId, oParameters).then(function (oResponse) {
+        if (iRequestVersion !== this._iODataGenerationRequestVersion ||
+            sAnalysisId !== this._oViewModel.getProperty("/analysisId")) {
+          return;
+        }
+        var oParsed = this._applyODataGenerationResponse(oResponse);
+        var bReady = oParsed.status === "READY";
+        this._oViewModel.setProperty("/odataGeneration/preflightReady", bReady);
+        this._oViewModel.setProperty("/odataGeneration/preflightSignature", bReady ? ODataGeneration.signature(oState) : "");
+        this._oViewModel.setProperty("/odataGeneration/canGenerate", bReady);
+        if (oParsed.status === "BLOCKED") {
+          this._oViewModel.setProperty("/odataGeneration/error", oParsed.message || this.getText("odataGenerationBlocked"));
+        }
+      }.bind(this)).catch(function (oError) {
+        if (iRequestVersion === this._iODataGenerationRequestVersion) {
+          this._invalidateODataGenerationPreflight(false);
+          this._showODataGenerationError(oError, "odataGenerationPreflightError");
+        }
+      }.bind(this)).finally(function () {
+        if (iRequestVersion === this._iODataGenerationRequestVersion) {
+          this._setODataGenerationBusy(false);
+        }
+      }.bind(this));
+    },
+
+    onGenerateOData: function () {
+      var oState;
+      var oParameters;
+      var sSignature;
+      var sRequestId;
+      var sValidationError;
+      var iRequestVersion;
+      var sAnalysisId = this._oViewModel.getProperty("/analysisId");
+
+      if (this._oViewModel.getProperty("/odataGeneration/dialogBusy") ||
+          ODataGeneration.isGenerationActive(this._oViewModel.getProperty("/odataGeneration/status"))) {
+        return;
+      }
+      oState = this._oViewModel.getProperty("/odataGeneration");
+      sValidationError = this._validateODataGeneration(oState, true);
+      sSignature = ODataGeneration.signature(oState);
+      if (!sAnalysisId || sValidationError || !oState.preflightReady || oState.preflightSignature !== sSignature) {
+        this._oViewModel.setProperty("/odataGeneration/error", !sAnalysisId ?
+          this.getText("odataGenerationAnalysisIdRequired") : sValidationError || this.getText("odataGenerationPreflightRequired"));
+        return;
+      }
+
+      sRequestId = ODataGeneration.createUuid();
+      oParameters = ODataGeneration.normalizeParameters(oState, sRequestId);
+      iRequestVersion = (this._iODataGenerationRequestVersion || 0) + 1;
+      this._iODataGenerationRequestVersion = iRequestVersion;
+      this._setODataGenerationInputs(oParameters);
+      this._oViewModel.setProperty("/odataGeneration/requestId", sRequestId);
+      this._oViewModel.setProperty("/odataGeneration/generationSignature", sSignature);
+      this._oViewModel.setProperty("/odataGeneration/canGenerate", false);
+      this._oViewModel.setProperty("/odataGeneration/preflightReady", false);
+      this._setODataGenerationBusy(true);
+      this.getAnalysisService().generateOData(sAnalysisId, oParameters).then(function (oResponse) {
+        if (iRequestVersion === this._iODataGenerationRequestVersion &&
+            sAnalysisId === this._oViewModel.getProperty("/analysisId")) {
+          this._handleODataGenerationStatus(this._applyODataGenerationResponse(oResponse), true);
+          this._recordSubmittedRequest("GENERATION", sAnalysisId, sRequestId, oResponse);
+        }
+      }.bind(this)).catch(function (oError) {
+        if (iRequestVersion === this._iODataGenerationRequestVersion) {
+          this._showODataGenerationError(oError, "odataGenerationGenerateError");
+        }
+      }.bind(this)).finally(function () {
+        if (iRequestVersion === this._iODataGenerationRequestVersion) {
+          this._setODataGenerationBusy(false);
+        }
+      }.bind(this));
+    },
+
+    onRefreshODataGeneration: function () {
+      this._clearODataGenerationTimer();
+      this._oViewModel.setProperty("/odataGeneration/polling", false);
+      this._pollODataGeneration(true);
+    },
+
+    onOpenLegacyComparison: function () {
+      var oState = this._oViewModel.getProperty("/comparison");
+      var oPrepared = this._oViewModel.getProperty("/fioriUi") || {};
+      var oGenerated = this._oViewModel.getProperty("/odataGeneration/result") || {};
+      var sGeneratedRoot = oGenerated.serviceUrl || "";
+      var oManifest = this.getOwnerComponent && this.getOwnerComponent().getManifest();
+      var sMainRoot = oManifest && oManifest["sap.app"] &&
+        oManifest["sap.app"].dataSources && oManifest["sap.app"].dataSources.mainService.uri || "";
+      var aClient = /[?&]sap-client=([0-9]{1,3})/.exec(sMainRoot);
+      if (sGeneratedRoot && aClient && !/[?&]sap-client=/.test(sGeneratedRoot)) {
+        sGeneratedRoot += (sGeneratedRoot.indexOf("?") < 0 ? "?" : "&") + "sap-client=" + aClient[1];
+      }
+      if (!oState.serviceRootUrl) {
+        this._oViewModel.setProperty("/comparison/serviceRootUrl",
+          oPrepared.metadataStatus === "VALIDATED" && oPrepared.serviceRootUrl || sGeneratedRoot);
+      }
+      if (!oState.entitySet) {
+        this._oViewModel.setProperty("/comparison/entitySet",
+          oPrepared.metadataStatus === "VALIDATED" && oPrepared.entitySet || oGenerated.entityName || "");
+      }
+      if (!this._pLegacyComparisonDialog) {
+        this._pLegacyComparisonDialog = Fragment.load({
+          id: this.getView().getId(),
+          name: "abap.to.fiori.system.view.fragments.LegacyComparisonDialog",
+          controller: this
+        }).then(function (oDialog) {
+          this.getView().addDependent(oDialog);
+          return oDialog;
+        }.bind(this));
+      }
+      var sAnalysisId = this._oViewModel.getProperty("/analysisId");
+      this._pLegacyComparisonDialog.then(function (oDialog) {
+        if (sAnalysisId === this._oViewModel.getProperty("/analysisId")) {
+          oDialog.open();
+          this._bLegacyComparisonOpen = true;
+          var oCurrent = this._oViewModel.getProperty("/comparison");
+          if (!oCurrent.historyMode && oCurrent.requestId && this._sLegacySelectionJson === "[]" &&
+              RequestHistory.isActive(oCurrent.captureStatus)) {
+            this._bLegacyAutoCompare = true;
+          }
+          this._scheduleLegacyComparisonPoll();
+        }
+      }.bind(this)).catch(function (oError) {
+        this._pLegacyComparisonDialog = null;
+        this._oViewModel.setProperty("/comparison/reason", oError.message);
+      }.bind(this));
+    },
+
+    onCloseLegacyComparison: function () {
+      this._stopLegacyComparison();
+      this._oViewModel.setProperty("/comparison/busy", false);
+      this.byId("legacyComparisonDialog").close();
+    },
+
+    _clearLegacyComparisonTimer: function () {
+      if (this._iLegacyComparisonTimer) {
+        clearTimeout(this._iLegacyComparisonTimer);
+        this._iLegacyComparisonTimer = null;
+      }
+    },
+
+    _stopLegacyComparison: function () {
+      this._clearLegacyComparisonTimer();
+      this._bLegacyAutoCompare = false;
+      this._bLegacyComparisonOpen = false;
+      this._iLegacyComparisonVersion = (this._iLegacyComparisonVersion || 0) + 1;
+    },
+
+    _scheduleLegacyComparisonPoll: function () {
+      this._clearLegacyComparisonTimer();
+      var oState = this._oViewModel.getProperty("/comparison");
+      if (!this._bLegacyComparisonOpen || !this._bLegacyAutoCompare || oState.busy ||
+          !oState.requestId || !RequestHistory.isActive(oState.captureStatus)) { return; }
+      this._iLegacyComparisonTimer = setTimeout(function () {
+        this._iLegacyComparisonTimer = null;
+        this.onCheckLegacyCapture();
+      }.bind(this), REQUEST_POLL_INTERVAL_MS);
+    },
+
+    _clearLegacyMappingLog: function () {
+      this._oViewModel.setProperty("/comparison/mappingLog", []);
+      this._oViewModel.setProperty("/comparison/mappingLogReady", false);
+    },
+
+    _resetLegacyRunLog: function () {
+      this._oViewModel.setProperty("/comparison/runLog", []);
+      this._oViewModel.setProperty("/comparison/runLogText", "");
+    },
+
+    _appendLegacyRunLog: function (sLevel, sStep, sMessage) {
+      var aLog = this._oViewModel.getProperty("/comparison/runLog") || [];
+      var oEntry = { timestamp: new Date().toISOString(), level: sLevel, step: sStep,
+        message: String(sMessage).replace(/[\r\n]+/g, " ") };
+      aLog.push(oEntry);
+      this._oViewModel.setProperty("/comparison/runLog", aLog);
+      var sPrevious = this._oViewModel.getProperty("/comparison/runLogText") || "";
+      this._oViewModel.setProperty("/comparison/runLogText", (sPrevious ? sPrevious + "\n" : "") +
+        "[" + oEntry.timestamp + "] [" + oEntry.level + "] [" + oEntry.step + "] " + oEntry.message);
+    },
+
+    onLegacyComparisonInputChange: function (oEvent) {
+      var oBinding = oEvent.getSource().getBinding("value");
+      var sPath = oBinding && oBinding.getPath();
+      if (sPath) { this._oViewModel.setProperty(sPath, oEvent.getParameter("value")); }
+      this._oViewModel.setProperty("/comparison/manualColumnMappingJson", "{}");
+      this._iLegacyComparisonVersion = (this._iLegacyComparisonVersion || 0) + 1;
+      this._clearLegacyComparisonTimer();
+      this._bLegacyAutoCompare = false;
+      this._oViewModel.setProperty("/comparison/busy", false);
+      this._resetLegacyRunLog();
+      this._aLegacyCapturedRows = null;
+      this._oViewModel.setProperty("/comparison/requestId", "");
+      this._oViewModel.setProperty("/comparison/captureStatus", "");
+      this._oViewModel.setProperty("/comparison/captureMessage", "");
+      this._oViewModel.setProperty("/comparison/captureCount", null);
+      this._oViewModel.setProperty("/comparison/ready", false);
+      this._oViewModel.setProperty("/comparison/status", "INCONCLUSIVE");
+      this._oViewModel.setProperty("/comparison/reason", this.getText("legacyCompareInputsChanged"));
+      this._oViewModel.setProperty("/comparison/differences", []);
+      this._clearLegacyMappingLog();
+      this._oViewModel.setProperty("/comparison/odataCount", null);
+      this._oViewModel.setProperty("/comparison/comparedColumnCount", null);
+      this._oViewModel.setProperty("/comparison/scopeMessage", "");
+      this._appendLegacyRunLog("WARN", "INPUT", "Comparison input changed: " + (sPath || "unknown") + ". Previous result invalidated.");
+    },
+
+    onLegacyComparisonMappingChange: function (oEvent) {
+      this._oViewModel.setProperty("/comparison/manualColumnMappingJson", oEvent.getParameter("value"));
+      this._iLegacyComparisonVersion = (this._iLegacyComparisonVersion || 0) + 1;
+      this._oViewModel.setProperty("/comparison/status", "INCONCLUSIVE");
+      this._oViewModel.setProperty("/comparison/reason", this.getText("legacyCompareInputsChanged"));
+      this._oViewModel.setProperty("/comparison/differences", []);
+      this._oViewModel.setProperty("/comparison/odataCount", null);
+      this._oViewModel.setProperty("/comparison/comparedColumnCount", null);
+      this._oViewModel.setProperty("/comparison/scopeMessage", "");
+      this._clearLegacyMappingLog();
+      this._appendLegacyRunLog("INFO", "MAPPING", "Manual column mapping changed; retry comparison with the current capture.");
+    },
+
+    onRequestLegacyCapture: function () {
+      var oState = this._oViewModel.getProperty("/comparison");
+      var sAnalysisId = this._oViewModel.getProperty("/analysisId");
+      if (oState.busy || RequestHistory.isActive(oState.captureStatus)) { return; }
+      if (!oState.serviceRootUrl || !oState.entitySet) {
+        this._resetLegacyRunLog();
+        this._legacyInconclusive(new Error(this.getText("legacyCompareTargetRequired")), "CAPTURE");
+        return;
+      }
+      try {
+        FioriUiReportConfig.serviceUrl(oState.serviceRootUrl);
+        if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(oState.entitySet)) {
+          throw new Error("Invalid generated OData entity set name.");
+        }
+      } catch (oError) {
+        this._resetLegacyRunLog();
+        this._legacyInconclusive(oError, "CAPTURE");
+        return;
+      }
+      var sSelectionJson = "[]";
+      var sRequestId = ODataGeneration.createUuid();
+      var bSubmitted = false;
+      var iVersion = (this._iLegacyComparisonVersion || 0) + 1;
+      this._iLegacyComparisonVersion = iVersion;
+      this._clearLegacyComparisonTimer();
+      this._bLegacyAutoCompare = true;
+      this._oViewModel.setProperty("/comparison/historyMode", false);
+      this._oViewModel.setProperty("/comparison/selectionJson", sSelectionJson);
+      this._aLegacyCapturedRows = null;
+      this._sLegacySelectionJson = sSelectionJson;
+      this._oViewModel.setProperty("/comparison/requestId", sRequestId);
+      this._oViewModel.setProperty("/comparison/captureStatus", "");
+      this._oViewModel.setProperty("/comparison/captureMessage", "");
+      this._oViewModel.setProperty("/comparison/captureCount", null);
+      this._oViewModel.setProperty("/comparison/odataCount", null);
+      this._oViewModel.setProperty("/comparison/comparedColumnCount", null);
+      this._oViewModel.setProperty("/comparison/scopeMessage", "");
+      this._oViewModel.setProperty("/comparison/differences", []);
+      this._clearLegacyMappingLog();
+      this._oViewModel.setProperty("/comparison/ready", false);
+      this._oViewModel.setProperty("/comparison/busy", true);
+      this._oViewModel.setProperty("/comparison/status", "INCONCLUSIVE");
+      this._oViewModel.setProperty("/comparison/reason", this.getText("legacyCompareSubmitting"));
+      this._resetLegacyRunLog();
+      this._appendLegacyRunLog("INFO", "CAPTURE", "Submitting AnalysisId=" + sAnalysisId +
+        " RequestId=" + sRequestId + " SelectionJson=" + sSelectionJson + ".");
+      return Promise.resolve().then(function () {
+        return this._oLegacyComparisonService.captureLegacyRows(sAnalysisId, sRequestId, sSelectionJson);
+      }.bind(this)).then(function (oResponse) {
+        if (iVersion !== this._iLegacyComparisonVersion || sAnalysisId !== this._oViewModel.getProperty("/analysisId")) { return; }
+        if (oResponse && oResponse.RequestId &&
+            String(oResponse.RequestId).toLowerCase() !== sRequestId.toLowerCase()) {
+          throw new Error("CaptureLegacyRows returned a different RequestId.");
+        }
+        bSubmitted = true;
+        this._recordSubmittedRequest("CAPTURE", sAnalysisId, sRequestId, oResponse);
+        return oResponse && oResponse.Status ? oResponse :
+          this._oLegacyComparisonService.getLegacyCapture(sAnalysisId, sRequestId);
+      }.bind(this)).then(function (oResponse) {
+        if (iVersion !== this._iLegacyComparisonVersion || sAnalysisId !== this._oViewModel.getProperty("/analysisId")) { return; }
+        if (!oResponse || !oResponse.Status) {
+          throw new Error("Capture request was sent, but SAP did not return its Status.");
+        }
+        this._oViewModel.setProperty("/comparison/captureStatus", oResponse.Status);
+        this._oViewModel.setProperty("/comparison/captureMessage", oResponse.Message || "");
+        this._oViewModel.setProperty("/comparison/reason", oResponse.Status === "CAPTURED" ?
+          this.getText("legacyCompareReady") : RequestHistory.isActive(oResponse.Status) ?
+            this.getText("legacyCompareWorkerHint") : oResponse.Message || oResponse.Status);
+        this._appendLegacyRunLog("INFO", "CAPTURE", "RequestId=" + sRequestId + " Status=" + oResponse.Status + ".");
+        if (RequestHistory.isActive(oResponse.Status)) {
+          this._appendLegacyRunLog("INFO", "WORKER", "Capture is pending; the scheduled SAP background job runs about every 2 minutes and status refreshes automatically.");
+        }
+      }.bind(this)).catch(function (oError) {
+        if (iVersion === this._iLegacyComparisonVersion) {
+          this._legacyInconclusive(oError, "CAPTURE");
+          if (!bSubmitted) {
+            this._oViewModel.setProperty("/comparison/requestId", "");
+          } else if (!this._oViewModel.getProperty("/comparison/captureStatus")) {
+            this._oViewModel.setProperty("/comparison/captureStatus", "UNKNOWN");
+          }
+        }
+      }.bind(this)).finally(function () {
+        if (iVersion === this._iLegacyComparisonVersion) {
+          this._oViewModel.setProperty("/comparison/busy", false);
+          if (bSubmitted && this._oViewModel.getProperty("/comparison/captureStatus") === "CAPTURED") {
+            return this.onCheckLegacyCapture();
+          }
+          this._scheduleLegacyComparisonPoll();
+        }
+      }.bind(this));
+    },
+
+    onCheckLegacyCapture: function () {
+      var oState = this._oViewModel.getProperty("/comparison");
+      var sAnalysisId = this._oViewModel.getProperty("/analysisId");
+      var sRequestId = oState.requestId;
+      if (oState.busy || !sRequestId) { return; }
+      this._clearLegacyComparisonTimer();
+      var iVersion = (this._iLegacyComparisonVersion || 0) + 1;
+      this._iLegacyComparisonVersion = iVersion;
+      this._aLegacyCapturedRows = null;
+      this._oViewModel.setProperty("/comparison/ready", false);
+      this._oViewModel.setProperty("/comparison/captureCount", null);
+      this._oViewModel.setProperty("/comparison/odataCount", null);
+      this._oViewModel.setProperty("/comparison/comparedColumnCount", null);
+      this._oViewModel.setProperty("/comparison/scopeMessage", "");
+      this._oViewModel.setProperty("/comparison/busy", true);
+      this._oViewModel.setProperty("/comparison/status", "INCONCLUSIVE");
+      this._oViewModel.setProperty("/comparison/differences", []);
+      this._clearLegacyMappingLog();
+      this._appendLegacyRunLog("INFO", "CAPTURE_CHECK", "Reading AnalysisId=" + sAnalysisId +
+        " RequestId=" + sRequestId + ".");
+      var bCaptured = false;
+      return Promise.resolve().then(function () {
+        return this._oLegacyComparisonService.getLegacyCapture(sAnalysisId, sRequestId);
+      }.bind(this)).then(function (oResponse) {
+        if (iVersion !== this._iLegacyComparisonVersion || sAnalysisId !== this._oViewModel.getProperty("/analysisId")) { return; }
+        this._oViewModel.setProperty("/comparison/captureStatus", oResponse && oResponse.Status || "");
+        this._oViewModel.setProperty("/comparison/captureMessage", oResponse && oResponse.Message || "");
+        this._appendLegacyRunLog("INFO", "CAPTURE_CHECK", "Status=" + (oResponse && oResponse.Status || "unknown") + ".");
+        var oCapture = LegacyComparison.capture(oResponse, sAnalysisId, sRequestId);
+        bCaptured = true;
+        this._aLegacyCapturedRows = oCapture.rows;
+        this._oViewModel.setProperty("/comparison/captureCount", oCapture.count);
+        this._oViewModel.setProperty("/comparison/ready", !oState.historyMode);
+        this._oViewModel.setProperty("/comparison/reason",
+          this.getText(oState.historyMode ? "legacyCompareHistoryReady" : "legacyCompareReady"));
+        this._appendLegacyRunLog("INFO", "CAPTURE_CHECK", "CAPTURED CountRow=" + oCapture.count +
+          "; RowsJson contains " + oCapture.rows.length + " rows.");
+      }.bind(this)).catch(function (oError) {
+        if (iVersion === this._iLegacyComparisonVersion) { this._legacyInconclusive(oError, "CAPTURE_CHECK"); }
+      }.bind(this)).finally(function () {
+        if (iVersion === this._iLegacyComparisonVersion) {
+          this._oViewModel.setProperty("/comparison/busy", false);
+          if (bCaptured && this._bLegacyAutoCompare && !oState.historyMode) {
+            this._bLegacyAutoCompare = false;
+            return this.onCompareLegacyRows();
+          }
+          this._scheduleLegacyComparisonPoll();
+        }
+      }.bind(this));
+    },
+
+    _legacyAutomaticColumns: function (oState) {
+      var oPrepared = this._oViewModel.getProperty("/fioriUi") || {};
+      var oColumns = {};
+      if (oPrepared.metadataStatus !== "VALIDATED" || !oPrepared.config ||
+          oPrepared.serviceRootUrl !== oState.serviceRootUrl || oPrepared.entitySet !== oState.entitySet) {
+        return oColumns;
+      }
+      (oPrepared.config.columns || oPrepared.config.Columns || []).forEach(function (oColumn) {
+        var sAlv = oColumn && (oColumn.alvField || oColumn.AlvField ||
+          oColumn.sourceField || oColumn.SourceField || oColumn.sourceColumn || oColumn.SourceColumn);
+        var sTarget = oColumn && (oColumn.property || oColumn.Property ||
+          oColumn.propertyName || oColumn.PropertyName);
+        if (sAlv && sTarget) { oColumns[sAlv] = sTarget; }
+      });
+      return oColumns;
+    },
+
+    onCompareLegacyRows: function () {
+      var oState = this._oViewModel.getProperty("/comparison");
+      var sAnalysisId = this._oViewModel.getProperty("/analysisId");
+      if (oState.busy || oState.historyMode || !oState.ready || !this._aLegacyCapturedRows) { return; }
+      if (this._sLegacySelectionJson !== "[]") {
+        this._clearLegacyMappingLog();
+        this._legacyInconclusive(new Error("The capture was not created for all rows. Start a new comparison."), "COMPARE");
+        return;
+      }
+      var oParameters = {}, oFilters = {}, oColumns, aKeys, oProjection;
+      var bEmptyCapture = this._aLegacyCapturedRows.length === 0;
+      var iVersion = (this._iLegacyComparisonVersion || 0) + 1;
+      this._iLegacyComparisonVersion = iVersion;
+      this._oViewModel.setProperty("/comparison/busy", true);
+      this._oViewModel.setProperty("/comparison/status", "INCONCLUSIVE");
+      this._oViewModel.setProperty("/comparison/reason", this.getText("legacyCompareLoading"));
+      this._oViewModel.setProperty("/comparison/differences", []);
+      this._clearLegacyMappingLog();
+      this._oViewModel.setProperty("/comparison/odataCount", null);
+      this._oViewModel.setProperty("/comparison/comparedColumnCount", null);
+      this._oViewModel.setProperty("/comparison/scopeMessage", "");
+      this._appendLegacyRunLog("INFO", "COMPARE", "Starting AnalysisId=" + sAnalysisId +
+        " RequestId=" + oState.requestId + " CaptureStatus=" + oState.captureStatus +
+        " CountRow=" + this._aLegacyCapturedRows.length + " EntitySet=" + oState.entitySet +
+        " SelectionJson=[].");
+      return Promise.resolve().then(function () {
+        return this._oLegacyComparisonService.getEntityMetadata(oState.serviceRootUrl, oState.entitySet);
+      }.bind(this)).then(function (oMetadata) {
+        if (iVersion !== this._iLegacyComparisonVersion || sAnalysisId !== this._oViewModel.getProperty("/analysisId")) { return; }
+        var oTypes = oMetadata.types;
+        this._appendLegacyRunLog("INFO", "METADATA", "Resolved " + Object.keys(oTypes).length +
+          " OData properties: " + Object.keys(oTypes).join(", ") + ".");
+        if (bEmptyCapture) {
+          var sProbe = oMetadata.keys[0] || Object.keys(oTypes)[0];
+          if (!sProbe) { throw new Error("The OData entity has no property to read for an empty capture."); }
+          oColumns = {};
+          oColumns[sProbe] = sProbe;
+          aKeys = [];
+          this._appendLegacyRunLog("INFO", "MAPPING", "Empty ALV capture; checking every OData page for extra rows.");
+        } else {
+          var oManual = LegacyComparison.mapping(oState.manualColumnMappingJson || "{}",
+            "ALV-to-OData mapping");
+          var aCapturedFields = Array.from(new Set(this._aLegacyCapturedRows.reduce(function (aNames, oRow) {
+            return aNames.concat(Object.keys(oRow));
+          }, [])));
+          Object.keys(oManual).forEach(function (sAlv) {
+            if (aCapturedFields.indexOf(sAlv) < 0) {
+              throw new Error("Manual mapping refers to ALV column " + sAlv +
+                ", which is absent from this capture.");
+            }
+            if (!Object.prototype.hasOwnProperty.call(oTypes, oManual[sAlv])) {
+              throw new Error("Manual mapping for " + sAlv + " refers to missing OData property " +
+                oManual[sAlv] + ". Entity properties: " + Object.keys(oTypes).join(", ") + ".");
+            }
+          });
+          oProjection = LegacyComparison.projectedColumns(this._aLegacyCapturedRows,
+            Object.assign({}, this._legacyAutomaticColumns(oState), oManual), oTypes);
+          oColumns = oProjection.columns;
+          aKeys = LegacyComparison.metadataKeys(oColumns, oMetadata.keys);
+          if (oProjection.omittedColumns.length || oProjection.unmatchedProperties.length) {
+            var sScope = "Comparing " + Object.keys(oColumns).length +
+              " generated OData properties across all captured rows.";
+            if (oProjection.omittedColumns.length) {
+              sScope += " Additional ALV fields outside this OData service are ignored: " +
+                oProjection.omittedColumns.join(", ") + ".";
+            }
+            if (oProjection.unmatchedProperties.length) {
+              sScope += " OData properties missing from the ALV capture: " +
+                oProjection.unmatchedProperties.join(", ") + ".";
+            }
+            this._oViewModel.setProperty("/comparison/scopeMessage", sScope);
+            this._appendLegacyRunLog("INFO", "SCOPE", sScope);
+          }
+        }
+        this._oViewModel.setProperty("/comparison/columnMappingJson", JSON.stringify(oColumns, null, 2));
+        this._oViewModel.setProperty("/comparison/keyColumnsJson", JSON.stringify(aKeys));
+        var pRows = this._oLegacyComparisonService.readAllRows(oState.serviceRootUrl, oState.entitySet,
+          oParameters, oFilters, oColumns, oTypes, function (oPage) {
+            if (iVersion === this._iLegacyComparisonVersion && sAnalysisId === this._oViewModel.getProperty("/analysisId")) {
+              this._appendLegacyRunLog("INFO", "ODATA_PAGE", "Page " + oPage.page + ": " + oPage.rows +
+                " rows; total=" + oPage.totalRows + "; nextLink=" + (oPage.hasNext ? "yes" : "no") + ".");
+            }
+          }.bind(this));
+        LegacyComparison.mappingLog(oColumns, aKeys, oFilters, oParameters).forEach(function (oMapping) {
+          this._appendLegacyRunLog("INFO", "MAPPING", oMapping.kind === "NO_FILTER" ?
+            "No OData filter (SelectionJson=[])." : oMapping.kind === "FILTER" ?
+              "Filter " + oMapping.source + " -> " + oMapping.target + "." :
+              "Column " + oMapping.source + " -> " + oMapping.target +
+                (oMapping.isKey ? " (business key)." : "."));
+        }.bind(this));
+        if (!aKeys.length) {
+          this._appendLegacyRunLog("INFO", "MAPPING", "No mapped entity keys; comparing complete rows with duplicate counts.");
+        }
+        return pRows.then(function (aOData) {
+          if (iVersion !== this._iLegacyComparisonVersion || sAnalysisId !== this._oViewModel.getProperty("/analysisId")) { return; }
+          this._oViewModel.setProperty("/comparison/mappingLog",
+            LegacyComparison.mappingLog(oColumns, aKeys, oFilters, oParameters));
+          this._oViewModel.setProperty("/comparison/mappingLogReady", true);
+          this._appendLegacyRunLog("INFO", "COMPARE", "Comparing ALV rows=" + this._aLegacyCapturedRows.length +
+            " with OData rows=" + aOData.length + " across " + Object.keys(oColumns).length + " columns.");
+          if (bEmptyCapture) {
+            return { status: aOData.length ? "FAIL" : "PASS", alvCount: 0, odataCount: aOData.length,
+              differences: aOData.map(function (oRow, iIndex) {
+                return { kind: "EXTRA", key: "#" + (iIndex + 1) + " (" + sProbe + "=" + String(oRow[sProbe]) + ")",
+                  column: "", alv: "row missing", odata: "row present" };
+              }) };
+          }
+          var oCompared = LegacyComparison.compare(this._aLegacyCapturedRows, aOData,
+            oColumns, aKeys, oTypes);
+          var aSchemaDifferences = LegacyComparison.schemaDifferences(oProjection);
+          oCompared.differences = aSchemaDifferences.concat(oCompared.differences);
+          if (aSchemaDifferences.length) { oCompared.status = "FAIL"; }
+          return oCompared;
+        }.bind(this));
+      }.bind(this)).then(function (oResult) {
+        if (iVersion !== this._iLegacyComparisonVersion || sAnalysisId !== this._oViewModel.getProperty("/analysisId")) { return; }
+        this._oViewModel.setProperty("/comparison/status", oResult.status);
+        this._oViewModel.setProperty("/comparison/reason", "");
+        this._oViewModel.setProperty("/comparison/captureCount", oResult.alvCount);
+        this._oViewModel.setProperty("/comparison/odataCount", oResult.odataCount);
+        this._oViewModel.setProperty("/comparison/comparedColumnCount", bEmptyCapture ? 0 : Object.keys(oColumns).length);
+        this._oViewModel.setProperty("/comparison/differences", oResult.differences);
+        var oDifferenceCount = { MISSING: 0, EXTRA: 0, VALUE: 0,
+          ALV_COLUMN_MISSING: 0 };
+        oResult.differences.forEach(function (oDifference) { oDifferenceCount[oDifference.kind] += 1; });
+        this._appendLegacyRunLog(oResult.status, "RESULT", "ALV=" + oResult.alvCount +
+          " OData=" + oResult.odataCount + " Columns=" + (bEmptyCapture ? 0 : Object.keys(oColumns).length) +
+          " Missing=" + oDifferenceCount.MISSING + " Extra=" + oDifferenceCount.EXTRA +
+          " MissingAlvColumns=" + oDifferenceCount.ALV_COLUMN_MISSING +
+          " Cells=" + oDifferenceCount.VALUE + ".");
+      }.bind(this)).catch(function (oError) {
+        if (iVersion === this._iLegacyComparisonVersion) { this._legacyInconclusive(oError, "COMPARE"); }
+      }.bind(this)).finally(function () {
+        if (iVersion === this._iLegacyComparisonVersion) { this._oViewModel.setProperty("/comparison/busy", false); }
+      }.bind(this));
+    },
+
+    _legacyInconclusive: function (oError, sStep) {
+      var oParsed = oError && this.parseError && this.parseError(oError);
+      var sMessage = oParsed && oParsed.message && oParsed.message !== "Unexpected error." ?
+        oParsed.message : oError && oError.message || String(oError);
+      this._oViewModel.setProperty("/comparison/status", "INCONCLUSIVE");
+      this._oViewModel.setProperty("/comparison/reason", sMessage);
+      this._oViewModel.setProperty("/comparison/differences", []);
+      this._oViewModel.setProperty("/comparison/odataCount", null);
+      this._oViewModel.setProperty("/comparison/comparedColumnCount", null);
+      this._appendLegacyRunLog("INCONCLUSIVE", sStep || "RESULT", sMessage);
+    },
+
+    _openFioriUiPrepareDialog: function (sAnalysisId) {
+      if (!this._pFioriUiPrepareDialog) {
+        this._pFioriUiPrepareDialog = Fragment.load({
+          id: this.getView().getId(),
+          name: "abap.to.fiori.system.view.fragments.FioriUiPrepareDialog",
+          controller: this
+        }).then(function (oDialog) {
+          this.getView().addDependent(oDialog);
+          return oDialog;
+        }.bind(this));
+      }
+      this._pFioriUiPrepareDialog.then(function (oDialog) {
+        if (sAnalysisId === this._oViewModel.getProperty("/analysisId")) {
+          oDialog.open();
+        }
+      }.bind(this)).catch(function (oError) {
+        this.showError(oError, "fioriUiPrepareError");
+        this._pFioriUiPrepareDialog = null;
+      }.bind(this));
+    },
+
+    _openODataGenerationDialog: function (sAnalysisId) {
+      if (!this._pODataGenerationDialog) {
+        this._pODataGenerationDialog = Fragment.load({
+          id: this.getView().getId(),
+          name: "abap.to.fiori.system.view.fragments.ODataGenerationDialog",
+          controller: this
+        }).then(function (oDialog) {
+          this.getView().addDependent(oDialog);
+          return oDialog;
+        }.bind(this));
+      }
+      this._pODataGenerationDialog.then(function (oDialog) {
+        if (sAnalysisId === this._oViewModel.getProperty("/analysisId")) {
+          oDialog.open();
+          this._bODataGenerationDialogOpen = true;
+          this._resumeODataGenerationPolling();
+        }
+      }.bind(this)).catch(function (oError) {
+        this.showError(oError, "odataGenerationDialogError");
+        this._pODataGenerationDialog = null;
+      }.bind(this));
+    },
+
+    _validateODataGeneration: function (oState, bGenerate) {
+      if (!String(oState && oState.targetPackage || "").trim()) {
+        return this.getText("odataGenerationTargetPackageRequired");
+      }
+      if (String(oState && oState.providerLanguage || "").toUpperCase() === "STANDARD" &&
+          !String(oState && oState.providerPackage || "").trim()) {
+        return this.getText("odataGenerationProviderPackageRequired");
+      }
+      if (bGenerate && !String(oState && oState.transportRequest || "").trim()) {
+        return this.getText("odataGenerationTransportRequired");
+      }
+      return "";
+    },
+
+    _setODataGenerationInputs: function (oParameters) {
+      this._oViewModel.setProperty("/odataGeneration/targetPackage", oParameters.TargetPackage);
+      this._oViewModel.setProperty("/odataGeneration/providerPackage", oParameters.ProviderPackage);
+      this._oViewModel.setProperty("/odataGeneration/providerLanguage", oParameters.ProviderLanguage);
+      this._oViewModel.setProperty("/odataGeneration/transportRequest", oParameters.TransportRequest);
+    },
+
+    _invalidateODataGenerationPreflight: function (bClearRequest) {
+      this._cancelODataGenerationPolling();
+      this._oViewModel.setProperty("/odataGeneration/preflightReady", false);
+      this._oViewModel.setProperty("/odataGeneration/preflightSignature", "");
+      this._oViewModel.setProperty("/odataGeneration/canGenerate", false);
+      this._oViewModel.setProperty("/odataGeneration/error", "");
+      if (bClearRequest !== false) {
+        this._oViewModel.setProperty("/odataGeneration/requestId", "");
+        this._oViewModel.setProperty("/odataGeneration/generationSignature", "");
+      }
+    },
+
+    _applyODataGenerationResponse: function (oResponse) {
+      var oParsed = ODataGeneration.parseResponse(oResponse);
+      var sRequestId = ODataGeneration.isUsableRequestId(oParsed.requestId) ?
+        oParsed.requestId : this._oViewModel.getProperty("/odataGeneration/requestId");
+      var bFailure = oParsed.status === "BLOCKED" || oParsed.status === "FAILED" ||
+        oParsed.status === "DISPATCH_FAILED";
+
+      this._oViewModel.setProperty("/odataGeneration/requestId", sRequestId);
+      this._oViewModel.setProperty("/odataGeneration/status", oParsed.status);
+      this._oViewModel.setProperty("/odataGeneration/runtimeCheck", oParsed.runtimeCheck);
+      this._oViewModel.setProperty("/odataGeneration/message", bFailure ? "" : oParsed.message);
+      this._oViewModel.setProperty("/odataGeneration/result", oParsed.result);
+      this._oViewModel.setProperty("/odataGeneration/resultJsonInvalid", oParsed.resultJsonInvalid);
+      this._oViewModel.setProperty("/odataGeneration/hasResult", true);
+      this._oViewModel.setProperty("/odataGeneration/error", bFailure ?
+        oParsed.message || this.getText(oParsed.status === "BLOCKED" ? "odataGenerationBlocked" : "odataGenerationFailed") : "");
+      return oParsed;
+    },
+
+    _handleODataGenerationStatus: function (oParsed, bStartPolling) {
+      if (ODataGeneration.isGenerationActive(oParsed.status)) {
+        if (bStartPolling) {
+          this._startODataGenerationPolling();
+        }
+        return;
+      }
+
+      this._clearODataGenerationTimer();
+      this._oViewModel.setProperty("/odataGeneration/polling", false);
+      if (oParsed.status === "GENERATED") {
+        this._oViewModel.setProperty("/odataGeneration/canGenerate", false);
+        MessageToast.show(oParsed.message || this.getText("odataGenerationGenerated"));
+      } else if (oParsed.status === "BLOCKED" || oParsed.status === "FAILED" ||
+          oParsed.status === "DISPATCH_FAILED") {
+        this._oViewModel.setProperty("/odataGeneration/error", oParsed.message ||
+          this.getText(oParsed.status === "BLOCKED" ? "odataGenerationBlocked" : "odataGenerationFailed"));
+      }
+    },
+
+    _startODataGenerationPolling: function () {
+      this._clearODataGenerationTimer();
+      this._oViewModel.setProperty("/odataGeneration/polling", true);
+      this._scheduleODataGenerationPoll();
+    },
+
+    _resumeODataGenerationPolling: function () {
+      var oState = this._oViewModel.getProperty("/odataGeneration");
+      if (!this._bODataGenerationDialogOpen || oState.dialogBusy ||
+          !ODataGeneration.isUsableRequestId(oState.requestId) ||
+          !ODataGeneration.isGenerationActive(oState.status)) { return; }
+      if (!oState.polling) {
+        this._startODataGenerationPolling();
+      } else if (!this._iODataGenerationTimer) {
+        this._scheduleODataGenerationPoll();
+      }
+    },
+
+    _scheduleODataGenerationPoll: function () {
+      if (!this._bODataGenerationDialogOpen || this._iODataGenerationTimer ||
+          !this._oViewModel.getProperty("/odataGeneration/polling")) { return; }
+      this._iODataGenerationTimer = setTimeout(function () {
+        this._iODataGenerationTimer = null;
+        this._pollODataGeneration(false);
+      }.bind(this), REQUEST_POLL_INTERVAL_MS);
+    },
+
+    _pollODataGeneration: function (bManual) {
+      var sAnalysisId = this._oViewModel.getProperty("/analysisId");
+      var sRequestId = this._oViewModel.getProperty("/odataGeneration/requestId");
+      var iRequestVersion;
+
+      if ((!bManual && !this._bODataGenerationDialogOpen) ||
+          !sAnalysisId || !ODataGeneration.isUsableRequestId(sRequestId) ||
+          this._oViewModel.getProperty("/odataGeneration/dialogBusy")) {
+        if (!ODataGeneration.isUsableRequestId(sRequestId)) {
+          this._oViewModel.setProperty("/odataGeneration/error", this.getText("odataGenerationRequestIdRequired"));
+        }
+        if (!bManual) { this._scheduleODataGenerationPoll(); }
+        return;
+      }
+
+      iRequestVersion = this._iODataGenerationRequestVersion || 0;
+      this._setODataGenerationBusy(true);
+      this.getAnalysisService().getODataGeneration(sAnalysisId, sRequestId).then(function (oResponse) {
+        var oParsed;
+        if (iRequestVersion !== (this._iODataGenerationRequestVersion || 0) ||
+            sAnalysisId !== this._oViewModel.getProperty("/analysisId")) {
+          return;
+        }
+        oParsed = this._applyODataGenerationResponse(oResponse);
+        this._handleODataGenerationStatus(oParsed, false);
+      }.bind(this)).catch(function (oError) {
+        if (iRequestVersion === (this._iODataGenerationRequestVersion || 0)) {
+          this._showODataGenerationError(oError, "odataGenerationRefreshError");
+        }
+      }.bind(this)).finally(function () {
+        if (iRequestVersion === (this._iODataGenerationRequestVersion || 0)) {
+          this._setODataGenerationBusy(false);
+          this._resumeODataGenerationPolling();
+        }
+      }.bind(this));
+    },
+
+    _setODataGenerationBusy: function (bBusy) {
+      this._oViewModel.setProperty("/odataGeneration/dialogBusy", bBusy);
+    },
+
+    _showODataGenerationError: function (oError, sFallbackKey) {
+      var sMessage = this.parseError(oError).message;
+      this._oViewModel.setProperty("/odataGeneration/error", sMessage && sMessage !== "Unexpected error." ?
+        sMessage : this.getText(sFallbackKey));
+    },
+
+    _clearODataGenerationTimer: function () {
+      if (this._iODataGenerationTimer) {
+        clearTimeout(this._iODataGenerationTimer);
+        this._iODataGenerationTimer = null;
+      }
+    },
+
+    _cancelODataGenerationPolling: function () {
+      this._clearODataGenerationTimer();
+      this._iODataGenerationRequestVersion = (this._iODataGenerationRequestVersion || 0) + 1;
+      if (this._oViewModel) {
+        this._oViewModel.setProperty("/odataGeneration/polling", false);
+        this._oViewModel.setProperty("/odataGeneration/dialogBusy", false);
+      }
+    },
       },
     );
   },

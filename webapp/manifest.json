@@ -23,13 +23,6 @@
         "settings": {
           "odataVersion": "4.0"
         }
-      },
-      "comparisonService": {
-        "uri": "/sap/opu/odata4/sap/zui_mig_cmp_o4/srvd/sap/zui_mig_cmp/0001/?sap-client=324",
-        "type": "OData",
-        "settings": {
-          "odataVersion": "4.0"
-        }
       }
     },
     "crossNavigation": {
@@ -112,19 +105,6 @@
           "groupId": "$direct",
           "updateGroupId": "$direct"
         }
-      },
-      "comparison": {
-        "dataSource": "comparisonService",
-        "type": "sap.ui.model.odata.v4.ODataModel",
-        "preload": false,
-        "settings": {
-          "operationMode": "Server",
-          "synchronizationMode": "None",
-          "autoExpandSelect": true,
-          "earlyRequests": true,
-          "groupId": "$direct",
-          "updateGroupId": "$direct"
-        }
       }
     },
     "resources": {
@@ -192,16 +172,6 @@
           "name": "mailJobDetailSlash",
           "pattern": "/mail/{jobId}",
           "target": "mailJobDetail"
-        },
-        {
-          "name": "comparisonHistory",
-          "pattern": "comparison",
-          "target": "comparisonHistory"
-        },
-        {
-          "name": "comparisonDetail",
-          "pattern": "comparison/{cmpRunId}",
-          "target": "comparisonDetail"
         }
       ],
       "targets": {
@@ -222,12 +192,6 @@
         },
         "mailJobDetail": {
           "viewName": "MailJobDetail"
-        },
-        "comparisonHistory": {
-          "viewName": "ComparisonList"
-        },
-        "comparisonDetail": {
-          "viewName": "ComparisonDetail"
         }
       }
     }

@@ -30,6 +30,8 @@ sap.ui.define([], function () {
       chatMessages: "/ChatMessages",
       exportResult: "/ExportResult",
       exportJobs: "/ExportJobs",
+      captureRequests: "/CaptureRequests",
+      generationRequests: "/GenerationRequests",
     }),
 
     navigation: Object.freeze({
@@ -61,6 +63,10 @@ sap.ui.define([], function () {
       prepareSelectedExportSuffix:
         "com.sap.gateway.srvd.zui_mig_analysis.v0001.PrepareSelectedExport(...)",
       askChatSuffix: "com.sap.gateway.srvd.zui_mig_analysis.v0001.ask(...)",
+      prepareFioriUiSuffix: "com.sap.gateway.srvd.zui_mig_analysis.v0001.PrepareFioriUi(...)",
+      preflightODataSuffix: "com.sap.gateway.srvd.zui_mig_analysis.v0001.PreflightOData(...)",
+      generateODataSuffix: "com.sap.gateway.srvd.zui_mig_analysis.v0001.GenerateOData(...)",
+      getODataGenerationSuffix: "com.sap.gateway.srvd.zui_mig_analysis.v0001.GetODataGeneration(...)"
     }),
 
     fileFormat: Object.freeze({
@@ -101,6 +107,12 @@ sap.ui.define([], function () {
       programNameMaxLength: 40,
       status: "Status",
       createdAt: "CreatedAt",
+      captureRequests: Object.freeze([
+        "RequestId", "AnalysisId", "RequestedBy", "CreatedAt", "UpdatedAt", "Status", "CountRow", "Message"
+      ]),
+      generationRequests: Object.freeze([
+        "RequestId", "AnalysisId", "RequestedBy", "CreatedAt", "UpdatedAt", "Status", "Message"
+      ]),
       analyses: Object.freeze([
         "AnalysisId",
         "ProgramName",

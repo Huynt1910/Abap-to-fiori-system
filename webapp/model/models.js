@@ -131,12 +131,38 @@ sap.ui.define([
       },
       comparison: {
         busy: false,
-        state: "IDLE",
-        message: ""
+        requestId: "",
+        captureStatus: "",
+        captureMessage: "",
+        captureCount: null,
+        odataCount: null,
+        comparedColumnCount: null,
+        scopeMessage: "",
+        status: "INCONCLUSIVE",
+        reason: "",
+        selectionJson: "[]",
+        filterMappingJson: "{}",
+        columnMappingJson: "{}",
+        manualColumnMappingJson: "{}",
+        keyColumnsJson: "[]",
+        serviceRootUrl: "",
+        entitySet: "",
+        mappingLog: [],
+        mappingLogReady: false,
+        runLog: [],
+        runLogText: "",
+        differences: [],
+        ready: false,
+        historyMode: false
+      },
+      requestHistory: {
+        scope: "ANALYSIS",
+        busy: false,
+        error: "",
+        items: []
       },
       fioriUi: {
         busy: false,
-        targetPackage: "",
         serviceRootUrl: "",
         error: "",
         hasResult: false,
@@ -144,9 +170,16 @@ sap.ui.define([
         runtimeCheck: "",
         issueCount: 0,
         entitySet: "",
+        prepareAnalysisId: "",
+        configAnalysisId: "",
         issues: [],
         columns: [],
-        filters: []
+        filters: [],
+        metadataStatus: "",
+        metadataIssues: [],
+        metadataSignature: "",
+        reportError: "",
+        config: null
       },
       odataGeneration: {
         dialogBusy: false,
@@ -265,40 +298,10 @@ sap.ui.define([
     });
   }
 
-  function createComparisonUiModel() {
-    return new JSONModel({
-      busy: false,
-      actionBusy: false,
-      errorMessage: "",
-      selectedAnalysisId: "",
-      selectedRunId: "",
-      filters: {
-        programName: "",
-        targetStrategy: "",
-        overallStatus: "",
-        runStatus: ""
-      },
-      itemFilters: {
-        category: "",
-        status: "",
-        severity: ""
-      },
-      progress: {
-        state: "IDLE",
-        message: ""
-      },
-      runs: [],
-      run: {},
-      items: [],
-      selectedItem: null
-    });
-  }
-
   return {
     createDeviceModel: createDeviceModel,
     createDashboardModel: createDashboardModel,
     createAnalysisDetailModel: createAnalysisDetailModel,
-    createMailUiModel: createMailUiModel,
-    createComparisonUiModel: createComparisonUiModel
+    createMailUiModel: createMailUiModel
   };
 });

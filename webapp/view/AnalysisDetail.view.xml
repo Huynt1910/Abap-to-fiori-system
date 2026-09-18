@@ -65,13 +65,27 @@
                     />
                 </uxap:snappedHeading>
                 <uxap:actions>
+                    <Button icon="sap-icon://refresh" tooltip="{i18n>refresh}" press=".onRefresh" />
                     <Button
-                        text="{i18n>runComparison}"
+                        text="{i18n>legacyCompareOpen}"
                         icon="sap-icon://compare"
                         type="Transparent"
-                        busy="{detail>/comparison/busy}"
-                        press=".onRunComparisonForAnalysis"
+                        press=".onOpenLegacyComparison"
                         visible="{auth>/canCompare}"
+                    />
+                    <Button
+                        text="{i18n>odataGenerationOpenButton}"
+                        icon="sap-icon://process"
+                        enabled="{= !!${detail>/analysisId} }"
+                        press=".onOpenODataGenerationDialog"
+                        visible="{auth>/canAnalyze}"
+                    />
+                    <Button
+                        text="{i18n>fioriUiPrepareButton}"
+                        icon="sap-icon://wrench"
+                        enabled="{= !!${detail>/analysisId} &amp;&amp; !${detail>/fioriUi/busy} }"
+                        press=".onOpenFioriUiPrepareDialog"
+                        visible="{auth>/canAnalyze}"
                     />
                     <Button
                         text="{i18n>createMailJob}"
@@ -166,6 +180,15 @@
             </l:Grid>
         </uxap:headerContent>
         <uxap:sections>
+            <uxap:ObjectPageSection id="requestHistorySection" title="{i18n>requestHistoryTitle}">
+                <uxap:subSections>
+                    <uxap:ObjectPageSubSection id="requestHistorySubSection" title="{i18n>requestHistoryTitle}">
+                        <uxap:blocks>
+                            <core:Fragment fragmentName="abap.to.fiori.system.view.fragments.detail.RequestHistoryTab" type="XML" />
+                        </uxap:blocks>
+                    </uxap:ObjectPageSubSection>
+                </uxap:subSections>
+            </uxap:ObjectPageSection>
             <uxap:ObjectPageSection
                 id="sourceStructureSection"
                 title="{i18n>sourceStructure}"

@@ -34,13 +34,6 @@
                         press=".onOpenMailJobs"
                     />
                     <Button
-                        id="comparisonHistoryButton"
-                        text="{i18n>comparisonTitle}"
-                        type="Transparent"
-                        icon="sap-icon://compare"
-                        press=".onOpenComparisonHistory"
-                    />
-                    <Button
                         id="runAnalysisButton"
                         text="{i18n>runAnalysis}"
                         type="Emphasized"

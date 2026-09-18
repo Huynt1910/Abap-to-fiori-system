@@ -56,6 +56,9 @@ sap.ui.define([], function () {
     return {
       status: textValue(oResponse && oResponse.Status),
       runtimeCheck: textValue(oResponse && oResponse.RuntimeCheck),
+      prepareAnalysisId: textValue(read(oResponse, ["AnalysisId"])),
+      configAnalysisId: textValue(read(oSection, ["analysisId"]) || read(oConfig, ["analysisId"])),
+      config: oSection === oConfig ? oConfig : Object.assign({}, oConfig, oSection),
       issueCount: Number.isFinite(iIssueCount) ? iIssueCount : aIssues.length,
       entitySet: textValue(read(oSection, ["EntitySet", "EntitySetName"]) || read(oConfig, ["EntitySet", "EntitySetName"])),
       issues: aIssues,
