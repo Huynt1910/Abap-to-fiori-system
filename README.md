@@ -19,6 +19,14 @@ This project analyzes legacy ABAP reports and generates rule-based modernization
 - RAP recommendation
 - UI5 migration suggestion
 - Dashboard reporting
+- Selected-field export from Analysis Detail
+
+## Documentation
+
+- [Export Flow](docs/EXPORT_FLOW.md)
+- [Authentication and feature audit](docs/authentication-feature-audit.md)
+- [BTP authentication setup](docs/btp-authentication-setup.md)
+- [ABAP Fiori Launchpad deployment](docs/abap-fiori-launchpad-deployment.md)
 
 ## Run Project
 

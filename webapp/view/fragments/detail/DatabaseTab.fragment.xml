@@ -1,0 +1,67 @@
+<core:FragmentDefinition xmlns:core="sap.ui.core" xmlns="sap.m">
+  <VBox class="tabSurface" busy="{detail>/loading/databaseObjects}" busyIndicatorDelay="0">
+    <MessageStrip visible="{path: 'detail>/errors/databaseObjects', formatter: '.formatter.hasValue'}" text="{detail>/errors/databaseObjects}" type="Error" showIcon="true" class="sapUiSmallMarginBottom" />
+    <OverflowToolbar class="sectionToolbar" visible="{path: 'detail>/databaseObjects', formatter: '.formatter.hasItems'}">
+      <Title text="{i18n>databaseObjects}" level="H3" />
+      <ObjectStatus text="{path: 'detail>/counts/databaseObjects', formatter: '.formatter.formatCountText'}" />
+      <ToolbarSpacer />
+      <Button icon="sap-icon://download" text="{i18n>exportReport}" tooltip="{i18n>exportSectionTooltip}" visible="{detail>/exportAvailable/databaseObjects}" press=".onOpenSectionExportDialog">
+        <customData>
+          <core:CustomData key="section" value="databaseObjects" />
+        </customData>
+      </Button>
+      <Button icon="sap-icon://action-settings" tooltip="{i18n>viewSettings}" press=".onOpenDetailTableSettings">
+        <customData>
+          <core:CustomData key="section" value="databaseObjects" />
+        </customData>
+      </Button>
+    </OverflowToolbar>
+    <IllustratedMessage visible="{path: 'detail>/databaseObjects', formatter: '.formatter.hasNoItems'}" illustrationType="sapIllus-NoEntries" illustrationSize="Spot" title="{i18n>noDatabaseAccesses}" />
+    <VBox id="databaseObjectsScroll" class="detailSingleRowScroll" width="100%" renderType="Bare">
+    <Table fixedLayout="false" id="databaseObjectsTable" visible="{path: 'detail>/databaseObjects', formatter: '.formatter.hasItems'}" growing="true" growingThreshold="20" items="{detail>/databaseObjects}">
+      <columns>
+        <Column width="12rem" visible="{detail>/columns/databaseObjects/objectName}"><Text wrapping="false" text="{i18n>objectName}" /></Column>
+        <Column width="8rem" visible="{detail>/columns/databaseObjects/objectType}"><Text wrapping="false" text="{i18n>objectType}" /></Column>
+        <Column width="10rem" visible="{detail>/columns/databaseObjects/operation}"><Text wrapping="false" text="{i18n>operation}" /></Column>
+        <Column width="16rem" visible="{detail>/columns/databaseObjects/selectedFields}"><Text wrapping="false" text="{i18n>selectedFields}" /></Column>
+        <Column width="16rem" visible="{detail>/columns/databaseObjects/whereFields}"><Text wrapping="false" text="{i18n>whereFields}" /></Column>
+        <Column width="16rem" visible="{detail>/columns/databaseObjects/joinedObjects}"><Text wrapping="false" text="{i18n>joinedObjects}" /></Column>
+        <Column width="16rem" visible="{detail>/columns/databaseObjects/joinCondition}"><Text wrapping="false" text="{i18n>joinCondition}" /></Column>
+        <Column width="14rem" visible="{detail>/columns/databaseObjects/aggregation}"><Text wrapping="false" text="{i18n>aggregation}" /></Column>
+        <Column width="12rem" visible="{detail>/columns/databaseObjects/resultTarget}"><Text wrapping="false" text="{i18n>resultTarget}" /></Column>
+        <Column width="14rem" visible="{detail>/columns/databaseObjects/containingRoutine}"><Text wrapping="false" text="{i18n>containingRoutine}" /></Column>
+        <Column width="11rem" visible="{detail>/columns/databaseObjects/executionKind}"><Text wrapping="false" text="{i18n>executionKind}" /></Column>
+        <Column width="18rem" visible="{detail>/columns/databaseObjects/executionContext}"><Text wrapping="false" text="{i18n>executionContext}" /></Column>
+        <Column width="8rem" visible="{detail>/columns/databaseObjects/dynamicAccess}"><Text wrapping="false" text="{i18n>dynamicAccess}" /></Column>
+        <Column width="8rem" visible="{detail>/columns/databaseObjects/readOnly}"><Text wrapping="false" text="{i18n>readOnly}" /></Column>
+        <Column width="10rem" visible="{detail>/columns/databaseObjects/pagingCapability}"><Text wrapping="false" text="{i18n>pagingCapability}" /></Column>
+        <Column width="16rem" visible="{detail>/columns/databaseObjects/description}"><Text wrapping="false" text="{i18n>description}" /></Column>
+        <Column width="8rem" visible="{detail>/columns/databaseObjects/confidence}"><Text wrapping="false" text="{i18n>confidence}" /></Column>
+      </columns>
+      <items>
+        <ColumnListItem type="Active" press=".onDatabaseObjectPress">
+          <cells>
+            <Text wrapping="false" text="{path: 'detail>ObjectName', formatter: '.formatter.formatText'}" visible="{detail>/columns/databaseObjects/objectName}" />
+            <Text wrapping="false" text="{path: 'detail>ObjectType', formatter: '.formatter.formatText'}" visible="{detail>/columns/databaseObjects/objectType}" />
+            <Text wrapping="false" text="{path: 'detail>Operation', formatter: '.formatter.formatText'}" visible="{detail>/columns/databaseObjects/operation}" />
+            <Text wrapping="false" text="{path: 'detail>SelectedFields', formatter: '.formatter.formatText'}" visible="{detail>/columns/databaseObjects/selectedFields}" />
+            <Text wrapping="false" text="{path: 'detail>WhereFields', formatter: '.formatter.formatText'}" visible="{detail>/columns/databaseObjects/whereFields}" />
+            <Text wrapping="false" text="{path: 'detail>JoinedObjects', formatter: '.formatter.formatText'}" visible="{detail>/columns/databaseObjects/joinedObjects}" />
+            <Text wrapping="false" text="{path: 'detail>JoinCondition', formatter: '.formatter.formatText'}" visible="{detail>/columns/databaseObjects/joinCondition}" />
+            <Text wrapping="false" text="{path: 'detail>Aggregation', formatter: '.formatter.formatText'}" visible="{detail>/columns/databaseObjects/aggregation}" />
+            <Text wrapping="false" text="{path: 'detail>ResultTarget', formatter: '.formatter.formatText'}" visible="{detail>/columns/databaseObjects/resultTarget}" />
+            <Text wrapping="false" text="{path: 'detail>ContainingRoutine', formatter: '.formatter.formatText'}" visible="{detail>/columns/databaseObjects/containingRoutine}" />
+            <Text wrapping="false" text="{path: 'detail>ExecutionKind', formatter: '.formatter.formatText'}" visible="{detail>/columns/databaseObjects/executionKind}" />
+            <Text wrapping="false" text="{path: 'detail>ExecutionContext', formatter: '.formatter.formatText'}" visible="{detail>/columns/databaseObjects/executionContext}" />
+            <Text wrapping="false" text="{path: 'detail>DynamicAccess', formatter: '.formatter.formatBoolean'}" visible="{detail>/columns/databaseObjects/dynamicAccess}" />
+            <Text wrapping="false" text="{path: 'detail>ReadOnly', formatter: '.formatter.formatBoolean'}" visible="{detail>/columns/databaseObjects/readOnly}" />
+            <Text wrapping="false" text="{path: 'detail>PagingCapability', formatter: '.formatter.formatText'}" visible="{detail>/columns/databaseObjects/pagingCapability}" />
+            <Text wrapping="false" text="{path: 'detail>Description', formatter: '.formatter.formatText'}" visible="{detail>/columns/databaseObjects/description}" />
+            <Text wrapping="false" text="{path: 'detail>Confidence', formatter: '.formatter.formatText'}" visible="{detail>/columns/databaseObjects/confidence}" />
+          </cells>
+        </ColumnListItem>
+      </items>
+    </Table>
+    </VBox>
+  </VBox>
+</core:FragmentDefinition>

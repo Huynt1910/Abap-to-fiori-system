@@ -4,3 +4,9 @@ coverage/
 .env
 .DS_Store
 .vscode/
+resources/
+doc/
+.agents/
+AGENTS.md
+test/
+archive.zip

@@ -1,0 +1,171 @@
+<core:FragmentDefinition xmlns:core="sap.ui.core" xmlns="sap.m">
+  <Dialog
+    id="exportReportDialog"
+    title="{i18n>exportReport}"
+    stretchOnPhone="true"
+    contentWidth="48rem"
+    contentHeight="42rem"
+    busy="{detail>/export/busy}"
+    busyIndicatorDelay="0">
+    <content>
+      <VBox class="sapUiMediumMargin formStack">
+        <Label text="{i18n>exportReportProgram}" labelFor="exportReportTypeInput" />
+        <Input
+          id="exportReportTypeInput"
+          value="{detail>/export/reportType}"
+          editable="false" />
+
+        <Label text="{i18n>exportSelectedSection}" labelFor="exportSelectedSectionInput" visible="{= !${detail>/export/isAll} &amp;&amp; ${detail>/export/fileFormat} !== 'M' }" />
+        <ObjectStatus
+          id="exportSelectedSectionInput"
+          text="{detail>/export/selectedSectionLabel}"
+          state="Information"
+          visible="{= !${detail>/export/isAll} &amp;&amp; ${detail>/export/fileFormat} !== 'M' }"
+          class="exportSelectedSectionStatus" />
+
+        <Label text="{i18n>exportFileFormat}" labelFor="exportFileFormatSelect" />
+        <Select
+          id="exportFileFormatSelect"
+          selectedKey="{detail>/export/fileFormat}"
+          enabled="{= !${detail>/export/busy} }"
+          change=".onExportFileFormatChange">
+          <items>
+            <core:Item key="X" text="{i18n>exportFormatExcel}" />
+            <core:Item key="P" text="{i18n>exportFormatPdf}" />
+            <core:Item key="C" text="{i18n>exportFormatCsv}" />
+            <core:Item
+              key="M"
+              text="{i18n>exportFormatMarkdown}"
+              enabled="{= ${detail>/overview/__OperationControl/GenerateTechnicalDocument} === true }" />
+          </items>
+        </Select>
+
+        <Label text="{i18n>fileName}" labelFor="exportFileNameInput" />
+        <Input
+          id="exportFileNameInput"
+          value="{detail>/export/fileName}"
+          placeholder="{detail>/export/defaultFileName}"
+          enabled="{= !${detail>/export/busy} }"
+          maxLength="128" />
+
+        <VBox visible="{= ${detail>/export/fileFormat} === 'P' }" class="sapUiTinyMarginTop">
+          <OverflowToolbar>
+            <Title text="{i18n>pdfOptions}" level="H5" />
+          </OverflowToolbar>
+          <Label text="{i18n>pdfHeaderText}" labelFor="exportPdfHeaderInput" />
+          <Input
+            id="exportPdfHeaderInput"
+            value="{detail>/export/pdfHeaderText}"
+            enabled="{= !${detail>/export/busy} }" />
+
+          <Label text="{i18n>pdfFooterText}" labelFor="exportPdfFooterInput" />
+          <Input
+            id="exportPdfFooterInput"
+            value="{detail>/export/pdfFooterText}"
+            enabled="{= !${detail>/export/busy} }" />
+
+          <Label text="{i18n>paperSize}" labelFor="exportPaperSizeSelect" />
+          <Select
+            id="exportPaperSizeSelect"
+            selectedKey="{detail>/export/paperSize}"
+            enabled="{= !${detail>/export/busy} }">
+            <items>
+              <core:Item key="A4" text="A4" />
+              <core:Item key="LETTER" text="Letter" />
+            </items>
+          </Select>
+
+          <Label text="{i18n>orientation}" labelFor="exportOrientationSelect" />
+          <Select
+            id="exportOrientationSelect"
+            selectedKey="{detail>/export/orientation}"
+            enabled="{= !${detail>/export/busy} }">
+            <items>
+              <core:Item key="P" text="{i18n>orientationPortrait}" />
+              <core:Item key="L" text="{i18n>orientationLandscape}" />
+            </items>
+          </Select>
+
+          <Label text="{i18n>fontSize}" labelFor="exportFontSizeInput" />
+          <Input
+            id="exportFontSizeInput"
+            value="{detail>/export/fontSize}"
+            type="Number"
+            enabled="{= !${detail>/export/busy} }" />
+
+          <CheckBox
+            text="{i18n>fitToPage}"
+            selected="{detail>/export/fitToPage}"
+            enabled="{= !${detail>/export/busy} }" />
+        </VBox>
+
+        <VBox visible="{= ${detail>/export/fileFormat} === 'X' }" class="sapUiTinyMarginTop">
+          <OverflowToolbar>
+            <Title text="{i18n>excelOptions}" level="H5" />
+          </OverflowToolbar>
+          <CheckBox
+            text="{i18n>splitMultiValue}"
+            selected="{detail>/export/splitMultiValue}"
+            enabled="{= !${detail>/export/busy} }" />
+        </VBox>
+
+        <OverflowToolbar visible="{= ${detail>/export/fileFormat} !== 'M' }">
+          <Title text="{i18n>selectedColumns}" level="H5" />
+          <ToolbarSpacer />
+          <Button text="{i18n>selectAll}" type="Transparent" enabled="{= !${detail>/export/busy} }" press=".onSelectAllExportFields" />
+          <Button text="{i18n>clearAll}" type="Transparent" enabled="{= !${detail>/export/busy} }" press=".onClearExportFields" />
+        </OverflowToolbar>
+        <ScrollContainer height="22rem" vertical="true" focusable="false" visible="{= ${detail>/export/fileFormat} !== 'M' }">
+          <VBox class="exportSectionList" items="{detail>/export/availableSections}">
+            <items>
+              <Panel expandable="true" expanded="true" class="exportSectionPanel">
+                <headerToolbar>
+                  <OverflowToolbar>
+                    <CheckBox
+                      selected="{detail>selected}"
+                      enabled="{= !${detail>/export/busy} }"
+                      select=".onToggleExportSection" />
+                    <Title text="{detail>label}" level="H5" />
+                    <ToolbarSpacer />
+                    <ObjectStatus text="{path: 'detail>fields/length', formatter: '.formatter.formatCountText'}" />
+                  </OverflowToolbar>
+                </headerToolbar>
+                <content>
+                  <VBox items="{path: 'detail>fields', templateShareable: false}">
+                    <items>
+                      <HBox class="exportFieldRow" alignItems="Center">
+                        <CheckBox
+                          selected="{detail>selected}"
+                          enabled="{= !${detail>/export/busy} }"
+                          select=".onToggleExportField" />
+                        <VBox>
+                          <Text text="{detail>label}" />
+                          <Text text="{detail>key}" class="sapUiTinyMarginTop sapMTextSubtle" />
+                        </VBox>
+                      </HBox>
+                    </items>
+                  </VBox>
+                </content>
+              </Panel>
+            </items>
+          </VBox>
+        </ScrollContainer>
+      </VBox>
+    </content>
+    <beginButton>
+      <Button
+        text="{i18n>download}"
+        type="Emphasized"
+        icon="sap-icon://download"
+        visible="{auth>/canExport}"
+        enabled="{= !${detail>/export/busy} }"
+        press=".onDownloadExport" />
+    </beginButton>
+    <endButton>
+      <Button
+        text="{i18n>cancel}"
+        enabled="{= !${detail>/export/busy} }"
+        press=".onCancelExport" />
+    </endButton>
+  </Dialog>
+</core:FragmentDefinition>

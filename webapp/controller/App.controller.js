@@ -1,5 +1,7 @@
-sap.ui.define(["sap/ui/core/mvc/Controller"], function (Controller) {
+sap.ui.define([
+  "abap/to/fiori/system/controller/BaseController"
+], function (BaseController) {
   "use strict";
 
-  return Controller.extend("abap.to.fiori.system.controller.App", {});
+  return BaseController.extend("abap.to.fiori.system.controller.App", {});
 });

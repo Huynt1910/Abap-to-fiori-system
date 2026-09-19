@@ -1,44 +1,308 @@
 sap.ui.define([
   "sap/ui/Device",
-  "sap/ui/model/json/JSONModel"
-], function (Device, JSONModel) {
+  "sap/ui/model/json/JSONModel",
+  "abap/to/fiori/system/model/AnalysisTableConfig"
+], function (Device, JSONModel, AnalysisTableConfig) {
   "use strict";
 
-  return {
-    createDeviceModel: function () {
-      var oModel = new JSONModel(Device);
-      oModel.setDefaultBindingMode("OneWay");
-      return oModel;
-    },
+  function createDeviceModel() {
+    var oDeviceModel = new JSONModel(Device);
+    oDeviceModel.setDefaultBindingMode("OneWay");
+    return oDeviceModel;
+  }
 
-    createViewModel: function () {
-      return new JSONModel({
+  function createDashboardModel() {
+    return new JSONModel({
+      busy: false,
+      deleteBusy: false,
+      deleteEnabled: false,
+      selectedAnalysisCount: 0,
+      filters: {
+        search: "",
+        status: ""
+      },
+      visibleCount: 0,
+      selectedCount: 0,
+      analyses: [],
+      errorMessage: "",
+      kpi: {
+        total: 0,
+        completed: 0,
+        warning: 0,
+        error: 0
+      },
+      columns: {
+        program: true,
+        status: true,
+        sourceObjects: true,
+        dbTables: true,
+        alvOutputs: true,
+        readinessScore: true,
+        createdAt: true,
+        createdBy: true
+      },
+      newAnalysis: {
+        programName: "",
         busy: false,
-        selectedProgram: "",
-        selectedAnalysis: {},
-        selectedReportCount: 0,
-        analysisRows: [],
-        analysisCount: 0,
-        analysisNoDataText: "Enter a Program Name and press Go",
-        newAnalysis: {
-          programName: "",
-          busy: false
-        },
-        detail: {
+        valueHelp: {
           busy: false,
-          programName: "",
-          selectedTab: "overview",
-          overview: {},
-          uiFilters: [],
-          uiFiltersCount: 0,
-          databaseTables: [],
-          databaseTablesCount: 0,
-          businessLogic: [],
-          businessLogicCount: 0,
-          comparisonResults: [],
-          comparisonResultsCount: 0
+          search: "",
+          errorMessage: "",
+          items: []
         }
-      });
-    }
+      }
+    });
+  }
+
+  function createAnalysisDetailModel() {
+    return new JSONModel({
+      busy: false,
+      analysisId: "",
+      selectedTab: "sourceObjects",
+      loaded: {
+        sourceObjects: false,
+        uiFilters: false,
+        databaseObjects: false,
+        businessLogic: false,
+        alvOutputs: false,
+        evidences: false,
+        recommendations: false,
+        messages: false
+      },
+      loading: {
+        sourceObjects: false,
+        uiFilters: false,
+        databaseObjects: false,
+        businessLogic: false,
+        alvOutputs: false,
+        evidences: false,
+        recommendations: false,
+        messages: false
+      },
+      errors: {
+        sourceObjects: null,
+        uiFilters: null,
+        databaseObjects: null,
+        businessLogic: null,
+        alvOutputs: null,
+        evidences: null,
+        recommendations: null,
+        messages: null,
+        history: null
+      },
+      overview: {},
+      history: {
+        busy: false,
+        items: []
+      },
+      export: {
+        busy: false,
+        fileFormat: "X",
+        exportSection: "ALL",
+        reportType: "",
+        dialogOpen: false,
+        isAll: false,
+        selectedSection: "",
+        selectedSectionLabel: "",
+        selectedFields: [],
+        availableSections: [],
+        availableFields: [],
+        fileName: "",
+        defaultFileName: "",
+        pdfHeaderText: "",
+        pdfFooterText: "",
+        paperSize: "A4",
+        orientation: "L",
+        fontSize: 10,
+        fitToPage: false,
+        splitMultiValue: false,
+        message: ""
+      },
+      exportAvailable: {
+        all: false,
+        sourceObjects: false,
+        uiFilters: false,
+        databaseObjects: false,
+        businessLogic: false,
+        alvOutputs: false,
+        evidences: false,
+        recommendations: false,
+        messages: false
+      },
+      comparison: {
+        busy: false,
+        requestId: "",
+        captureStatus: "",
+        captureMessage: "",
+        captureCount: null,
+        odataCount: null,
+        comparedColumnCount: null,
+        scopeMessage: "",
+        status: "INCONCLUSIVE",
+        reason: "",
+        error: "",
+        selectionJson: "[]",
+        filterMappingJson: "{}",
+        columnMappingJson: "{}",
+        manualColumnMappingJson: "{}",
+        keyColumnsJson: "[]",
+        serviceRootUrl: "",
+        entitySet: "",
+        mappingLog: [],
+        mappingLogReady: false,
+        runLog: [],
+        runLogText: "",
+        differences: [],
+        ready: false,
+        historyMode: false
+      },
+      requestHistory: {
+        scope: "ANALYSIS",
+        busy: false,
+        error: "",
+        items: []
+      },
+      fioriUi: {
+        busy: false,
+        serviceRootUrl: "",
+        error: "",
+        hasResult: false,
+        status: "",
+        runtimeCheck: "",
+        issueCount: 0,
+        entitySet: "",
+        prepareAnalysisId: "",
+        configAnalysisId: "",
+        issues: [],
+        columns: [],
+        filters: [],
+        metadataStatus: "",
+        metadataIssues: [],
+        metadataSignature: "",
+        reportError: "",
+        config: null
+      },
+      odataGeneration: {
+        dialogBusy: false,
+        polling: false,
+        targetPackage: "",
+        providerPackage: "",
+        providerLanguage: "STANDARD",
+        transportRequest: "",
+        requestId: "",
+        status: "",
+        runtimeCheck: "",
+        message: "",
+        result: {},
+        resultJsonInvalid: false,
+        preflightReady: false,
+        preflightSignature: "",
+        generationSignature: "",
+        canGenerate: false,
+        error: "",
+        hasResult: false
+      },
+      columns: AnalysisTableConfig.getAllColumnDefaults(),
+      tableSettingsState: {},
+      selectedSourceObject: null,
+      sourceObjectTree: [],
+      sourceObjectNarrow: false,
+      sourceCodeMobileDetail: false,
+      sourceCodeDetail: {
+        loading: false,
+        error: null,
+        lines: [],
+        lineCount: 0
+      },
+      selectedAlvOutput: null,
+      selectedBusinessLogic: null,
+      businessLogicDetail: {
+        loading: false,
+        error: null,
+        callBindings: []
+      },
+      alvOutputDetail: {
+        loading: false,
+        error: null,
+        columns: [],
+        sorts: [],
+        filters: [],
+        events: []
+      },
+      selectedRecommendation: null,
+      recommendationDetail: {
+        loading: false,
+        error: null,
+        annotations: []
+      },
+      sourceObjects: [],
+      uiFilters: [],
+      databaseObjects: [],
+      businessLogic: [],
+      alvOutputs: [],
+      evidences: [],
+      recommendations: [],
+      messages: [],
+      counts: {}
+    });
+  }
+
+  function createMailUiModel() {
+    return new JSONModel({
+      busy: false,
+      listBusy: false,
+      sendBusyJobId: null,
+      selectedJobId: null,
+      recipientCounts: {},
+      filters: {
+        search: "",
+        frequency: "",
+        fileFormat: ""
+      },
+      columns: {
+        jobName: true,
+        reportType: true,
+        fileFormat: true,
+        frequency: true,
+        nextRunAt: true,
+        createdBy: true,
+        createdAt: true,
+        actions: true
+      },
+      wizard: {
+        busy: false,
+        mode: "create",
+        errorMessage: "",
+        job: {},
+        schedule: {
+          showStartDate: false,
+          showStartTime: false,
+          showDayOfWeek: false,
+          showDayOfMonth: false,
+          timezoneText: "System time zone"
+        },
+        recipients: [],
+        newRecipient: {
+          RecipientType: "T",
+          SapUser: ""
+        },
+        activateAfterCreate: false
+      },
+      recipient: {
+        busy: false,
+        mode: "create",
+        jobId: "",
+        data: {}
+      },
+      logs: [],
+      errors: {}
+    });
+  }
+
+  return {
+    createDeviceModel: createDeviceModel,
+    createDashboardModel: createDashboardModel,
+    createAnalysisDetailModel: createAnalysisDetailModel,
+    createMailUiModel: createMailUiModel
   };
 });

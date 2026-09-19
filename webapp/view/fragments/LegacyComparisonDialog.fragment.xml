@@ -1,0 +1,106 @@
+<core:FragmentDefinition xmlns:core="sap.ui.core" xmlns="sap.m">
+  <Dialog id="legacyComparisonDialog" title="{i18n>legacyCompareTitle}"
+    contentWidth="65rem" contentHeight="80%" stretchOnPhone="true" resizable="true"
+    busy="{detail>/comparison/busy}" busyIndicatorDelay="0">
+    <content>
+      <VBox class="sapUiMediumMargin" width="100%">
+        <Label text="{i18n>legacyCompareServiceRoot}" labelFor="legacyServiceRoot" class="sapUiSmallMarginTop" />
+        <Input id="legacyServiceRoot" value="{detail>/comparison/serviceRootUrl}"
+          valueLiveUpdate="true" liveChange=".onLegacyComparisonInputChange" enabled="{= !${detail>/comparison/busy} }" />
+        <Label text="{i18n>legacyCompareEntitySet}" labelFor="legacyEntitySet" />
+        <Input id="legacyEntitySet" value="{detail>/comparison/entitySet}"
+          valueLiveUpdate="true" liveChange=".onLegacyComparisonInputChange" enabled="{= !${detail>/comparison/busy} }" />
+        <HBox wrap="Wrap" alignItems="Center" class="sapUiSmallMarginTop">
+          <Button text="{= ${detail>/comparison/captureStatus} === 'CAPTURED' ? ${i18n>legacyCompareCaptured} : ${i18n>legacyCompareRequest} }"
+            type="Emphasized" press=".onRequestLegacyCapture"
+            enabled="{= !${detail>/comparison/busy} &amp;&amp; !!${detail>/comparison/serviceRootUrl} &amp;&amp; !!${detail>/comparison/entitySet} &amp;&amp; ${detail>/comparison/captureStatus} !== 'QUEUED' &amp;&amp; ${detail>/comparison/captureStatus} !== 'DISPATCHING' &amp;&amp; ${detail>/comparison/captureStatus} !== 'SCHEDULED' &amp;&amp; ${detail>/comparison/captureStatus} !== 'RUNNING' }" />
+          <Button text="{i18n>legacyCompareNewCapture}" press=".onStartNewLegacyCapture"
+            visible="{= ${detail>/comparison/captureStatus} === 'CAPTURED' }"
+            enabled="{= !${detail>/comparison/busy} &amp;&amp; !!${detail>/comparison/serviceRootUrl} &amp;&amp; !!${detail>/comparison/entitySet} }"
+            class="sapUiTinyMarginBegin" />
+        </HBox>
+        <HBox wrap="Wrap" class="sapUiSmallMarginTop">
+          <ObjectAttribute title="{i18n>legacyCompareRequestId}" text="{detail>/comparison/requestId}" class="sapUiMediumMarginEnd" />
+          <ObjectStatus title="{i18n>legacyCompareCaptureStatus}" text="{detail>/comparison/captureStatus}"
+            state="{path: 'detail>/comparison/captureStatus', formatter: '.formatter.formatRequestStatusState'}" />
+        </HBox>
+        <Button text="{i18n>legacyCompareCheck}" press=".onCheckLegacyCapture"
+          enabled="{= !${detail>/comparison/busy} &amp;&amp; !!${detail>/comparison/requestId} }"
+          class="sapUiSmallMarginTop" />
+        <Label text="{i18n>legacyCompareManualColumnMapping}" labelFor="legacyManualColumnMapping"
+          visible="{detail>/comparison/ready}"
+          class="sapUiSmallMarginTop" />
+        <TextArea id="legacyManualColumnMapping" value="{detail>/comparison/manualColumnMappingJson}"
+          valueLiveUpdate="true" liveChange=".onLegacyComparisonMappingChange" rows="2" width="100%"
+          enabled="{= !${detail>/comparison/busy} }"
+          visible="{detail>/comparison/ready}" />
+        <Text text="{i18n>legacyCompareManualColumnMappingHint}" wrapping="true"
+          visible="{detail>/comparison/ready}" />
+
+        <Title text="{i18n>legacyCompareResult}" level="H4" class="sapUiMediumMarginTop" />
+        <HBox wrap="Wrap">
+          <ObjectStatus title="{i18n>legacyCompareStatus}"
+            text="{= ${detail>/comparison/status} === 'INCONCLUSIVE' ? ${i18n>legacyCompareInconclusive} : ${detail>/comparison/status} }"
+            state="{= ${detail>/comparison/status} === 'PASS' ? 'Success' : ${detail>/comparison/status} === 'FAIL' ? 'Error' : 'Warning' }"
+            class="sapUiMediumMarginEnd" />
+          <ObjectAttribute title="{i18n>legacyCompareAlvCount}" text="{detail>/comparison/captureCount}" class="sapUiMediumMarginEnd" />
+          <ObjectAttribute title="{i18n>legacyCompareODataCount}" text="{detail>/comparison/odataCount}" />
+          <ObjectAttribute title="{i18n>legacyCompareComparedColumns}" text="{detail>/comparison/comparedColumnCount}" class="sapUiMediumMarginBegin" />
+        </HBox>
+        <Text text="{detail>/comparison/error}" wrapping="true"
+          visible="{= !!${detail>/comparison/error} }" class="comparisonErrorText sapUiSmallMarginTop" />
+        <Panel headerText="{i18n>legacyCompareRunLog}" expandable="true" expanded="false"
+          visible="{= !!${detail>/comparison/runLogText} }" class="sapUiSmallMarginTop">
+          <content>
+            <TextArea value="{detail>/comparison/runLogText}" editable="false" rows="12" width="100%" />
+          </content>
+        </Panel>
+        <Panel headerText="{i18n>legacyCompareMappingLog}" expandable="true" expanded="false"
+          visible="{detail>/comparison/mappingLogReady}" class="sapUiSmallMarginTop">
+          <content>
+            <Table items="{detail>/comparison/mappingLog}" growing="true" growingThreshold="50">
+              <columns>
+                <Column><Text text="{i18n>legacyCompareMappingType}" /></Column>
+                <Column><Text text="{i18n>legacyCompareMappingSource}" /></Column>
+                <Column><Text text="{i18n>legacyCompareMappingTarget}" /></Column>
+                <Column><Text text="{i18n>legacyCompareMappingRole}" /></Column>
+              </columns>
+              <items>
+                <ColumnListItem>
+                  <cells>
+                    <Text text="{= ${detail>kind} === 'COLUMN' ? ${i18n>legacyCompareMappingColumn} : ${detail>kind} === 'FILTER' ? ${i18n>legacyCompareMappingFilter} : ${i18n>legacyCompareMappingNoFilter} }" />
+                    <Text text="{detail>source}" />
+                    <Text text="{detail>target}" />
+                    <Text text="{= ${detail>isKey} ? ${i18n>legacyCompareMappingKey} : '' }" />
+                  </cells>
+                </ColumnListItem>
+              </items>
+            </Table>
+          </content>
+        </Panel>
+        <Table items="{detail>/comparison/differences}" growing="true" growingThreshold="50"
+          noDataText="{i18n>legacyCompareNoDifferences}" class="sapUiSmallMarginTop">
+          <columns>
+            <Column><Text text="{i18n>legacyCompareDifferenceType}" /></Column>
+            <Column><Text text="{i18n>legacyCompareRowKey}" /></Column>
+            <Column><Text text="{i18n>legacyCompareColumn}" /></Column>
+            <Column><Text text="{i18n>legacyCompareAlvValue}" /></Column>
+            <Column><Text text="{i18n>legacyCompareODataValue}" /></Column>
+          </columns>
+          <items>
+            <ColumnListItem>
+              <cells>
+                <Text text="{= ${detail>kind} === 'MISSING' ? ${i18n>legacyCompareMissing} : ${detail>kind} === 'EXTRA' ? ${i18n>legacyCompareExtra} : ${detail>kind} === 'ALV_COLUMN_MISSING' ? ${i18n>legacyCompareMissingAlvColumn} : ${i18n>legacyCompareValue} }" />
+                <Text text="{detail>key}" wrapping="true" />
+                <Text text="{detail>column}" wrapping="true" />
+                <Text text="{detail>alv}" wrapping="true" />
+                <Text text="{detail>odata}" wrapping="true" />
+              </cells>
+            </ColumnListItem>
+          </items>
+        </Table>
+      </VBox>
+    </content>
+    <endButton><Button text="{i18n>close}" press=".onCloseLegacyComparison" /></endButton>
+  </Dialog>
+</core:FragmentDefinition>
