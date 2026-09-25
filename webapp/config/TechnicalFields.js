@@ -3,6 +3,7 @@ sap.ui.define([], function () {
 
   var aTechnicalFields = Object.freeze([
     "AnalysisId",
+    "RequestId",
     "ItemId",
     "OutputId",
     "RecommendationId",

@@ -384,7 +384,8 @@ test("Compare all sends [] and automatically compares every row after CAPTURED",
   assert.equal(state.status, "PASS");
   assert.equal(state.odataCount, 1);
   assert.deepEqual(Array.from(state.runLog.filter((entry) => entry.step === "RESULT"), (entry) => entry.level), ["PASS"]);
-  assert.match(state.runLogText, /\[CAPTURE\].*RequestId=request/);
+  assert.match(state.runLogText, /\[CAPTURE\].*Status=QUEUED/);
+  assert.doesNotMatch(state.runLogText, /(?:AnalysisId|RequestId)=/);
   assert.match(state.runLogText, /\[WORKER\].*about every 2 minutes.*refreshes automatically/);
   assert.match(state.runLogText, /\[CAPTURE_CHECK\].*CountRow=1/);
   assert.match(state.runLogText, /\[METADATA\].*ProductID/);
@@ -519,7 +520,16 @@ test("comparison pre-fills the generated service and offers a column override", 
   instance._stopLegacyComparison();
   const xml = fs.readFileSync(path.join(root, "webapp/view/fragments/LegacyComparisonDialog.fragment.xml"), "utf8");
   assert.doesNotMatch(xml, /legacyParameters|legacyFilterMapping|legacyColumnMapping|legacyKeys/);
+  assert.doesNotMatch(xml, /legacyCompareRequestId/);
   assert.match(xml, /legacyManualColumnMapping/);
+});
+
+test("request history does not render technical request or analysis identifiers", () => {
+  const xml = fs.readFileSync(path.join(root,
+    "webapp/view/fragments/detail/RequestHistoryTab.fragment.xml"), "utf8");
+
+  assert.doesNotMatch(xml, /requestHistoryRequestId|requestHistoryAnalysisId/);
+  assert.doesNotMatch(xml, /detail>(?:requestId|analysisId)/);
 });
 
 test("compare maps all same-name ALV columns and derives the entity key", async () => {

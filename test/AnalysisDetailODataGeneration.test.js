@@ -59,9 +59,10 @@ class Model {
 
 function createController(generationOverrides = {}) {
   const generation = Object.assign({
+    mode: "CREATE",
     dialogBusy: false, polling: false, targetPackage: "Z_TARGET", providerPackage: "Z_PROVIDER",
     providerLanguage: "STANDARD", transportRequest: "DEVK900001", requestId: "",
-    status: "", runtimeCheck: "", message: "", result: {}, resultJsonInvalid: false,
+    status: "", runtimeCheck: "", message: "", result: {}, resultAnalysisId: "", resultJsonInvalid: false,
     preflightReady: false, preflightSignature: "", generationSignature: "", canGenerate: false,
     error: "", hasResult: false
   }, generationOverrides);
@@ -77,11 +78,245 @@ function createController(generationOverrides = {}) {
   return controller;
 }
 
+function flushPromises() {
+  return new Promise((resolve) => setImmediate(resolve));
+}
+
+function deploymentResponse(analysisId, status = "GENERATED", serviceUrl = "/sap/opu/odata4/generated/") {
+  return {
+    AnalysisId: analysisId,
+    RequestId: ODataGeneration.ZERO_UUID,
+    Status: status,
+    RuntimeCheck: "NOT_GENERATED",
+    ResultJson: JSON.stringify({
+      serviceUrl,
+      serviceName: "ZUI_ANALYSIS",
+      serviceBinding: "ZUI_ANALYSIS_O4",
+      entityName: "ZCE_ANALYSIS",
+      queryProviderClass: "ZCL_ANALYSIS_PROVIDER"
+    })
+  };
+}
+
 test("STANDARD requires ProviderPackage and generation requires TransportRequest", () => {
   const controller = createController();
   assert.equal(controller._validateODataGeneration({ targetPackage: "Z", providerLanguage: "STANDARD", providerPackage: "" }, false), "odataGenerationProviderPackageRequired");
   assert.equal(controller._validateODataGeneration({ targetPackage: "Z", providerLanguage: "CLOUD", providerPackage: "" }, false), "");
   assert.equal(controller._validateODataGeneration({ targetPackage: "Z", providerLanguage: "CLOUD", transportRequest: "" }, true), "odataGenerationTransportRequired");
+});
+
+test("deployment helpers recognize reusable results and only the documented missing-input errors", () => {
+  const analysisId = "8b95f36a-4f27-1fe1-a4a6-40de08121663";
+  const parsed = ODataGeneration.parseResponse(deploymentResponse(analysisId));
+  assert.equal(ODataGeneration.deploymentMode(parsed), "REUSE");
+  assert.equal(ODataGeneration.deploymentMode(Object.assign({}, parsed, { status: "STALE" })), "STALE");
+  assert.equal(ODataGeneration.deploymentMode(Object.assign({}, parsed, { result: {} })), "");
+  assert.equal(ODataGeneration.hasReusableDeployment({ status: "GENERATED", result: parsed.result,
+    resultAnalysisId: analysisId }, analysisId), true);
+  assert.equal(ODataGeneration.hasReusableDeployment({ status: "GENERATED", result: parsed.result,
+    resultAnalysisId: "another-analysis" }, analysisId), false);
+  assert.equal(ODataGeneration.isMissingGenerationInputError(new Error("AnalysisId/TargetPackage required")), true);
+  assert.equal(ODataGeneration.isMissingGenerationInputError({ responseText: JSON.stringify({
+    error: { code: "TARGET_PACKAGE_REQUIRED", message: "Target package is required" }
+  }) }), true);
+  assert.equal(ODataGeneration.isMissingGenerationInputError(new Error("HTTP 503 Service Unavailable")), false);
+  assert.equal(ODataGeneration.isMissingGenerationInputError(new Error("Authorization required")), false);
+});
+
+test("opening an empty form probes by AnalysisId and reuses an existing deployment without generating", async () => {
+  const controller = createController({ targetPackage: "", providerPackage: "", transportRequest: "" });
+  const analysisId = controller._oViewModel.getProperty("/analysisId");
+  const calls = [];
+  controller._openODataGenerationDialog = () => {};
+  controller.getAnalysisService = () => ({
+    preflightOData(id, parameters) {
+      calls.push(["preflight", id, parameters]);
+      return Promise.resolve(deploymentResponse(id));
+    },
+    generateOData() { calls.push(["generate"]); }
+  });
+
+  controller.onOpenODataGenerationDialog();
+  assert.equal(controller._oViewModel.getProperty("/odataGeneration/mode"), "CHECKING");
+  assert.equal(controller._oViewModel.getProperty("/odataGeneration/dialogBusy"), true);
+  await flushPromises();
+
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0][0], "preflight");
+  assert.equal(calls[0][1], analysisId);
+  assert.deepEqual(JSON.parse(JSON.stringify(calls[0][2])), {
+    TargetPackage: "", ProviderPackage: "", ProviderLanguage: "STANDARD",
+    TransportRequest: "", RequestId: ODataGeneration.ZERO_UUID
+  });
+  assert.equal(controller._oViewModel.getProperty("/odataGeneration/mode"), "REUSE");
+  assert.equal(controller._oViewModel.getProperty("/odataGeneration/result/serviceUrl"), "/sap/opu/odata4/generated/");
+  assert.equal(controller._oViewModel.getProperty("/odataGeneration/requestId"), "");
+  assert.equal(controller._oViewModel.getProperty("/odataGeneration/polling"), false);
+  assert.equal(controller._oViewModel.getProperty("/odataGeneration/dialogBusy"), false);
+});
+
+test("a cached generated deployment for the current analysis avoids another API call", () => {
+  const controller = createController({
+    status: "GENERATED",
+    resultAnalysisId: "8b95f36a-4f27-1fe1-a4a6-40de08121663",
+    result: { serviceUrl: "/sap/opu/odata4/shared/" }
+  });
+  let preflights = 0;
+  controller._openODataGenerationDialog = () => {};
+  controller.getAnalysisService = () => ({ preflightOData() { preflights += 1; } });
+
+  controller.onOpenODataGenerationDialog();
+
+  assert.equal(preflights, 0);
+  assert.equal(controller._oViewModel.getProperty("/odataGeneration/mode"), "REUSE");
+  assert.equal(controller._oViewModel.getProperty("/odataGeneration/result/serviceUrl"), "/sap/opu/odata4/shared/");
+});
+
+test("the AnalysisId deployment lookup is independent of request-history ownership", async () => {
+  const controller = createController({ targetPackage: "", providerPackage: "", transportRequest: "" });
+  const analysisId = controller._oViewModel.getProperty("/analysisId");
+  controller._openODataGenerationDialog = () => {};
+  controller.getAnalysisService = () => ({
+    preflightOData: (id) => Promise.resolve(deploymentResponse(id, "GENERATED", "/sap/opu/odata4/shared-user/"))
+  });
+
+  controller.onOpenODataGenerationDialog();
+  await flushPromises();
+
+  assert.equal(controller._oViewModel.getProperty("/odataGeneration/resultAnalysisId"), analysisId);
+  assert.equal(controller._oViewModel.getProperty("/odataGeneration/result/serviceUrl"), "/sap/opu/odata4/shared-user/");
+  assert.equal(controller._oViewModel.getProperty("/odataGeneration/mode"), "REUSE");
+});
+
+test("a missing-input probe error silently opens CREATE and the normal check/generate flow still works", async () => {
+  const controller = createController({ targetPackage: "", providerPackage: "", transportRequest: "" });
+  let probe = true;
+  let generated = 0;
+  controller._openODataGenerationDialog = () => {};
+  controller.getAnalysisService = () => ({
+    preflightOData(id, parameters) {
+      if (probe) {
+        probe = false;
+        return Promise.reject(new Error("Target package is required"));
+      }
+      return Promise.resolve({ AnalysisId: id, RequestId: parameters.RequestId, Status: "READY", ResultJson: "{}" });
+    },
+    generateOData(id, parameters) {
+      generated += 1;
+      return Promise.resolve({ AnalysisId: id, RequestId: parameters.RequestId, Status: "QUEUED", ResultJson: "{}" });
+    }
+  });
+
+  controller.onOpenODataGenerationDialog();
+  await flushPromises();
+  assert.equal(controller._oViewModel.getProperty("/odataGeneration/mode"), "CREATE");
+  assert.equal(controller._oViewModel.getProperty("/odataGeneration/error"), "");
+  assert.equal(controller._oViewModel.getProperty("/odataGeneration/hasResult"), false);
+
+  controller._oViewModel.setProperty("/odataGeneration/targetPackage", "Z_TARGET");
+  controller._oViewModel.setProperty("/odataGeneration/providerPackage", "Z_PROVIDER");
+  controller._oViewModel.setProperty("/odataGeneration/transportRequest", "DEVK900001");
+  controller.onPreflightOData();
+  await flushPromises();
+  assert.equal(controller._oViewModel.getProperty("/odataGeneration/preflightReady"), true);
+  controller.onGenerateOData();
+  await flushPromises();
+  assert.equal(generated, 1);
+  assert.equal(controller._oViewModel.getProperty("/odataGeneration/status"), "QUEUED");
+});
+
+test("STALE deployment is read-only and does not submit or poll", async () => {
+  const controller = createController({ targetPackage: "", providerPackage: "", transportRequest: "" });
+  let generated = 0;
+  controller._openODataGenerationDialog = () => {};
+  controller.getAnalysisService = () => ({
+    preflightOData: (id) => Promise.resolve(deploymentResponse(id, "STALE", "/sap/opu/odata4/stale/")),
+    generateOData() { generated += 1; }
+  });
+
+  controller.onOpenODataGenerationDialog();
+  await flushPromises();
+  controller.onGenerateOData();
+
+  assert.equal(controller._oViewModel.getProperty("/odataGeneration/mode"), "STALE");
+  assert.equal(controller._oViewModel.getProperty("/odataGeneration/result/serviceUrl"), "/sap/opu/odata4/stale/");
+  assert.equal(controller._oViewModel.getProperty("/odataGeneration/polling"), false);
+  assert.equal(generated, 0);
+});
+
+test("real lookup errors remain visible in ERROR mode and can be retried", async () => {
+  const controller = createController({ targetPackage: "", providerPackage: "", transportRequest: "" });
+  let attempts = 0;
+  controller._openODataGenerationDialog = () => {};
+  controller.getAnalysisService = () => ({
+    preflightOData(id) {
+      attempts += 1;
+      return attempts === 1 ? Promise.reject(new Error("HTTP 503 Service Unavailable")) :
+        Promise.resolve(deploymentResponse(id));
+    }
+  });
+
+  controller.onOpenODataGenerationDialog();
+  await flushPromises();
+  assert.equal(controller._oViewModel.getProperty("/odataGeneration/mode"), "ERROR");
+  assert.equal(controller._oViewModel.getProperty("/odataGeneration/error"), "HTTP 503 Service Unavailable");
+
+  controller.onRetryODataDeploymentLookup();
+  await flushPromises();
+  assert.equal(attempts, 2);
+  assert.equal(controller._oViewModel.getProperty("/odataGeneration/mode"), "REUSE");
+});
+
+test("switching analyses prevents an older deployment response from overwriting the new dialog", async () => {
+  const controller = createController({ targetPackage: "", providerPackage: "", transportRequest: "" });
+  const pending = {};
+  controller._openODataGenerationDialog = () => {};
+  controller.getAnalysisService = () => ({
+    preflightOData(id) { return new Promise((resolve) => { pending[id] = resolve; }); }
+  });
+
+  controller.onOpenODataGenerationDialog();
+  await flushPromises();
+  controller._oViewModel.setProperty("/analysisId", "second-analysis");
+  controller.onOpenODataGenerationDialog();
+  await flushPromises();
+  pending["second-analysis"](deploymentResponse("second-analysis", "GENERATED", "/second/"));
+  await flushPromises();
+  pending["8b95f36a-4f27-1fe1-a4a6-40de08121663"](
+    deploymentResponse("8b95f36a-4f27-1fe1-a4a6-40de08121663", "GENERATED", "/first/"));
+  await flushPromises();
+
+  assert.equal(controller._oViewModel.getProperty("/odataGeneration/resultAnalysisId"), "second-analysis");
+  assert.equal(controller._oViewModel.getProperty("/odataGeneration/result/serviceUrl"), "/second/");
+});
+
+test("closing the dialog invalidates an in-flight deployment lookup", async () => {
+  const controller = createController({ targetPackage: "", providerPackage: "", transportRequest: "" });
+  let resolveLookup;
+  controller._openODataGenerationDialog = () => {};
+  controller.byId = () => ({ close() {} });
+  controller.getAnalysisService = () => ({
+    preflightOData() { return new Promise((resolve) => { resolveLookup = resolve; }); }
+  });
+
+  controller.onOpenODataGenerationDialog();
+  await flushPromises();
+  controller.onCloseODataGenerationDialog();
+  resolveLookup(deploymentResponse(controller._oViewModel.getProperty("/analysisId")));
+  await flushPromises();
+
+  assert.equal(controller._oViewModel.getProperty("/odataGeneration/result/serviceUrl"), undefined);
+  assert.equal(controller._oViewModel.getProperty("/odataGeneration/dialogBusy"), false);
+});
+
+test("REUSE and STALE UI hide the form, action buttons and conflicting runtime check", () => {
+  const xml = fs.readFileSync(path.join(root, "webapp", "view", "fragments", "ODataGenerationDialog.fragment.xml"), "utf8");
+  assert.doesNotMatch(xml, /odataGenerationRequestId/);
+  assert.match(xml, /SimpleForm[\s\S]*visible="\{= \$\{detail>\/odataGeneration\/mode\} === 'CREATE' \}"/);
+  assert.match(xml, /odataGenerationReuseMessage/);
+  assert.match(xml, /odataGenerationStaleMessage/);
+  assert.match(xml, /odataGenerationRuntimeCheck[\s\S]*mode\} === 'CREATE'/);
+  assert.equal((xml.match(/visible="\{= \$\{detail>\/odataGeneration\/mode\} === 'CREATE' \}"/g) || []).length >= 4, true);
 });
 
 test("READY can enable generation and an input change invalidates the preflight and RequestId", () => {
@@ -105,9 +340,6 @@ test("failed OData responses show the backend message once as an error", () => {
     controller._applyODataGenerationResponse({ Status: status, Message: backendMessage, ResultJson: "{}" });
     assert.equal(controller._oViewModel.getProperty("/odataGeneration/error"), backendMessage);
     assert.equal(controller._oViewModel.getProperty("/odataGeneration/message"), "");
-    controller._openODataGenerationDialog = () => {};
-    controller.onOpenODataGenerationDialog();
-    assert.equal(controller._oViewModel.getProperty("/odataGeneration/error"), backendMessage);
   });
 
   controller._applyODataGenerationResponse({ Status: "READY", Message: "Ready to generate", ResultJson: "{}" });
@@ -395,10 +627,14 @@ test("reopening generation resumes polling the same request without resubmitting
   const controller = createController({ requestId, status: "QUEUED" });
   let scheduled = 0;
   let submitted = 0;
+  let lookups = 0;
   controller._pODataGenerationDialog = Promise.resolve({ open() {}, close() {} });
   controller.byId = () => ({ close() {} });
   controller._scheduleODataGenerationPoll = () => { scheduled += 1; };
-  controller.getAnalysisService = () => ({ generateOData() { submitted += 1; } });
+  controller.getAnalysisService = () => ({
+    preflightOData() { lookups += 1; },
+    generateOData() { submitted += 1; }
+  });
 
   controller.onOpenODataGenerationDialog();
   await new Promise((resolve) => setImmediate(resolve));
@@ -413,6 +649,7 @@ test("reopening generation resumes polling the same request without resubmitting
   assert.equal(controller._oViewModel.getProperty("/odataGeneration/polling"), true);
   assert.equal(scheduled, 2);
   assert.equal(submitted, 0);
+  assert.equal(lookups, 0);
   controller.onCloseODataGenerationDialog();
 });
 

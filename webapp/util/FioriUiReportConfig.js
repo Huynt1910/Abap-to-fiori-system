@@ -10,7 +10,7 @@ sap.ui.define([], function () {
     if (/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/.test(sId)) {
       return sId;
     }
-    throw new Error("Invalid analysisId.");
+    throw new Error("The analysis reference is invalid.");
   }
 
   function read(oValue, aNames) {
@@ -75,13 +75,13 @@ sap.ui.define([], function () {
     var sConfig = normalizeAnalysisId(oState.configAnalysisId ||
       value(oState.config, ["analysisId"]));
     if (sRouteAnalysisId && normalizeAnalysisId(sRouteAnalysisId) !== sOpen) {
-      throw new Error("Route analysisId does not match the open analysis.");
+      throw new Error("The route does not match the open analysis.");
     }
     if (sConfig !== sOpen) {
-      throw new Error("ConfigJson.analysisId does not match the open analysis.");
+      throw new Error("The configuration does not match the open analysis.");
     }
     if (oState.prepareAnalysisId && normalizeAnalysisId(oState.prepareAnalysisId) !== sOpen) {
-      throw new Error("PrepareFioriUi.AnalysisId does not match the open analysis.");
+      throw new Error("The prepared result does not match the open analysis.");
     }
     return assertService(oState.config, oState.serviceRootUrl);
   }

@@ -19,10 +19,7 @@
         <Column width="8rem" minScreenWidth="Tablet" demandPopin="true"><Text text="{i18n>requestHistoryType}" /></Column>
         <Column width="9rem" importance="High"><Text text="{i18n>status}" /></Column>
         <Column width="18rem" importance="High" minScreenWidth="Tablet" demandPopin="true"><Text text="{i18n>requestHistoryMessage}" /></Column>
-        <Column width="17rem" minScreenWidth="Desktop" demandPopin="true"><Text text="{i18n>requestHistoryRequestId}" /></Column>
         <Column width="8rem" importance="Low" minScreenWidth="Desktop" demandPopin="true"><Text text="{i18n>requestHistoryRowCount}" /></Column>
-        <Column width="17rem" minScreenWidth="Desktop" demandPopin="true"
-          visible="{= ${detail>/requestHistory/scope} === 'ALL' }"><Text text="{i18n>requestHistoryAnalysisId}" /></Column>
       </columns>
       <items>
         <ColumnListItem type="Navigation" press=".onRequestHistoryPress">
@@ -31,9 +28,7 @@
             <Text text="{= ${detail>kind} === 'CAPTURE' ? ${i18n>requestHistoryCapture} : ${i18n>requestHistoryGeneration} }" />
             <ObjectStatus text="{detail>status}" state="{path: 'detail>status', formatter: '.formatter.formatRequestStatusState'}" />
             <Text text="{path: 'detail>message', formatter: '.formatter.formatText'}" wrapping="true" />
-            <Text text="{detail>requestId}" wrapping="true" />
             <Text text="{detail>rowCountText}" />
-            <Text text="{detail>analysisId}" wrapping="true" />
           </cells>
         </ColumnListItem>
       </items>
