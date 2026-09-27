@@ -20,6 +20,11 @@ sap.ui.define([], function () {
       sStatus === "SCHEDULED" || sStatus === "RUNNING";
   }
 
+  function sameId(vLeft, vRight) {
+    return !!String(vLeft || "").trim() &&
+      String(vLeft || "").trim().toLowerCase() === String(vRight || "").trim().toLowerCase();
+  }
+
   function normalizeParameters(oState, sRequestId) {
     var sProviderLanguage = normalizeUpper(oState && oState.providerLanguage) || "STANDARD";
     return {
@@ -71,6 +76,83 @@ sap.ui.define([], function () {
     };
   }
 
+  function deploymentMode(oParsed) {
+    var sStatus = normalizeUpper(oParsed && oParsed.status);
+    var sServiceUrl = String(oParsed && oParsed.result && oParsed.result.serviceUrl || "").trim();
+
+    if (!sServiceUrl) {
+      return "";
+    }
+    if (sStatus === "GENERATED") {
+      return "REUSE";
+    }
+    if (sStatus === "STALE") {
+      return "STALE";
+    }
+    return "";
+  }
+
+  function hasReusableDeployment(oState, sAnalysisId) {
+    return !!oState &&
+      normalizeUpper(oState.status) === "GENERATED" &&
+      !!String(oState.result && oState.result.serviceUrl || "").trim() &&
+      sameId(oState.resultAnalysisId, sAnalysisId);
+  }
+
+  function cachedDeploymentMode(oState, sAnalysisId) {
+    if (hasReusableDeployment(oState, sAnalysisId)) {
+      return "REUSE";
+    }
+    return oState && sameId(oState.resultAnalysisId, sAnalysisId) && deploymentMode(oState) === "STALE" ?
+      "STALE" : "";
+  }
+
+  function collectErrorText(oError, oParsedError) {
+    var aValues = [];
+
+    function add(vValue) {
+      if (vValue !== null && vValue !== undefined && vValue !== "") {
+        aValues.push(String(vValue));
+      }
+    }
+
+    function addObject(oValue) {
+      var oPayload;
+      if (!oValue || typeof oValue !== "object") {
+        return;
+      }
+      add(oValue.code);
+      add(oValue.message && oValue.message.value || oValue.message);
+      add(oValue.error && oValue.error.code);
+      add(oValue.error && oValue.error.message && oValue.error.message.value ||
+        oValue.error && oValue.error.message);
+      if (typeof oValue.responseText === "string") {
+        add(oValue.responseText);
+        try {
+          oPayload = JSON.parse(oValue.responseText);
+          addObject(oPayload);
+        } catch (oIgnored) {
+          // Raw response text is still checked below.
+        }
+      }
+      if (oValue.response) {
+        addObject(oValue.response);
+      }
+    }
+
+    addObject(oError);
+    addObject(oParsedError);
+    return aValues.join(" ");
+  }
+
+  function isMissingGenerationInputError(oError, oParsedError) {
+    var sText = collectErrorText(oError, oParsedError);
+    return /analysis\s*id\s*\/\s*target\s*package\s+(?:is\s+)?required/i.test(sText) ||
+      /target\s+package\s+is\s+required/i.test(sText) ||
+      /analysis[_\s-]*id[_\s-]*target[_\s-]*package[_\s-]*required/i.test(sText) ||
+      /target[_\s-]*package[_\s-]*required/i.test(sText);
+  }
+
   function fallbackUuid() {
     var aBytes = [];
     var i;
@@ -99,9 +181,14 @@ sap.ui.define([], function () {
     isZeroUuid: isZeroUuid,
     isUsableRequestId: isUsableRequestId,
     isGenerationActive: isGenerationActive,
+    sameId: sameId,
     normalizeParameters: normalizeParameters,
     signature: signature,
     parseResponse: parseResponse,
+    deploymentMode: deploymentMode,
+    hasReusableDeployment: hasReusableDeployment,
+    cachedDeploymentMode: cachedDeploymentMode,
+    isMissingGenerationInputError: isMissingGenerationInputError,
     createUuid: createUuid
   });
 });

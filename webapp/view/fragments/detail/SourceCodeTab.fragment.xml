@@ -15,12 +15,12 @@
           includeItemInSelection="true"
           visible="{= ${detail>/sourceObjects/length} > 0 }"
           noDataText="{i18n>noSourceObjects}"
-          selectionChange=".onSourceObjectPress"
+          itemPress=".onSourceObjectPress"
           toggleOpenState=".onSourceObjectToggleOpenState"
           updateFinished=".onSourceObjectTreeUpdateFinished"
           items="{path: 'detail>/sourceObjectTree', parameters: {arrayNames: ['children']}}"
         >
-          <CustomTreeItem class="sourceObjectTreeItem">
+          <CustomTreeItem class="sourceObjectTreeItem" type="Active">
             <HBox class="sourceObjectTreeItemContent" alignItems="Center" justifyContent="SpaceBetween">
               <HBox class="sourceObjectTreeIdentity" alignItems="Center">
                 <core:Icon class="sourceObjectTreeIcon" src="{detail>icon}" decorative="true" />

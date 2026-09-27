@@ -77,6 +77,7 @@ sap.ui.define([
       Device.resize.detachHandler(this._onSourceObjectResize, this);
       this._iFioriUiRequestVersion = (this._iFioriUiRequestVersion || 0) + 1;
       this._closeFioriUiReport();
+      this._iODataGenerationDialogVersion = (this._iODataGenerationDialogVersion || 0) + 1;
       this._bODataGenerationDialogOpen = false;
       this._cancelODataGenerationPolling();
       this._stopRequestHistory();
@@ -702,6 +703,7 @@ sap.ui.define([
       this._sLegacySelectionJson = "";
       this._iFioriUiRequestVersion = (this._iFioriUiRequestVersion || 0) + 1;
       this._closeFioriUiReport();
+      this._iODataGenerationDialogVersion = (this._iODataGenerationDialogVersion || 0) + 1;
       this._bODataGenerationDialogOpen = false;
       this._cancelODataGenerationPolling();
       ["fioriUiPrepareDialog", "odataGenerationDialog", "legacyComparisonDialog"].forEach(function (sId) {
@@ -2437,6 +2439,7 @@ sap.ui.define([
         this._oPendingHistoryRequest = null;
         this._stopRequestHistory();
         this._stopLegacyComparison();
+        this._iODataGenerationDialogVersion = (this._iODataGenerationDialogVersion || 0) + 1;
         this._bODataGenerationDialogOpen = false;
         this._cancelODataGenerationPolling();
         var oGenerationDialog = this.byId && this.byId("odataGenerationDialog");
@@ -2565,6 +2568,7 @@ sap.ui.define([
         return;
       }
       this._cancelODataGenerationPolling();
+      this._oViewModel.setProperty("/odataGeneration/mode", "CREATE");
       this._oViewModel.setProperty("/odataGeneration/requestId", sRequestId);
       this._oViewModel.setProperty("/odataGeneration/status", oRow.status);
       this._oViewModel.setProperty("/odataGeneration/message", oRow.message);
@@ -2580,7 +2584,7 @@ sap.ui.define([
             !RequestHistory.sameId(sAnalysisId, this._oViewModel.getProperty("/analysisId"))) { return; }
         if (oResponse && ((oResponse.RequestId && !RequestHistory.sameId(oResponse.RequestId, sRequestId)) ||
             (oResponse.AnalysisId && !RequestHistory.sameId(oResponse.AnalysisId, sAnalysisId)))) {
-          throw new Error("Generation response does not match AnalysisId and RequestId.");
+          throw new Error("Generation response does not match the active request.");
         }
         var oParsed = this._applyODataGenerationResponse(oResponse);
         if (oParsed.status === "FAILED" || oParsed.status === "DISPATCH_FAILED" || oParsed.status === "BLOCKED") {
@@ -2767,20 +2771,32 @@ sap.ui.define([
 
     onOpenODataGenerationDialog: function () {
       var sAnalysisId = this._oViewModel.getProperty("/analysisId");
-      var sStatus = this._oViewModel.getProperty("/odataGeneration/status");
+      var oState = this._oViewModel.getProperty("/odataGeneration");
+      var sCachedMode;
 
       if (!sAnalysisId) {
         this._oViewModel.setProperty("/odataGeneration/error", this.getText("odataGenerationAnalysisIdRequired"));
         return;
       }
-      if (sStatus !== "BLOCKED" && sStatus !== "FAILED" && sStatus !== "DISPATCH_FAILED") {
-        this._oViewModel.setProperty("/odataGeneration/error", "");
-      }
+
       this._openODataGenerationDialog(sAnalysisId);
+      if (ODataGeneration.isGenerationActive(oState.status)) {
+        this._oViewModel.setProperty("/odataGeneration/mode", "CREATE");
+        this._resumeODataGenerationPolling();
+        return;
+      }
+      sCachedMode = ODataGeneration.cachedDeploymentMode(oState, sAnalysisId);
+      if (sCachedMode) {
+        this._oViewModel.setProperty("/odataGeneration/mode", sCachedMode);
+        this._oViewModel.setProperty("/odataGeneration/error", "");
+        return;
+      }
+      this._probeExistingODataDeployment(sAnalysisId);
     },
 
     onCloseODataGenerationDialog: function () {
       this._iRequestHistoryDetailVersion = (this._iRequestHistoryDetailVersion || 0) + 1;
+      this._iODataGenerationDialogVersion = (this._iODataGenerationDialogVersion || 0) + 1;
       this._bODataGenerationDialogOpen = false;
       this._cancelODataGenerationPolling();
       var oDialog = this.byId("odataGenerationDialog");
@@ -2791,12 +2807,21 @@ sap.ui.define([
 
     onAfterCloseODataGenerationDialog: function () {
       this._iRequestHistoryDetailVersion = (this._iRequestHistoryDetailVersion || 0) + 1;
+      this._iODataGenerationDialogVersion = (this._iODataGenerationDialogVersion || 0) + 1;
       this._bODataGenerationDialogOpen = false;
       this._cancelODataGenerationPolling();
     },
 
+    onRetryODataDeploymentLookup: function () {
+      var sAnalysisId = this._oViewModel.getProperty("/analysisId");
+      if (sAnalysisId && !this._oViewModel.getProperty("/odataGeneration/dialogBusy")) {
+        this._probeExistingODataDeployment(sAnalysisId);
+      }
+    },
+
     onODataGenerationInputChange: function (oEvent) {
-      if (ODataGeneration.isGenerationActive(this._oViewModel.getProperty("/odataGeneration/status")) ||
+      if (this._oViewModel.getProperty("/odataGeneration/mode") !== "CREATE" ||
+          ODataGeneration.isGenerationActive(this._oViewModel.getProperty("/odataGeneration/status")) ||
           this._oViewModel.getProperty("/odataGeneration/dialogBusy")) {
         return;
       }
@@ -2818,7 +2843,8 @@ sap.ui.define([
       var iRequestVersion;
       var sAnalysisId = this._oViewModel.getProperty("/analysisId");
 
-      if (this._oViewModel.getProperty("/odataGeneration/dialogBusy") ||
+      if (this._oViewModel.getProperty("/odataGeneration/mode") !== "CREATE" ||
+          this._oViewModel.getProperty("/odataGeneration/dialogBusy") ||
           ODataGeneration.isGenerationActive(this._oViewModel.getProperty("/odataGeneration/status"))) {
         return;
       }
@@ -2876,7 +2902,8 @@ sap.ui.define([
       var iRequestVersion;
       var sAnalysisId = this._oViewModel.getProperty("/analysisId");
 
-      if (this._oViewModel.getProperty("/odataGeneration/dialogBusy") ||
+      if (this._oViewModel.getProperty("/odataGeneration/mode") !== "CREATE" ||
+          this._oViewModel.getProperty("/odataGeneration/dialogBusy") ||
           ODataGeneration.isGenerationActive(this._oViewModel.getProperty("/odataGeneration/status"))) {
         return;
       }
@@ -3052,7 +3079,7 @@ sap.ui.define([
       this._oViewModel.setProperty("/comparison/scopeMessage", "");
       this._appendLegacyRunLog("WARN", "INPUT", "Comparison input changed: " + (sPath || "unknown") +
         ". Previous result invalidated; " + (bReuseCapture ?
-          "captured RequestId=" + oState.requestId + " retained." : "a new capture is required."));
+          "the current capture was retained." : "a new capture is required."));
     },
 
     onLegacyComparisonMappingChange: function (oEvent) {
@@ -3124,15 +3151,15 @@ sap.ui.define([
       this._oViewModel.setProperty("/comparison/error", "");
       this._oViewModel.setProperty("/comparison/reason", this.getText("legacyCompareSubmitting"));
       this._resetLegacyRunLog();
-      this._appendLegacyRunLog("INFO", "CAPTURE", "Submitting AnalysisId=" + sAnalysisId +
-        " RequestId=" + sRequestId + " SelectionJson=" + sSelectionJson + ".");
+      this._appendLegacyRunLog("INFO", "CAPTURE", "Submitting capture with SelectionJson=" +
+        sSelectionJson + ".");
       return Promise.resolve().then(function () {
         return this._oLegacyComparisonService.captureLegacyRows(sAnalysisId, sRequestId, sSelectionJson);
       }.bind(this)).then(function (oResponse) {
         if (iVersion !== this._iLegacyComparisonVersion || sAnalysisId !== this._oViewModel.getProperty("/analysisId")) { return; }
         if (oResponse && oResponse.RequestId &&
             String(oResponse.RequestId).toLowerCase() !== sRequestId.toLowerCase()) {
-          throw new Error("CaptureLegacyRows returned a different RequestId.");
+          throw new Error("The capture action returned a different request.");
         }
         bSubmitted = true;
         this._recordSubmittedRequest("CAPTURE", sAnalysisId, sRequestId, oResponse);
@@ -3149,7 +3176,7 @@ sap.ui.define([
         this._oViewModel.setProperty("/comparison/reason", oResponse.Status === "CAPTURED" ?
           this.getText("legacyCompareReady") : RequestHistory.isActive(oResponse.Status) ?
             "" : oResponse.Message || oResponse.Status);
-        this._appendLegacyRunLog("INFO", "CAPTURE", "RequestId=" + sRequestId + " Status=" + oResponse.Status + ".");
+        this._appendLegacyRunLog("INFO", "CAPTURE", "Status=" + oResponse.Status + ".");
         if (RequestHistory.isActive(oResponse.Status)) {
           this._appendLegacyRunLog("INFO", "WORKER", "Capture is pending; the scheduled SAP background job runs about every 2 minutes and status refreshes automatically.");
         }
@@ -3192,8 +3219,7 @@ sap.ui.define([
       this._oViewModel.setProperty("/comparison/error", "");
       this._oViewModel.setProperty("/comparison/differences", []);
       this._clearLegacyMappingLog();
-      this._appendLegacyRunLog("INFO", "CAPTURE_CHECK", "Reading AnalysisId=" + sAnalysisId +
-        " RequestId=" + sRequestId + ".");
+      this._appendLegacyRunLog("INFO", "CAPTURE_CHECK", "Reading the current capture.");
       var bCaptured = false;
       return Promise.resolve().then(function () {
         return this._oLegacyComparisonService.getLegacyCapture(sAnalysisId, sRequestId);
@@ -3206,7 +3232,7 @@ sap.ui.define([
         if (RequestHistory.isActive(oResponse && oResponse.Status)) {
           if (!RequestHistory.sameId(oResponse.AnalysisId, sAnalysisId) ||
               !RequestHistory.sameId(oResponse.RequestId, sRequestId)) {
-            throw new Error("Capture response does not match AnalysisId and RequestId.");
+            throw new Error("Capture response does not match the active request.");
           }
           this._oViewModel.setProperty("/comparison/reason", "");
           return;
@@ -3268,8 +3294,7 @@ sap.ui.define([
       this._oViewModel.setProperty("/comparison/odataCount", null);
       this._oViewModel.setProperty("/comparison/comparedColumnCount", null);
       this._oViewModel.setProperty("/comparison/scopeMessage", "");
-      this._appendLegacyRunLog("INFO", "COMPARE", "Starting AnalysisId=" + sAnalysisId +
-        " RequestId=" + oState.requestId + " CaptureStatus=" + oState.captureStatus +
+      this._appendLegacyRunLog("INFO", "COMPARE", "Starting CaptureStatus=" + oState.captureStatus +
         " CountRow=" + this._aLegacyCapturedRows.length + " EntitySet=" + oState.entitySet +
         " SelectionJson=" + (this._sLegacySelectionJson || "unknown") + ".");
       if (this._sLegacySelectionJson !== "[]") {
@@ -3425,6 +3450,8 @@ sap.ui.define([
     },
 
     _openODataGenerationDialog: function (sAnalysisId) {
+      var iDialogVersion = (this._iODataGenerationDialogVersion || 0) + 1;
+      this._iODataGenerationDialogVersion = iDialogVersion;
       if (!this._pODataGenerationDialog) {
         this._pODataGenerationDialog = Fragment.load({
           id: this.getView().getId(),
@@ -3436,7 +3463,8 @@ sap.ui.define([
         }.bind(this));
       }
       this._pODataGenerationDialog.then(function (oDialog) {
-        if (sAnalysisId === this._oViewModel.getProperty("/analysisId")) {
+        if (iDialogVersion === this._iODataGenerationDialogVersion &&
+            sAnalysisId === this._oViewModel.getProperty("/analysisId")) {
           oDialog.open();
           this._bODataGenerationDialogOpen = true;
           this._resumeODataGenerationPolling();
@@ -3445,6 +3473,79 @@ sap.ui.define([
         this.showError(oError, "odataGenerationDialogError");
         this._pODataGenerationDialog = null;
       }.bind(this));
+    },
+
+    _probeExistingODataDeployment: function (sAnalysisId) {
+      var iRequestVersion;
+      var oParameters;
+
+      if (!sAnalysisId || ODataGeneration.isGenerationActive(
+        this._oViewModel.getProperty("/odataGeneration/status"))) {
+        return Promise.resolve();
+      }
+
+      iRequestVersion = (this._iODataGenerationRequestVersion || 0) + 1;
+      this._iODataGenerationRequestVersion = iRequestVersion;
+      oParameters = ODataGeneration.normalizeParameters({ providerLanguage: "STANDARD" }, ODataGeneration.ZERO_UUID);
+      this._oViewModel.setProperty("/odataGeneration/mode", "CHECKING");
+      this._oViewModel.setProperty("/odataGeneration/error", "");
+      this._setODataGenerationBusy(true);
+
+      return Promise.resolve().then(function () {
+        return this.getAnalysisService().preflightOData(sAnalysisId, oParameters);
+      }.bind(this)).then(function (oResponse) {
+        var oParsed;
+        var sMode;
+        if (iRequestVersion !== this._iODataGenerationRequestVersion ||
+            sAnalysisId !== this._oViewModel.getProperty("/analysisId")) {
+          return;
+        }
+        oParsed = this._applyODataGenerationResponse(oResponse, sAnalysisId);
+        sMode = ODataGeneration.deploymentMode(oParsed);
+        if (!sMode) {
+          throw new Error(this.getText("odataGenerationLookupUnexpectedResponse"));
+        }
+        this._oViewModel.setProperty("/odataGeneration/mode", sMode);
+        this._oViewModel.setProperty("/odataGeneration/preflightReady", false);
+        this._oViewModel.setProperty("/odataGeneration/canGenerate", false);
+      }.bind(this)).catch(function (oError) {
+        var oParsedError;
+        if (iRequestVersion !== this._iODataGenerationRequestVersion ||
+            sAnalysisId !== this._oViewModel.getProperty("/analysisId")) {
+          return;
+        }
+        oParsedError = this.parseError(oError);
+        if (ODataGeneration.isMissingGenerationInputError(oError, oParsedError)) {
+          this._resetODataGenerationForCreate();
+          return;
+        }
+        this._oViewModel.setProperty("/odataGeneration/mode", "ERROR");
+        this._oViewModel.setProperty("/odataGeneration/error",
+          oParsedError.message && oParsedError.message !== "Unexpected error." ?
+            oParsedError.message : this.getText("odataGenerationLookupError"));
+      }.bind(this)).finally(function () {
+        if (iRequestVersion === this._iODataGenerationRequestVersion &&
+            sAnalysisId === this._oViewModel.getProperty("/analysisId")) {
+          this._setODataGenerationBusy(false);
+        }
+      }.bind(this));
+    },
+
+    _resetODataGenerationForCreate: function () {
+      this._oViewModel.setProperty("/odataGeneration/mode", "CREATE");
+      this._oViewModel.setProperty("/odataGeneration/requestId", "");
+      this._oViewModel.setProperty("/odataGeneration/status", "");
+      this._oViewModel.setProperty("/odataGeneration/runtimeCheck", "");
+      this._oViewModel.setProperty("/odataGeneration/message", "");
+      this._oViewModel.setProperty("/odataGeneration/result", {});
+      this._oViewModel.setProperty("/odataGeneration/resultAnalysisId", "");
+      this._oViewModel.setProperty("/odataGeneration/resultJsonInvalid", false);
+      this._oViewModel.setProperty("/odataGeneration/hasResult", false);
+      this._oViewModel.setProperty("/odataGeneration/preflightReady", false);
+      this._oViewModel.setProperty("/odataGeneration/preflightSignature", "");
+      this._oViewModel.setProperty("/odataGeneration/generationSignature", "");
+      this._oViewModel.setProperty("/odataGeneration/canGenerate", false);
+      this._oViewModel.setProperty("/odataGeneration/error", "");
     },
 
     _validateODataGeneration: function (oState, bGenerate) {
@@ -3480,18 +3581,25 @@ sap.ui.define([
       }
     },
 
-    _applyODataGenerationResponse: function (oResponse) {
+    _applyODataGenerationResponse: function (oResponse, sExpectedAnalysisId) {
       var oParsed = ODataGeneration.parseResponse(oResponse);
       var sRequestId = ODataGeneration.isUsableRequestId(oParsed.requestId) ?
         oParsed.requestId : this._oViewModel.getProperty("/odataGeneration/requestId");
       var bFailure = oParsed.status === "BLOCKED" || oParsed.status === "FAILED" ||
         oParsed.status === "DISPATCH_FAILED";
 
+      if (sExpectedAnalysisId && oParsed.analysisId &&
+          !ODataGeneration.sameId(oParsed.analysisId, sExpectedAnalysisId)) {
+        throw new Error(this.getText("odataGenerationLookupMismatchedAnalysis"));
+      }
+
       this._oViewModel.setProperty("/odataGeneration/requestId", sRequestId);
       this._oViewModel.setProperty("/odataGeneration/status", oParsed.status);
       this._oViewModel.setProperty("/odataGeneration/runtimeCheck", oParsed.runtimeCheck);
       this._oViewModel.setProperty("/odataGeneration/message", bFailure ? "" : oParsed.message);
       this._oViewModel.setProperty("/odataGeneration/result", oParsed.result);
+      this._oViewModel.setProperty("/odataGeneration/resultAnalysisId",
+        oParsed.analysisId || sExpectedAnalysisId || this._oViewModel.getProperty("/analysisId"));
       this._oViewModel.setProperty("/odataGeneration/resultJsonInvalid", oParsed.resultJsonInvalid);
       this._oViewModel.setProperty("/odataGeneration/hasResult", true);
       this._oViewModel.setProperty("/odataGeneration/error", bFailure ?
@@ -3510,6 +3618,9 @@ sap.ui.define([
       this._clearODataGenerationTimer();
       this._oViewModel.setProperty("/odataGeneration/polling", false);
       if (oParsed.status === "GENERATED") {
+        if (ODataGeneration.deploymentMode(oParsed) === "REUSE") {
+          this._oViewModel.setProperty("/odataGeneration/mode", "REUSE");
+        }
         this._oViewModel.setProperty("/odataGeneration/canGenerate", false);
         MessageToast.show(oParsed.message || this.getText("odataGenerationGenerated"));
       } else if (oParsed.status === "BLOCKED" || oParsed.status === "FAILED" ||

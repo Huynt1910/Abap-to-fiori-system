@@ -20,7 +20,6 @@
             class="sapUiTinyMarginBegin" />
         </HBox>
         <HBox wrap="Wrap" class="sapUiSmallMarginTop">
-          <ObjectAttribute title="{i18n>legacyCompareRequestId}" text="{detail>/comparison/requestId}" class="sapUiMediumMarginEnd" />
           <ObjectStatus title="{i18n>legacyCompareCaptureStatus}" text="{detail>/comparison/captureStatus}"
             state="{path: 'detail>/comparison/captureStatus', formatter: '.formatter.formatRequestStatusState'}" />
         </HBox>

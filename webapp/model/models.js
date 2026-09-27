@@ -183,6 +183,7 @@ sap.ui.define([
         config: null
       },
       odataGeneration: {
+        mode: "CREATE",
         dialogBusy: false,
         polling: false,
         targetPackage: "",
@@ -194,6 +195,7 @@ sap.ui.define([
         runtimeCheck: "",
         message: "",
         result: {},
+        resultAnalysisId: "",
         resultJsonInvalid: false,
         preflightReady: false,
         preflightSignature: "",

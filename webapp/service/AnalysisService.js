@@ -249,7 +249,7 @@ sap.ui.define([
     var oActionBinding;
 
     if (!sId || !sTargetPackage || !sServiceRootUrl) {
-      return Promise.reject(new Error("AnalysisId, TargetPackage and ServiceRootUrl are required."));
+      return Promise.reject(new Error("The current analysis, target package and service root URL are required."));
     }
 
     oActionBinding = this._oModel.bindContext(
@@ -343,7 +343,7 @@ sap.ui.define([
     var sId = String(sAnalysisId || "").trim();
 
     if (!sId) {
-      throw new Error("AnalysisId is required.");
+      throw new Error("The current analysis is required.");
     }
 
     return Constants.entitySet.analyses + "(" + encodeURIComponent(sId) + ")";
@@ -354,7 +354,7 @@ sap.ui.define([
     var sSourceItem = String(sSourceItemId || "").trim();
 
     if (!sAnalysis || !sSourceItem) {
-      throw new Error("AnalysisId and SourceItemId are required.");
+      throw new Error("The current analysis and source item are required.");
     }
 
     return Constants.entitySet.sourceObjects + "(AnalysisId=" + encodeURIComponent(sAnalysis) + ",ItemId=" + encodeURIComponent(sSourceItem) + ")";
@@ -365,7 +365,7 @@ sap.ui.define([
     var sOutput = String(sOutputId || "").trim();
 
     if (!sAnalysis || !sOutput) {
-      throw new Error("AnalysisId and OutputId are required.");
+      throw new Error("The current analysis and output are required.");
     }
 
     return Constants.entitySet.alvOutputs + "(AnalysisId=" + encodeURIComponent(sAnalysis) + ",OutputId=" + encodeURIComponent(sOutput) + ")";
@@ -376,7 +376,7 @@ sap.ui.define([
     var sItem = String(sItemId || "").trim();
 
     if (!sAnalysis || !sItem) {
-      throw new Error("AnalysisId and ItemId are required.");
+      throw new Error("The current analysis and item are required.");
     }
 
     return Constants.entitySet.businessLogic + "(AnalysisId=" + encodeURIComponent(sAnalysis) + ",ItemId=" + encodeURIComponent(sItem) + ")";
@@ -387,7 +387,7 @@ sap.ui.define([
     var sRecommendation = String(sRecommendationId || "").trim();
 
     if (!sAnalysis || !sRecommendation) {
-      throw new Error("AnalysisId and RecommendationId are required.");
+      throw new Error("The current analysis and recommendation are required.");
     }
 
     return Constants.entitySet.recommendations + "(AnalysisId=" + encodeURIComponent(sAnalysis) + ",RecommendationId=" + encodeURIComponent(sRecommendation) + ")";

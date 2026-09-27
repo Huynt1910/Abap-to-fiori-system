@@ -95,7 +95,7 @@ sap.ui.define([
     this._validateSelectedExportParameters(mParameters);
 
     if (!sId) {
-      return Promise.reject(new Error("AnalysisId is required for export."));
+      return Promise.reject(new Error("The current analysis is required for export."));
     }
 
     mActionParameters = this._buildSelectedExportActionParameters(mParameters);
@@ -140,7 +140,7 @@ sap.ui.define([
     var oAction;
 
     if (!sId) {
-      return Promise.reject(new Error("AnalysisId is required for technical document generation."));
+      return Promise.reject(new Error("The current analysis is required for technical document generation."));
     }
 
     oAction = this._oModel.bindContext(

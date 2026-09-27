@@ -198,7 +198,7 @@ sap.ui.define([], function () {
   function capture(oResponse, sAnalysisId, sRequestId) {
     if (!oResponse || String(oResponse.AnalysisId || "").toLowerCase() !== String(sAnalysisId).toLowerCase() ||
         String(oResponse.RequestId || "").toLowerCase() !== String(sRequestId).toLowerCase()) {
-      throw new Error("Capture response does not match AnalysisId and RequestId.");
+      throw new Error("Capture response does not match the active request.");
     }
     if (oResponse.Status !== "CAPTURED") {
       var sStatus = oResponse.Status || "unknown";
